@@ -23,7 +23,7 @@ def main():
         rec=reassemble_fragments(args.fragments) if args.fragments else read_csv_bytes(Path(args.input).read_bytes(),'inference','unseen','csv','unknown','unknown')
         bundle=load_bundle(args.model or out/'model.joblib');pred=predict_recording(rec,bundle)
         pred.to_csv(out/'predictions.csv',index=False)
-        write_json(out/'prediction_receipt.json',{'input_sha256':rec.sha256,'model_sha256':sha256_file(args.model or out/'model.joblib'),'windows':len(pred),'predicted':int((pred.status=='predicted').sum()),'scope':'offline weak-label model, not physiological validation'})
+        write_json(out/'prediction_receipt.json',{'input_sha256':rec.sha256,'model_sha256':sha256_file(args.model or out/'model.joblib'),'rows':len(pred),'feature_windows':int((pred.row_type=='window').sum()),'rejected_intervals':int((pred.row_type=='rejected_run').sum()),'predicted':int((pred.status=='predicted').sum()),'scope':'offline weak-label model, not physiological validation'})
     elif args.command=='demo':
         data=process_dataset(synthetic_recordings(),c,out)
         f=eligible_features(data['features'])

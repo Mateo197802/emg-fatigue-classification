@@ -29,8 +29,7 @@ def export_public_results(frame,public_dir,private_dir):
 
 def render_report_assets(output_root,config):
     out=Path(output_root);ev=out/'evaluation';assets=out/'report_assets';assets.mkdir(parents=True,exist_ok=True)
-    receipt=json.loads((ev/'evaluation_receipt.json').read_text(encoding='utf-8'))
-    if receipt['config_sha256']!=config.digest():raise ValueError('evaluation/config mismatch')
+    receipt=verify_evaluation(out,config)
     results=pd.read_csv(ev/'results.csv');summary=pd.read_csv(ev/'metrics_summary.csv')
     oof=pd.read_parquet(ev/'oof_predictions.parquet');features=pd.read_parquet(out/'features.parquet')
     if oof.duplicated(['model','window_id']).any():raise ValueError('OOF duplicates')
@@ -89,3 +88,28 @@ def render_report_assets(output_root,config):
     tracked=[p for p in assets.iterdir() if p.is_file() and p.name!='assets_manifest.json']
     write_json(assets/'assets_manifest.json',{'config_sha256':config.digest(),'files':[{'name':p.name,'sha256':sha256_file(p)} for p in sorted(tracked)]})
     return assets
+
+
+def verify_evaluation(output_root,config):
+    from .workflow import verify_feature_cache,eligible_features,feature_table_digest
+    out=Path(output_root);ev=out/'evaluation'
+    if (ev/'RUNNING.json').exists() or not (ev/'evaluation_receipt.json').exists():
+        raise ValueError('evaluation is incomplete or running')
+    receipt=json.loads((ev/'evaluation_receipt.json').read_text(encoding='utf-8'))
+    if receipt.get('status')!='complete' or receipt['config_sha256']!=config.digest():raise ValueError('evaluation/config mismatch')
+    verify_feature_cache(out,config)
+    features=eligible_features(pd.read_parquet(out/'features.parquet'))
+    if receipt.get('feature_table_sha256')!=feature_table_digest(features):raise ValueError('evaluation feature identity mismatch')
+    for name,expected in receipt['output_hashes'].items():
+        if sha256_file(ev/name)!=expected:raise ValueError('evaluation output checksum mismatch: '+name)
+    results=pd.read_csv(ev/'results.csv');oof=pd.read_parquet(ev/'oof_predictions.parquet')
+    if set(results.model)!=set(receipt['models']) or set(oof.model)!=set(receipt['models']):raise ValueError('evaluation model set mismatch')
+    expected_windows=set(features.window_id)
+    for model in receipt['models']:
+        r=results[results.model==model];o=oof[oof.model==model]
+        if len(r)!=receipt['outer_folds'] or r.fold_id.nunique()!=receipt['outer_folds'] or r.subject_id.nunique()!=receipt['outer_folds']:
+            raise ValueError('incomplete or duplicate model/fold results')
+        if len(o)!=len(features) or o.window_id.duplicated().any() or set(o.window_id)!=expected_windows:raise ValueError('OOF window set mismatch')
+        aligned=o.set_index('window_id').loc[features.window_id]
+        if not np.array_equal(aligned.label.to_numpy(),features.label.to_numpy()):raise ValueError('OOF label mismatch')
+    return receipt

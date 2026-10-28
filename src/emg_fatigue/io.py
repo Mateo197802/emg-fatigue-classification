@@ -1,12 +1,53 @@
 """Read archives without extracting member-controlled paths. Names stay private."""
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import hashlib, io, re, stat, subprocess, zipfile
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 import numpy as np
 import pandas as pd
 from .contracts import Recording
 
 MAX_MEMBER=512*1024**2
 MAX_TOTAL=3*1024**3
+
+
+def run_bounded(command,stdout_limit,timeout=60,stderr_limit=65536):
+    """Drain both pipes under hard byte limits; kill/reap on overflow or timeout."""
+    proc=subprocess.Popen(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    pool=ThreadPoolExecutor(max_workers=2)
+    def read_limited(stream,limit):
+        chunks=[];count=0
+        while True:
+            chunk=stream.read(min(65536,limit-count+1))
+            if not chunk:return b''.join(chunks)
+            count+=len(chunk)
+            if count>limit:raise ValueError('archive subprocess exceeded byte limit')
+            chunks.append(chunk)
+    try:
+        output=pool.submit(read_limited,proc.stdout,stdout_limit)
+        error=pool.submit(read_limited,proc.stderr,stderr_limit)
+        done,pending=wait([output,error],timeout=timeout,return_when=FIRST_EXCEPTION)
+        for f in done:
+            if f.exception():raise f.exception()
+        if pending:raise TimeoutError('archive subprocess timed out')
+        code=proc.wait(timeout=5)
+        if code:raise ValueError(f'archive subprocess failed with code {code}: '+error.result().decode('utf-8',errors='replace')[:300])
+        return output.result()
+    except BaseException:
+        proc.kill();proc.wait(timeout=5);raise
+    finally:
+        pool.shutdown(wait=True)
+        proc.stdout.close();proc.stderr.close()
+
+
+def reject_duplicate_recordings(recordings):
+    seen={}
+    for r in recordings:
+        canonical=np.column_stack((r.t-r.t[0],r.x)).astype('<f8').tobytes()
+        for key in [('bytes',r.sha256),('signal',hashlib.sha256(canonical).hexdigest())]:
+            if key in seen:
+                other=seen[key]
+                raise ValueError(f'duplicate recording content: {other.source_member or other.recording_id} and {r.source_member or r.recording_id}')
+            seen[key]=r
 
 
 def read_csv_bytes(data, recording_id, subject_id, source, side, series, source_member=''):
@@ -56,21 +97,23 @@ def load_recordings(path,config=None):
         names=inspect_zip(path)
         with zipfile.ZipFile(path) as z:items=[(n,z.read(n)) for n in names]
     elif source=='rar':
-        names=subprocess.run(['tar','-tf',str(path)],check=True,capture_output=True,text=True,timeout=60).stdout.splitlines()
+        names=run_bounded(['tar','-tf',str(path)],1024**2).decode('utf-8-sig').splitlines()
         if len(names)!=len(set(n.casefold() for n in names)):raise ValueError('duplicate RAR member')
         for n in names:
             if not re.fullmatch(r'P\d+_set0[1-5]_(dr|iz)\.csv',n,re.I):raise ValueError('unsafe or unsupported RAR member')
         items=[];total=0
         for n in sorted(names):
-            b=subprocess.run(['tar','-xOf',str(path),n],check=True,capture_output=True,timeout=60).stdout
+            b=run_bounded(['tar','-xOf',str(path),n],min(MAX_MEMBER,MAX_TOTAL-total))
             total+=len(b)
             if len(b)>MAX_MEMBER or total>MAX_TOTAL:raise ValueError('oversized archive')
             items.append((n,b))
     else:raise ValueError('training source must be ZIP or RAR')
     metadata=[_metadata(n,source) for n,_ in items]
     groups={g:f'{source.upper()}_G{i:02d}' for i,g in enumerate(sorted({m[0] for m in metadata}),1)}
-    return [read_csv_bytes(b,f'{source.upper()}_REC{i:04d}',groups[g],source,side,series,n)
+    recordings=[read_csv_bytes(b,f'{source.upper()}_REC{i:04d}',groups[g],source,side,series,n)
             for i,((n,b),(g,series,side)) in enumerate(zip(items,metadata),1)]
+    reject_duplicate_recordings(recordings)
+    return recordings
 
 
 def reassemble_fragments(paths):

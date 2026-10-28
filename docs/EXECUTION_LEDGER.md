@@ -26,3 +26,15 @@ T5: validation RED 5 failures for absent modules, then GREEN 11/11 suite. Group 
 T6: workflow/model RED 2 failures for absent modules, then GREEN 13/13 suite. Trusted local serialization roundtrip, checksum tampering and unordered fragment reassembly tested.
 
 Primary nested evaluation running. T7 and sensitivity/ablation execution pending.
+
+Final review: independent read-only reviewer identified 5 Important issues. Fix pass: 8 regression cases observed RED, followed by full suite GREEN 25/25. Fixed mixed-run/stale reporting with completion-last output hashes, source-table digests and model/fold/window validation; exact/canonical signal duplicates across folders; stable rejected-interval inference schema; persisted failed inner-search audits and failed-run receipt; bounded RAR subprocess pipes and timeout/reaping. Numerical implementation revision/module hashes added to processing, evaluation and model receipts.
+
+Reviewer did not judge physiological validity, identity, activity truth or acquisition calibration. Ruling: these require evidence absent from the supplied archive and remain explicitly unestablished; software tests cannot resolve them.
+
+Ruling: the full-data model was fitted independently while outer evaluation ran — it was never used for OOF prediction or to choose candidates from outer scores. The final verified model will be refitted after the final evaluation. No performance estimate is assigned to that full-data fit.
+
+Ruling: first sensitivity execution completed all nine variations and three ablations before primary OOF existed; its final side summary failed at the expected dependent read. Numerical outputs were retained, and the final verified run will re-execute under completion/identity guards. No failure was hidden.
+
+Ruling: initial hash generation with pip-tools was replaced by official PyPI release-file hashes for the 33 exact installed distributions — avoids downloading every platform artifact merely to compute hashes. A new environment was installed using --require-hashes and passed the then-current full suite.
+
+Ruling: public model×fold results use whitelist-only opaque fold identifiers with a private persistent salt; source recordings, names, granular OOF and models stay private. This satisfies the results.csv format without copying the private dataset into Git.

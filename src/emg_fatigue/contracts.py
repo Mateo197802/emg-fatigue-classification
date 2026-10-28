@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict, fields
 from pathlib import Path
 import hashlib, json, os
+import subprocess
 import numpy as np
 import yaml
 
@@ -90,3 +91,11 @@ def sha256_file(path):
     with Path(path).open('rb') as f:
         for b in iter(lambda:f.read(8*1024*1024),b''):h.update(b)
     return h.hexdigest()
+
+
+def implementation_provenance():
+    package=Path(__file__).resolve().parent;repo=package.parents[1]
+    files={p.name:sha256_file(p) for p in sorted(package.glob('*.py'))}
+    revision=subprocess.run(['git','rev-parse','HEAD'],cwd=repo,capture_output=True,text=True)
+    return {'git_revision':revision.stdout.strip() if revision.returncode==0 else 'unavailable',
+      'package_source_sha256':hashlib.sha256(json.dumps(files,sort_keys=True).encode()).hexdigest(),'module_hashes':files}

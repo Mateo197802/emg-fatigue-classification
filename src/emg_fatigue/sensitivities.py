@@ -58,6 +58,8 @@ def finalize_sensitivities(output_root,config):
     if not (out/'evaluation/oof_predictions.parquet').exists():
         write_json(out/'sensitivity_finalization_pending.json',{'reason':'primary OOF still running; variations and ablations completed; finalize after primary evaluation'})
         return
+    from .reporting import verify_evaluation
+    verify_evaluation(out,config)
     oof=pd.read_parquet(out/'evaluation/oof_predictions.parquet');sides=[]
     for (model,subject,side),g in oof.groupby(['model','subject_id','side']):
         sides.append({'model':model,'subject_id':subject,'side':side,**binary_metrics(g.label,g.prediction,g.score)})

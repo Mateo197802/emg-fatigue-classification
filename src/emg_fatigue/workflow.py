@@ -3,7 +3,7 @@ from pathlib import Path
 import hashlib, importlib.metadata, time
 import numpy as np
 import pandas as pd
-from .contracts import Recording, write_json, sha256_file
+from .contracts import Recording, write_json, sha256_file, implementation_provenance
 from .preprocessing import preprocess, line_prominence
 from .activity import detect_activity
 from .labels import make_windows
@@ -28,6 +28,9 @@ def inventory(recordings,out):
 
 
 def process_dataset(recordings,config,output_dir):
+    from .io import reject_duplicate_recordings
+    reject_duplicate_recordings(recordings)
+    provenance=implementation_provenance()
     out=Path(output_dir);out.mkdir(parents=True,exist_ok=True);started=time.perf_counter()
     inv=inventory(recordings,out);frames=[];qc=[];coverage=[];line=[]
     for rec in recordings:
@@ -66,6 +69,7 @@ def process_dataset(recordings,config,output_dir):
       'physiological_reference_available':False,'seconds':time.perf_counter()-started}
     receipt['features_sha256']=sha256_file(out/'features.parquet') if not df.empty else None
     receipt['input_hashes_sha256']=sha256_file(out/'input_hashes.json')
+    receipt['implementation']=provenance
     write_json(out/'processing_receipt.json',receipt)
     write_json(out/'label_audit.json',{'version':config.label_version,'evidence':'weak elapsed recording time','original_bounds_before_qc':True,'transition_excluded':True,'qc_and_activity_are_not_negative_class':True,'label_counts':receipt['label_counts'],'status_counts':{str(k):int(v) for k,v in df.status.value_counts().items()} if not df.empty else {}})
     print(f'Processed {receipt["formal_recordings"]} formal recordings; {receipt["windows_labeled"]} labeled windows; {receipt["seconds"]:.1f}s',flush=True)

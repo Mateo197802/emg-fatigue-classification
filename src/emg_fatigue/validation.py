@@ -13,7 +13,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import GroupKFold
 from sklearn.exceptions import ConvergenceWarning
 from threadpoolctl import threadpool_limits
-from .contracts import write_json
+from .contracts import write_json, sha256_file, implementation_provenance
 from .features import FEATURE_COLUMNS, AMPLITUDE, SPECTRAL, WAVELET
 from .evaluation import binary_metrics, summarize_results, paired_differences
 
@@ -70,7 +70,7 @@ def predict_scores(pipe,test):
     return pred,np.asarray(score),kind
 
 
-def select_candidates(train,config,candidates,context,columns=None):
+def select_candidates(train,config,candidates,context,columns=None,audit_dir=None):
     n=min(config.inner_folds,train.subject_id.nunique())
     if n<2:raise ValueError('insufficient inner groups')
     folds=list(GroupKFold(n_splits=n).split(train,train.label,groups=train.subject_id))
@@ -91,6 +91,11 @@ def select_candidates(train,config,candidates,context,columns=None):
         mean=float(np.mean(scores)) if not failure and scores else None
         row={'context':context,'candidate_order':order,'family':c['family'],'parameters':json.dumps(c,sort_keys=True),'inner_subject_macro_f1':mean,'status':'failed' if failure else 'ok','failure':failure,'seconds':time.perf_counter()-started}
         rows.append(row)
+        if audit_dir is not None:
+            from pathlib import Path
+            audit=Path(audit_dir);audit.mkdir(parents=True,exist_ok=True)
+            pd.DataFrame(rows).to_csv(audit/'search_results.csv',index=False)
+            write_json(audit/'splits.json',splits)
         if mean is not None and (c['family'] not in best or mean>best[c['family']][0]+1e-12):best[c['family']]=(mean,order,c)
     if not best:raise RuntimeError('all candidate configurations failed; inspect search audit')
     overall=max(best.values(),key=lambda v:(v[0],-v[1]))[2]
@@ -99,13 +104,31 @@ def select_candidates(train,config,candidates,context,columns=None):
 
 def evaluate_nested(features,config,output_dir,candidates=None,columns=None):
     from pathlib import Path
-    from .workflow import feature_table_digest
     out=Path(output_dir);out.mkdir(parents=True,exist_ok=True)
+    completion=out/'evaluation_receipt.json'
+    if completion.exists():completion.unlink()
+    old_failure=out/'failure_receipt.json'
+    if old_failure.exists():old_failure.unlink()
+    write_json(out/'RUNNING.json',{'config_sha256':config.digest(),'status':'incomplete'})
+    try:
+        result=_evaluate_nested(features,config,out,candidates,columns)
+        (out/'RUNNING.json').unlink()
+        return result
+    except BaseException as error:
+        if completion.exists():completion.unlink()
+        write_json(out/'failure_receipt.json',{'status':'failed_incomplete','error_type':type(error).__name__,'error':str(error),'config_sha256':config.digest()})
+        raise
+
+
+def _evaluate_nested(features,config,output_dir,candidates=None,columns=None):
+    from pathlib import Path
+    from .workflow import feature_table_digest
+    out=Path(output_dir);provenance=implementation_provenance()
     df=features.copy().reset_index(drop=True);require_two_classes(df.label.to_numpy())
     folds=make_subject_folds(df.subject_id,config);results=[];oof=[];search=[];splits=[];selected=[]
     for fold in folds:
         start=time.perf_counter();train=df.iloc[fold['train']];test=df.iloc[fold['test']]
-        best,choice,rows,inner=select_candidates(train,config,candidates or candidate_grid(),fold['fold_id'],columns)
+        best,choice,rows,inner=select_candidates(train,config,candidates or candidate_grid(),fold['fold_id'],columns,audit_dir=out/'search_audit'/fold['fold_id'])
         search.extend(rows);splits.extend(inner)
         splits.append({'context':fold['fold_id'],'inner_fold':None,'train_subjects':sorted(set(train.subject_id)),'test_subjects':sorted(set(test.subject_id))})
         selected.append({'fold_id':fold['fold_id'],**choice})
@@ -132,5 +155,6 @@ def evaluate_nested(features,config,output_dir,candidates=None,columns=None):
     summarize_results(result,config.seed,config.bootstrap_replicates).to_csv(out/'metrics_summary.csv',index=False)
     paired_differences(result,config).to_csv(out/'paired_differences.csv',index=False)
     write_json(out/'selected_configurations.json',selected)
-    write_json(out/'evaluation_receipt.json',{'config_sha256':config.digest(),'feature_table_sha256':feature_table_digest(df),'rows':len(df),'recording_groups':int(df.subject_id.nunique()),'identity_status':config.group_identity_status,'outer_folds':len(folds),'oof_rows':len(predictions),'target':config.label_version,'physiological_reference_available':False,'runtime_scope':'offline','candidate_count':len(candidates or candidate_grid())})
+    artifacts=['results.csv','search_results.csv','splits.json','oof_predictions.parquet','metrics_summary.csv','paired_differences.csv','selected_configurations.json']
+    write_json(out/'evaluation_receipt.json',{'status':'complete','config_sha256':config.digest(),'feature_table_sha256':feature_table_digest(df),'implementation':provenance,'output_hashes':{name:sha256_file(out/name) for name in artifacts},'models':sorted(result.model.unique()),'rows':len(df),'recording_groups':int(df.subject_id.nunique()),'identity_status':config.group_identity_status,'outer_folds':len(folds),'oof_rows':len(predictions),'target':config.label_version,'physiological_reference_available':False,'runtime_scope':'offline','candidate_count':len(candidates or candidate_grid())})
     return {'results':result,'oof':predictions,'search':search,'splits':splits}
