@@ -3,7 +3,7 @@ from pathlib import Path
 import argparse, json, os
 import pandas as pd
 from .contracts import read_config, output_root, write_json, sha256_file
-from .workflow import inventory, process_dataset, eligible_features, synthetic_recordings, environment
+from .workflow import inventory, process_dataset, eligible_features, synthetic_recordings, environment, verify_feature_cache
 from .io import load_recordings, read_csv_bytes, reassemble_fragments
 from .validation import evaluate_nested
 from .inference import fit_final, load_bundle, predict_recording
@@ -37,8 +37,7 @@ def main():
         if args.command=='inventory':inventory(recordings,out)
         else:process_dataset(recordings,c,out)
     elif args.command in ['evaluate','fit-final']:
-        receipt=json.loads((out/'processing_receipt.json').read_text(encoding='utf-8'))
-        if receipt['config_sha256']!=c.digest():raise ValueError('cached features do not match requested configuration')
+        receipt=verify_feature_cache(out,c)
         f=eligible_features(pd.read_parquet(out/'features.parquet'))
         if args.command=='evaluate':evaluate_nested(f,c,out/'evaluation')
         else:fit_final(f,c,out/'model.joblib')

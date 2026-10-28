@@ -3,7 +3,7 @@ from pathlib import Path
 import hashlib, importlib.metadata, time
 import numpy as np
 import pandas as pd
-from .contracts import Recording, write_json
+from .contracts import Recording, write_json, sha256_file
 from .preprocessing import preprocess, line_prominence
 from .activity import detect_activity
 from .labels import make_windows
@@ -64,10 +64,27 @@ def process_dataset(recordings,config,output_dir):
       'source_mode':'synthetic_fixture' if recordings and recordings[0].source=='synthetic' else 'supplied_recordings',
       'physical_channel_mode':'unverified','mvc_available':False,'resting_baseline_available':False,
       'physiological_reference_available':False,'seconds':time.perf_counter()-started}
+    receipt['features_sha256']=sha256_file(out/'features.parquet') if not df.empty else None
+    receipt['input_hashes_sha256']=sha256_file(out/'input_hashes.json')
     write_json(out/'processing_receipt.json',receipt)
     write_json(out/'label_audit.json',{'version':config.label_version,'evidence':'weak elapsed recording time','original_bounds_before_qc':True,'transition_excluded':True,'qc_and_activity_are_not_negative_class':True,'label_counts':receipt['label_counts'],'status_counts':{str(k):int(v) for k,v in df.status.value_counts().items()} if not df.empty else {}})
     print(f'Processed {receipt["formal_recordings"]} formal recordings; {receipt["windows_labeled"]} labeled windows; {receipt["seconds"]:.1f}s',flush=True)
     return {'features':df,'inventory':inv,'receipt':receipt}
+
+
+def verify_feature_cache(output_dir,config):
+    root=Path(output_dir)
+    receipt=__import__('json').loads((root/'processing_receipt.json').read_text(encoding='utf-8'))
+    if receipt['config_sha256']!=config.digest():raise ValueError('cached configuration mismatch')
+    if sha256_file(root/'features.parquet')!=receipt.get('features_sha256'):
+        raise ValueError('feature cache checksum mismatch; regenerate from original recordings')
+    return receipt
+
+
+def feature_table_digest(frame):
+    columns=['window_id','subject_id','label']+FEATURE_COLUMNS
+    values=pd.util.hash_pandas_object(frame[columns],index=False).to_numpy().tobytes()
+    return hashlib.sha256(values).hexdigest()
 
 
 def eligible_features(df):

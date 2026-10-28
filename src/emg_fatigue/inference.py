@@ -13,6 +13,7 @@ from .validation import select_candidates, candidate_grid, fit_pipeline, predict
 
 
 def fit_final(features,config,model_path,candidates=None):
+    from .workflow import feature_table_digest, environment
     path=Path(model_path);path.parent.mkdir(parents=True,exist_ok=True)
     _,choice,search,splits=select_candidates(features,config,candidates or candidate_grid(),'final_full_data_inner_selection')
     pipeline=fit_pipeline(choice,features,config.seed)
@@ -23,6 +24,7 @@ def fit_final(features,config,model_path,candidates=None):
     before=predict_scores(pipeline,features)[1]
     joblib.dump(bundle,path,compress=3)
     write_json(path.with_suffix('.receipt.json'),{'sha256':sha256_file(path),'config_sha256':config.digest(),
+      'feature_table_sha256':feature_table_digest(features),'environment':environment(),
       'selected_configuration':choice,'training_windows':len(features),'recording_groups':int(features.subject_id.nunique()),
       'group_identity_status':config.group_identity_status,'evaluation':'full-data fit is not a new held-out performance estimate',
       'search':search,'splits':splits,'sklearn_version':bundle['sklearn_version']})

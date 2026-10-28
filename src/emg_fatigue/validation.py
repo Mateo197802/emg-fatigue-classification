@@ -99,6 +99,7 @@ def select_candidates(train,config,candidates,context,columns=None):
 
 def evaluate_nested(features,config,output_dir,candidates=None,columns=None):
     from pathlib import Path
+    from .workflow import feature_table_digest
     out=Path(output_dir);out.mkdir(parents=True,exist_ok=True)
     df=features.copy().reset_index(drop=True);require_two_classes(df.label.to_numpy())
     folds=make_subject_folds(df.subject_id,config);results=[];oof=[];search=[];splits=[];selected=[]
@@ -131,5 +132,5 @@ def evaluate_nested(features,config,output_dir,candidates=None,columns=None):
     summarize_results(result,config.seed,config.bootstrap_replicates).to_csv(out/'metrics_summary.csv',index=False)
     paired_differences(result,config).to_csv(out/'paired_differences.csv',index=False)
     write_json(out/'selected_configurations.json',selected)
-    write_json(out/'evaluation_receipt.json',{'config_sha256':config.digest(),'rows':len(df),'recording_groups':int(df.subject_id.nunique()),'identity_status':config.group_identity_status,'outer_folds':len(folds),'oof_rows':len(predictions),'target':config.label_version,'physiological_reference_available':False,'runtime_scope':'offline','candidate_count':len(candidates or candidate_grid())})
+    write_json(out/'evaluation_receipt.json',{'config_sha256':config.digest(),'feature_table_sha256':feature_table_digest(df),'rows':len(df),'recording_groups':int(df.subject_id.nunique()),'identity_status':config.group_identity_status,'outer_folds':len(folds),'oof_rows':len(predictions),'target':config.label_version,'physiological_reference_available':False,'runtime_scope':'offline','candidate_count':len(candidates or candidate_grid())})
     return {'results':result,'oof':predictions,'search':search,'splits':splits}

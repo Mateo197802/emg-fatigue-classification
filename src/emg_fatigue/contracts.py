@@ -33,6 +33,11 @@ class StudyConfig:
             raise ValueError('invalid window or occupancy configuration')
         if not (0<self.band_hz[0]<self.band_hz[1] and self.inner_folds>=2):
             raise ValueError('invalid frequency band or grouped folds')
+        if tuple(self.band_hz)!=(20.,400.) or self.filter_order!=4:
+            raise ValueError('this frozen feature contract supports only order-4 prototype band 20-400 Hz')
+        for value in [self.activity_frame_s,self.activity_hop_s,self.edge_s,self.gap_min_s,self.gap_multiplier,self.jitter_max,self.bootstrap_replicates]:
+            if not np.isfinite(value) or value<=0:raise ValueError('all processing limits must be finite and positive')
+        if not np.isfinite(self.boundary_shift):raise ValueError('boundary shift must be finite')
         if self.mode!='offline' or self.label_version!='weak_elapsed_thirds_binary_v1':
             raise ValueError('unsupported mode or label version')
         if abs(self.boundary_shift)>.10:raise ValueError('boundary shift outside prespecified range')

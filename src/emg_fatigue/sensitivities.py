@@ -50,8 +50,18 @@ def run_sensitivities(recordings,config,output_root):
     pd.DataFrame(ablation).to_csv(out/'ablation_summary.csv',index=False)
     oracle=(primary.time_fraction>=.5).astype(int)
     write_json(out/'time_oracle_diagnostic.json',{'interpretation':'tautological elapsed-time label oracle; uses full-record bounds; not a learned or deployable fatigue model',**binary_metrics(primary.label,oracle,primary.time_fraction)})
+    finalize_sensitivities(out,config)
+
+
+def finalize_sensitivities(output_root,config):
+    out=Path(output_root)
+    if not (out/'evaluation/oof_predictions.parquet').exists():
+        write_json(out/'sensitivity_finalization_pending.json',{'reason':'primary OOF still running; variations and ablations completed; finalize after primary evaluation'})
+        return
     oof=pd.read_parquet(out/'evaluation/oof_predictions.parquet');sides=[]
     for (model,subject,side),g in oof.groupby(['model','subject_id','side']):
         sides.append({'model':model,'subject_id':subject,'side':side,**binary_metrics(g.label,g.prediction,g.score)})
     pd.DataFrame(sides).to_csv(out/'side_metrics.csv',index=False)
     write_json(out/'sensitivity_receipt.json',{'primary_config_sha256':config.digest(),'variations':9,'ablation_subsets':3,'sensitivity_model':'fixed C=1 RMS+MDF logistic; all held-out groups re-evaluated','ablation_model':'logistic with inner grouped C tuning','physiological_validation':False})
+    pending=out/'sensitivity_finalization_pending.json'
+    if pending.exists():pending.unlink()

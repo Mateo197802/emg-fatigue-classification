@@ -1,0 +1,122 @@
+[
+  {
+    "key": "Dimitrov2006",
+    "doi": "10.1249/01.mss.0000233794.31659.6d",
+    "kind": "primary",
+    "evidence_note": "Knee extension; torque and joint angle synchronized; pre/post MVC; no supervised classifier",
+    "title": "Muscle Fatigue during Dynamic Contractions Assessed by New Spectral Indices",
+    "authors": "GEORGE V. DIMITROV; TODOR I. ARABADZHIEV; KATYA N. MILEVA; JOANNA L. BOWTELL; NICOLA CRICHTON; NONNA A. DIMITROVA",
+    "year": 2006,
+    "journal": "Medicine &amp; Science in Sports &amp; Exercise",
+    "url": "https://doi.org/10.1249/01.mss.0000233794.31659.6d",
+    "verification": "Crossref DOI metadata verified 2026-10-28; substantive use bounded by evidence_note"
+  },
+  {
+    "key": "Bonato2001",
+    "doi": "10.1109/10.930899",
+    "kind": "primary",
+    "title": "Time-frequency parameters of the surface myoelectric signal for assessing muscle fatigue during cyclic dynamic contractions",
+    "authors": "P. Bonato; S.H. Roy; M. Knaflitz; C.J. de Luca",
+    "year": 2001,
+    "journal": "IEEE Transactions on Biomedical Engineering",
+    "url": "https://doi.org/10.1109/10.930899",
+    "verification": "Crossref DOI metadata verified 2026-10-28; scientific use limited to evidence_note",
+    "evidence_note": "Cyclic dynamic contractions; time-frequency estimation; no classifier accuracy imported"
+  },
+  {
+    "key": "DeLuca2010",
+    "doi": "10.1016/j.jbiomech.2010.01.027",
+    "kind": "primary",
+    "evidence_note": "Controlled movement artifact and baseline noise; filtering study, not binary fatigue classification",
+    "title": "Filtering the surface EMG signal: Movement artifact and baseline noise contamination",
+    "authors": "Carlo J. De Luca; L. Donald Gilmore; Mikhail Kuznetsov; Serge H. Roy",
+    "year": 2010,
+    "journal": "Journal of Biomechanics",
+    "url": "https://doi.org/10.1016/j.jbiomech.2010.01.027",
+    "verification": "Crossref DOI metadata verified 2026-10-28; substantive use bounded by evidence_note"
+  },
+  {
+    "key": "Zhang2021",
+    "doi": "10.1016/j.eswa.2021.115639",
+    "kind": "primary",
+    "title": "MFFNet: Multi-dimensional Feature Fusion Network based on attention mechanism for sEMG analysis to detect muscle fatigue",
+    "authors": "Yongqing Zhang; Siyu Chen; Wenpeng Cao; Peng Guo; Dongrui Gao; Manqing Wang; Jiliu Zhou; Ting Wang",
+    "year": 2021,
+    "journal": "Expert Systems with Applications",
+    "url": "https://doi.org/10.1016/j.eswa.2021.115639",
+    "verification": "Crossref DOI metadata verified 2026-10-28; scientific use limited to evidence_note",
+    "evidence_note": "CNN BLSTM attention; cross-subject objective in publisher abstract; no external accuracy imported"
+  },
+  {
+    "key": "Wang2021",
+    "doi": "10.3390/s21196369",
+    "kind": "primary",
+    "title": "A Muscle Fatigue Classification Model Based on LSTM and Improved Wavelet Packet Threshold",
+    "authors": "Junhong Wang; Shaoming Sun; Yining Sun",
+    "year": 2021,
+    "journal": "Sensors",
+    "url": "https://doi.org/10.3390/s21196369",
+    "verification": "Crossref DOI metadata verified 2026-10-28; scientific use limited to evidence_note",
+    "evidence_note": "Wavelet packet threshold and LSTM; publisher metadata verified; detailed label/split not independently recovered here"
+  },
+  {
+    "key": "Mu2022",
+    "doi": "10.1371/journal.pone.0276921",
+    "kind": "primary",
+    "evidence_note": "EMG ECG fusion; temporal convolution; publisher research article; different multimodal task",
+    "title": "Study on exercise muscle fatigue based on sEMG and ECG data fusion and temporal convolutional network",
+    "authors": "Dinghong Mu; Fenglei Li; Linxinying Yu; Chunlin Du; Linhua Ge; Tao Sun",
+    "year": 2022,
+    "journal": "PLOS ONE",
+    "url": "https://doi.org/10.1371/journal.pone.0276921",
+    "verification": "Crossref DOI metadata verified 2026-10-28; substantive use bounded by evidence_note"
+  },
+  {
+    "key": "Mu2024",
+    "doi": "10.1371/journal.pone.0310035",
+    "kind": "primary",
+    "title": "Multilevel attention mechanism for motion fatigue recognition based on sEMG and ACC signal fusion",
+    "authors": "Dinghong Mu; Jian Wang; Fenglei Li; Wujin Hu; Rong Chen",
+    "year": 2024,
+    "journal": "PLOS ONE",
+    "url": "https://doi.org/10.1371/journal.pone.0310035",
+    "verification": "Crossref DOI metadata verified 2026-10-28; scientific use limited to evidence_note",
+    "evidence_note": "EMG ACC fusion and multilevel attention; publisher research article; multimodal task"
+  },
+  {
+    "key": "Kapoor2023",
+    "doi": "10.1016/j.patter.2023.100804",
+    "kind": "methods",
+    "title": "Leakage and the reproducibility crisis in machine-learning-based science",
+    "authors": "Sayash Kapoor; Arvind Narayanan",
+    "year": 2023,
+    "journal": "Patterns",
+    "url": "https://doi.org/10.1016/j.patter.2023.100804",
+    "verification": "Crossref DOI metadata verified 2026-10-28; scientific use limited to evidence_note",
+    "evidence_note": "Leakage and reproducibility; supports separation of learned preprocessing and held-out data"
+  },
+  {
+    "key": "Varoquaux2018",
+    "doi": "10.1016/j.neuroimage.2017.06.061",
+    "kind": "methods",
+    "title": "Cross-validation failure: Small sample sizes lead to large error bars",
+    "authors": "GaÃ«l Varoquaux",
+    "year": 2018,
+    "journal": "NeuroImage",
+    "url": "https://doi.org/10.1016/j.neuroimage.2017.06.061",
+    "verification": "Crossref DOI metadata verified 2026-10-28; scientific use limited to evidence_note",
+    "evidence_note": "Small sample cross-validation uncertainty; supports group variability and caution"
+  },
+  {
+    "key": "FrequencyTutorial2024",
+    "doi": "10.1016/j.jelekin.2024.102937",
+    "kind": "tutorial",
+    "title": "Tutorial. Frequency analysis of the surface EMG signal: Best practices",
+    "authors": "Silvia Muceli; Roberto Merletti",
+    "year": 2024,
+    "journal": "Journal of Electromyography and Kinesiology",
+    "url": "https://doi.org/10.1016/j.jelekin.2024.102937",
+    "verification": "Crossref DOI metadata verified 2026-10-28; scientific use limited to evidence_note",
+    "evidence_note": "Frequency-analysis best practices; not independent local fatigue evidence"
+  }
+]

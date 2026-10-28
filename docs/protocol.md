@@ -1,0 +1,23 @@
+# Frozen binary protocol
+
+Version: weak_elapsed_thirds_binary_v1. Seed: 20261028. Approved plan date: 2026-10-28.
+
+The intended construct is acute fatigue in rectus femoris during unilateral knee extension at a prescribed 70% of the reference-leg 1RM. Available evidence supports a weaker operational target: early versus late recording position in candidate-active EMG. Central/peripheral mechanisms, functional force loss and fatigue onset are not identified.
+
+The early class contains complete windows ending strictly before the first elapsed-time third; the late class starts at or after the final-third boundary. Recording bounds come from the original file, before quality exclusion. The central third and crossing windows are excluded. Quality failures and activity below detection are never negative fatigue labels. Report the denominators of all windows, valid windows, candidate-active windows and labeled windows.
+
+Primary processing uses 20–400 Hz Butterworth, prototype order 4 (digital bandpass order 8), zero-phase forward/backward SOS, and 100 ms edge masking per contiguous run. This operation is noncausal. Timestamps define a nominal rate only. Gaps greater than max(1.5 ms, 1.5 × median dt) plus 1 ns split runs; relative p95–p5 dt spread above 5% excludes a run. No interpolation or concatenation bridges gaps. Physical signal mode and calibration remain unverified. Neither %MVC nor resting-baseline SNR is fabricated.
+
+RMS candidate activity uses 50 ms frames and 25 ms hops, followed by fixed per-recording Otsu segmentation. Feature windows are 250 ms with 50% overlap, entirely within a valid run and with at least 75% candidate-active occupancy. Otsu is offline per-recording signal adaptation, not a learned fatigue label or a confirmed contraction detector. It is applied independently to each held-out recording; it uses neither other test subjects nor their class labels. No claim of streaming performance is made.
+
+Predictors are centered RMS, MAV, waveform length per second; MDF, MNF and 20–60/60–400 Hz power ratio; and relative db4 wavelet coefficient energies A3/D3/D2/D1, level 3, symmetric extension. Frequency estimates use a Hann periodogram, one-sided density scaling and the 20–400 Hz band. 250 ms gives approximately 4 Hz bin spacing; window length limits resolution. Wavelet energies are relative coefficient energies, not ideal disjoint physical bands. Group, side, series and time metadata are excluded from primary inputs.
+
+Outer validation holds out one folder-derived recording group at a time, with both sides and every series held together. This estimates unseen-person performance only if the one-person-per-folder assumption is correct. Four grouped inner folds select parameters using mean per-validation-group macro-F1. Scalers are fitted inside each training pipeline. There is no random window split and no augmentation of the test set.
+
+Models: training majority; logistic RMS+MDF; logistic all features; SVM RBF; random forest with 300 trees. Logistic C=0.1/1/10; SVM C=0.1/1/10 and gamma=scale/0.01; RF max_depth=3/6/None and min_samples_leaf=2/5. Class weights are balanced where supported. Ties favor earlier/lower-complexity candidates. SVM decisions use margin 0; probability-producing estimators use their default binary decision. No threshold is tuned on outer test groups. The full-data final choice repeats the inner-selection procedure; OOF metrics estimate the procedure, not a retrospectively chosen winner.
+
+Metrics use explicit labels [0,1]. AUC and kappa undefined under the specified support conditions are NA with reasons. Uncertainty is mean and sample SD across held-out groups and 5000 group bootstrap draws. Bootstrap intervals summarize this small cohort's variability and do not establish a population guarantee. OOF window counts are not independent biological subjects.
+
+Sensitivity analyses are prespecified: no overlap, 500/1000 ms windows, 50% activity occupancy, boundary shifts ±5/±10% recording duration, and conditional 50/60 Hz notch with prominence >10 dB and Q=30. Their model is fixed C=1 RMS+MDF logistic, with no search for a sensitivity winner. Family ablations use grouped inner logistic tuning. This cost-saving ruling is recorded before the sensitivity results in the ledger. Bilateral results are descriptive, paired where possible, and do not establish dominance or simultaneous two-channel behavior.
+
+The 20-file RAR is a separate descriptive/inference source, not an untouched external test set. Original F31/F55 scores are retired from the main task rather than mathematically equated to the new binary scores.
