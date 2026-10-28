@@ -1,0 +1,28 @@
+# Execution ledger for the approved PLAN_AUDITABLE_EMG.md
+
+Authority: user approval on 2026-10-28; plan in sibling audit_emg_2026-10-28.
+
+Ruling: create an independent repository on codex/implement-binary-fatigue instead of a linked worktree of the old repository — the approved deliverable is a new repository; preserves the old checkout and avoids importing its historical clutter.
+
+Ruling: execute inline using executing-plans and TDD; use a fresh reviewer at the final review as required by that skill. No per-task delegation.
+
+Ruling: folder-derived subject keys remain explicitly unverified identities — there is no independent identity key in the supplied data. Report held-out recording groups, conditional on one person per folder; never claim independent verification of unseen persons.
+
+Ruling: the RAR remains separate, never silently pooled or called independent external validation. Publication uses the authenticated user's GitHub namespace, not an assumed right to create under the original repository owner's account.
+
+Pre-flight T1→T2→T3→T4: Recording keys/timestamps/counts → per-run arrays/masks → complete windows and weak labels → ordered finite feature table. Time bounds always come from the original recording, before QC.
+Pre-flight T4→T5→T6→T7: Feature schema and label vocabulary [0,1] → nested OOF/results → complete pipeline/model contract → reproducible assets. All stages share a frozen configuration digest and private output root.
+
+Ruling: sensitivity analyses use a fixed C=1 RMS+MDF logistic baseline, independently evaluated LOSO in each prespecified variation — avoids selecting a sensitivity winner from outer results, keeps primary nested selection separate and permits a complete sensitivity audit within a reasonable CPU budget. Ablations use grouped inner tuning of logistic C within each feature subset.
+
+Ruling: use a conservative 100 ms edge mask per contiguous run (rather than merely the SOS padding length), frozen before evaluating outcomes. Diagnostic clipping remains a flag, not a fabricated calibrated rail rejection.
+
+T0: protocol frozen in configs/study.yaml before any model results; independent physiological reference remains absent.
+T1–T4: core RED 6 failures for missing implementation, then GREEN 6/6. Real ingestion reproduces 140 CSV and 4,256,257 samples; preprocessing yields 138 formal recordings and 5,509 weak-labeled active windows under the frozen primary configuration.
+
+Ruling: jitter status takes precedence over nominal median-rate failure — alternating 0.5/1.5 ms intervals can produce a misleading median rate because the number of intervals is odd; both are invalid but jitter is the primary issue. Covered by the original failing jitter test.
+
+T5: validation RED 5 failures for absent modules, then GREEN 11/11 suite. Group separation, test-only outlier, binary metrics, single-class guard and OOF uniqueness tested.
+T6: workflow/model RED 2 failures for absent modules, then GREEN 13/13 suite. Trusted local serialization roundtrip, checksum tampering and unordered fragment reassembly tested.
+
+Primary nested evaluation running. T7 and sensitivity/ablation execution pending.

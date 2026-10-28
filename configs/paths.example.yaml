@@ -1,0 +1,4 @@
+# Copy outside the repository or set these environment variables.
+# Never put recordings or individual results inside the checkout.
+data_zip: ${EMG_DATA_ZIP}
+output_root: ${EMG_OUTPUT_ROOT}

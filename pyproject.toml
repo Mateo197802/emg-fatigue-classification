@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emg-fatigue-classification"
+version = "0.1.0"
+description = "Auditable offline binary sEMG classification with explicit weak labels"
+requires-python = ">=3.12"
+dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "PyWavelets", "matplotlib", "joblib", "PyYAML", "pyarrow"]
+
+[project.scripts]
+emg-fatigue = "emg_fatigue.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

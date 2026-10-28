@@ -1,0 +1,20 @@
+label_version: weak_elapsed_thirds_binary_v1
+seed: 20261028
+window_s: 0.25
+overlap: 0.5
+activity_occupancy: 0.75
+activity_frame_s: 0.05
+activity_hop_s: 0.025
+band_hz: [20.0, 400.0]
+filter_order: 4
+edge_s: 0.10
+gap_min_s: 0.0015
+gap_multiplier: 1.5
+jitter_max: 0.05
+inner_folds: 4
+bootstrap_replicates: 5000
+notch: false
+boundary_shift: 0.0
+source_kind: zip
+group_identity_status: filename_derived_unverified
+mode: offline
