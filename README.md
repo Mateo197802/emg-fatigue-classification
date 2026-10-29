@@ -1,5 +1,7 @@
 # Binary sEMG fatigue proxy classification
 
+**Entrega estructurada:** abrir [LÉEME PRIMERO](LEEME_PRIMERO.md), el [informe de evidencias](docs/INFORME_EVIDENCIAS.md) y el [mapa entre afirmaciones, artículo, diapositivas y archivos](docs/MAPA_EVIDENCIA.csv). El ZIP privado conserva el artículo, la presentación vigente, datos, modelos y comprobantes. El [verificador portátil](tools/verify_delivery.py) comprueba todos los archivos del paquete y su snapshot del código.
+
 ## Defense presentation
 
 The revised private defense follows the signal-analysis workflow in **16 principal slides (600 seconds) and seven evidence appendices**: corpus, stored signal, descriptive preanalysis, preprocessing, windows and labels, features, grouped validation, model families, main performance and errors, auxiliary architecture, controls, phase results and conclusions. It removes the former administrative closing block. See the [slide-by-slide storyboard](docs/DEFENSE_STORYBOARD.md).

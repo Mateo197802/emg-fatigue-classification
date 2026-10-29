@@ -1,0 +1,19 @@
+id,afirmacion,seccion_articulo,diapositivas,evidencia_publica,ruta_zip_privada,alcance
+E01,140 CSV y 4256257 muestras; 138 formales y 2 controles,2,2,docs/RESULTS.md,resultados/primary/inventory.csv,15 grupos derivados de carpetas
+E02,33090 ventanas candidatas; 9289 activas; 5509 etiquetadas,2.3;3.2,6,docs/RESULTS.md,resultados/primary/coverage.csv,Las ventanas no son personas
+E03,Banda 20-400 Hz; prototipo orden 4; bordes 100 ms,4.1,3;5,configs/study.yaml;src/emg_fatigue/preprocessing.py,resultados/primary/processing_receipt.json,Procesamiento offline
+E04,Clase 0 primer tercio; clase 1 ultimo tercio original,3,6,docs/protocol.md,resultados/primary/label_audit.json,Referencia temporal debil
+E05,10 features de amplitud espectro y wavelet,4.2,7,src/emg_fatigue/features.py,resultados/primary/feature_schema.json,Sin tiempo identidad lado o serie como predictores
+E06,15 folds externos y 4 internos agrupados,5.2,8,src/emg_fatigue/evaluation.py,resultados/primary/evaluation/splits.json,Identidad individual no reconciliada
+E07,Seis procedimientos principales; RF final separado,5.1;D2,9;17,results/phase_experiment/model_registry.csv,resultados/primary/model.receipt.json,El selector no es un ensamble
+E08,Selector F1 0.6240; RMS MDF 0.6272; sin mejora clara,6.1,10,docs/RESULTS.md,resultados/primary/evaluation/metrics_summary.csv,Media y DE por grupo
+E09,Matriz selector 1473 856 995 2185,6.3;E,11;19;20,results/phase_experiment/confusion_matrices.csv,resultados/primary/evaluation/oof_predictions.parquet,Conteos agrupados no sustituyen incertidumbre entre grupos
+E10,RF auxiliar de 100 arboles seguido de logistica,5.5;D,12;13,docs/PHASE_EXPERIMENT.md;experiments/phase_proxy/phase_spike.py,suplemento_fase/run/head_training_audit.json,Fase candidata de mitades EMG
+E11,3337 etiquetas auxiliares de 996 rafagas,5.5;G,13;15,results/phase_experiment/auxiliary_phase_fold_metrics.csv,suplemento_fase/run/phase_extraction_receipt.json,No extension o flexion observadas
+E12,Directo F1 0.6355; condicionado 0.6293; delta -0.0062,6.7;F,14;21;22,results/phase_experiment/metrics_summary.csv;results/phase_experiment/paired_differences.csv,suplemento_fase/run/oof_predictions.parquet,IC95 -0.0232 a +0.0082
+E13,RF auxiliar F1 0.5420 y AUC 0.6212,6.7;G,15,results/phase_experiment/auxiliary_phase_fold_metrics.csv,suplemento_fase/run/auxiliary_phase_metrics.csv,Objetivo diferente al temprano tardio
+E14,Reconstruccion auxiliar con diferencia maxima de score 0,D;G,12,experiments/phase_proxy/evidence.py,auditoria_integracion/reconstruction_verification.json,Comprobacion numerica sin nuevo endpoint
+E15,9 sensibilidades y 3 ablaciones preservadas,6.5;A,18,docs/RESULTS.md,resultados/primary/sensitivity_summary.csv;resultados/primary/ablation_summary.csv,El soporte cambia entre sensibilidades
+E16,Referencias de fase y cinemática con limites explicitos,7.3;10,23,docs/PHASE_REFERENCES.md,entrega/REFERENCIAS_SUPLEMENTO.md,Fuentes relacionadas no prueba externa de la cascada
+E17,21 paginas y 23 diapositivas con 600 segundos,Articulo completo,1-23,docs/DEFENSE_STORYBOARD.md,auditoria_integracion/artifact_verification.json,Verificacion editorial y estructural
+E18,Integridad ZIP snapshot Git y artefactos conservados,C;G,Anexos,tools/verify_delivery.py;tests/test_delivery_integrity.py,SHA256SUMS;entrega/VERIFICACION_FINAL.json,Hashes de consistencia no autenticidad ni validacion fisiologica
