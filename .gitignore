@@ -17,6 +17,10 @@ report/*.docx
 report/*.pdf
 results/*
 !results/README.md
+!results/phase_experiment/
+results/phase_experiment/*
+!results/phase_experiment/*.csv
+!results/phase_experiment/evidence_receipt.json
 models/*
 !models/README.md
 build/

@@ -1,5 +1,26 @@
 # Binary sEMG fatigue proxy classification
 
+## Supplemental two-stage phase experiment
+
+The completed exploratory cascade did **not show a clear improvement**. On the same 5,509 windows and 15 held-out groups, direct ten-feature logistic regression obtained macro-F1 **0.6355 ± 0.1262**; the phase-conditioned variant obtained **0.6293 ± 0.1330**. Paired difference: **−0.0062**, 95% group-bootstrap interval **[−0.0232, +0.0082]**. The original primary model remains unchanged.
+
+Stage 1 is a separate random forest learning **first/second EMG activity-burst halves**, not verified knee extension/flexion. Stage 2 is a logistic classifier using EMG features and the stage 1 score to predict the weak early/late target. Both stages use grouped cross-fitting inside nested validation. No independent physiological fatigue reference is introduced.
+
+```mermaid
+flowchart LR
+    X[Ten EMG features] --> P[Auxiliary burst-half RF]
+    X --> L[Second-stage logistic]
+    P --> S[Group-out-of-fold phase score]
+    S --> L
+    L --> Y[Early or late proxy]
+```
+
+![Experiment architecture](docs/figures/phase_architecture.png)
+
+See the **[full supplemental report and model relationships](docs/PHASE_EXPERIMENT.md)**, [commented references](docs/PHASE_REFERENCES.md), [all 12 target-specific confusion matrices](results/phase_experiment/confusion_matrices.csv), [aggregate/fold results](results/phase_experiment), [original experiment source and reproduction instructions](experiments/phase_proxy), and [evidence tests](tests/test_phase_evidence.py). Absolute and row-normalized matrices for all six primary procedures, five supplemental variants and the auxiliary head are shown in the report. Full OOF, manuscript, slide deck and models remain in the updated private delivery.
+
+The supplemental `baseline_10` reproduces primary `logistic_all`; it is different from the primary nested selector (macro-F1 0.6240). The auxiliary RF, primary RF family and final serialized RF are different fits and roles, explicitly related in the model map. This experiment does not establish verified extension recognition, physiological fatigue or robustness to unseen acquisition domains.
+
 This project implements offline binary classification of early and late candidate-active windows from the intended rectus femoris knee-extension study. Labels are a **weak elapsed-time approximation** of nonfatigue/fatigue. The supplied recordings do not include an independent synchronized fatigue reference. Consequently, the reported scores establish agreement with this operational label, not validated physiological fatigue, force loss, or fatigue onset.
 
 The original exploratory project is retained separately: [proyecto-biomecanica-emg](https://github.com/EthanGL1/proyecto-biomecanica-emg/tree/772b7a39c18ecfd34bfbd5f20fa0a14d2ddfa003). This repository implements a new binary task; its metrics must not be substituted for the old three-class scores or for Borg/Cerqueira results from other tasks.

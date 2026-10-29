@@ -1,0 +1,25 @@
+{
+  "status": "verified",
+  "primary_procedures": 6,
+  "supplemental_variants": 5,
+  "auxiliary_heads": 1,
+  "early_late_windows_per_procedure": 5509,
+  "auxiliary_reference_windows": 3337,
+  "primary_oof_rows": 33054,
+  "supplemental_oof_rows": 27545,
+  "original_phase_script_sha256": "4a0cd04ad40d6676d39ed06a76cbe512349e24c41c3f7541057862921d2cca57",
+  "protocol_sha256": "7587051c1d835e2b00d16cc808a47ffbc09ea2e2067076ab2dbe34ca43e4658d",
+  "baseline_matches_primary": true,
+  "auxiliary_reconstruction_matches_original_metrics": true,
+  "primary_target": "weak early/late recording position",
+  "auxiliary_target": "first/second EMG activity burst half; not verified extension",
+  "deployment": "primary model unchanged; exploratory cascade is not promoted",
+  "aggregate_hashes": {
+    "auxiliary_phase_fold_metrics.csv": "4f393c5f134db1e560ac02eb0db9ef5d3ecbed42a62eed74149e05e22adb8cd9",
+    "confusion_matrices.csv": "6913c311cf13852c3e48f3219d6d4611f15f30b0c9a55a9d71b4460c03303051",
+    "metrics_summary.csv": "1f8dc3f1290a71a3213aacc2e101df977d633a9e71a597d81e78e36a335d2014",
+    "model_registry.csv": "3f60b0de125d4212ee8f5c98a353a6f0b3e09d10a3deb62fb5cd6059bd25c24a",
+    "paired_differences.csv": "822c6bd821a94ccdfdff983be29b5bd095463f9da3612cb103dcac9efe370cbc",
+    "results.csv": "bfc61a10145bfcd64ed5790e4b4776a6504088482c946955697ef226e9aa1f5f"
+  }
+}

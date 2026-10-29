@@ -1,0 +1,14 @@
+model,display_name,role,target,oof_support,reference_equivalence,deployed_primary_artifact
+majority,Training majority,primary_procedure,early_late_proxy,5509,,False
+logistic_rms_mdf,Logistic RMS + MDF,primary_procedure,early_late_proxy,5509,,False
+logistic_all,Logistic 10 features,primary_procedure,early_late_proxy,5509,,False
+svm_rbf,SVM RBF,primary_procedure,early_late_proxy,5509,,False
+random_forest,Random forest,primary_procedure,early_late_proxy,5509,,False
+nested_selector,Nested selector,primary_procedure,early_late_proxy,5509,,False
+baseline_10,Direct logistic 10,supplemental_variant,early_late_proxy,5509,same predictions as primary logistic_all,False
+phase_score,10 features + phase score,supplemental_variant,early_late_proxy,5509,,False
+phase_conditioned,Phase conditioned,supplemental_variant,early_late_proxy,5509,,False
+phase_only,Phase score only,supplemental_variant,early_late_proxy,5509,,False
+random_conditioned,Random label control,supplemental_variant,early_late_proxy,5509,,False
+auxiliary_phase_head,Auxiliary burst half head,auxiliary_head,burst_half_proxy,3337,,False
+final_primary_rf_artifact,Serialized final primary RF,full_cohort_fit_not_OOF_estimator,early_late_proxy,0,full-cohort inner selection; no additional OOF estimate,True
