@@ -31,9 +31,9 @@
 
 - [x] T1 Add RED tests for OOF validation and confusion/count exports; implement evidence generator and preserve original experiment source/protocol.
 - [x] T2 Generate private and public aggregate evidence, model map, architecture, references and README links; verify numerical equivalence and export privacy.
-- [ ] T3 Integrate main report sections plus detailed appendices, and ten principal slides plus reserve evidence slides. Render and inspect all changed pages/slides.
-- [ ] T4 Run complete software checks and independent branch review; resolve material findings in one tested fix pass. Commit, publish and verify exact-head CI.
-- [ ] T5 Build a new complete private delivery with old numerical evidence plus the new supplement and updated code/artifacts. Verify ZIP CRC and every SHA256; preserve old releases.
+- [x] T3 Integrate main report sections plus detailed appendices, and ten principal slides plus reserve evidence slides. Render and inspect all changed pages/slides.
+- [x] T4 Run complete software checks and independent branch review; resolve material findings in one tested fix pass. Commit, publish and verify exact-head CI.
+- [x] T5 Build a new complete private delivery with old numerical evidence plus the new supplement and updated code/artifacts. Verify ZIP CRC and every SHA256; preserve old releases.
 
 ## Execution ledger
 
@@ -44,3 +44,5 @@ Ruling: no experiment is rerun or tuned for a better score; this task integrates
 T1–T2: seven expected RED cases for the absent evidence exporter, then all evidence tests GREEN. Added separate RED→GREEN cases for self-referential receipts and Windows CSV line endings. Public CSVs are normalized to LF before hashing so a Git checkout preserves receipt validity. Baseline equivalence, original completion hashes and auxiliary reconstruction metrics verified. All source data and model artifacts remain private.
 
 Independent final review: all 12 public count matrices matched private OOF; original phase script/protocol bytes matched receipts. One P2 reproduction gap was accepted: reconstruction of auxiliary OOF and comparison image depended on private helpers. One fix pass added two expected RED cases, then a public automatic reconstruction/export path accepting direct or legacy run layouts. A fresh copied run with no diagnostics or comparison image reproduced the evidence, followed by full suite GREEN 40/40. No second-stage model was refitted and the original experimental script/protocol remain unchanged. Reviewer did not inspect final rendered artifacts or independently verify literature; those checks belong to final QA.
+
+T3–T5 closed: private article 21 pages, 235-word abstract, 13 references; presentation 19 slides comprising ten principal slides/600 s and nine reserve slides. All report pages and slides were visually checked, with corrected auxiliary legend clipping, table wrapping and UTF-8 input decoding. Artifact structure, source template identity and output hashes were verified. Public code/evidence passed exact-head CI; the final ledger-only revision is checked again during delivery. The new complete private archive passed CRC and per-member SHA256 verification; its current final commit, CI URL, counts and archive digest are recorded in the private COMPROBANTE_PAQUETE.json and VERIFICACION_FINAL.json. The original archive, original experimental protocol/results and primary model were preserved. No new physiological or kinematic validation is claimed.
