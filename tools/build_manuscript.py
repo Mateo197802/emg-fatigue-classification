@@ -78,6 +78,14 @@ def table(headers,data,pattern=1):
             tcPr.append(borders)
         if j==0:
             repeat=OxmlElement('w:tblHeader');row._tr.get_or_add_trPr().append(repeat)
+    available=doc.sections[0].page_width-doc.sections[0].left_margin-doc.sections[0].right_margin
+    n=len(headers)
+    weights=([.26,.74] if n==2 else [.33,.22,.45] if n==3 else [.31,.23,.23,.23] if n==4 else [.34,.16,.16,.17,.17] if n==5 else [.20,.16,.16,.16,.16,.16])
+    if n==6 and headers[0]=='Ref.':weights=[.07,.17,.23,.15,.17,.21]
+    t.autofit=False
+    for column,weight in zip(t.columns,weights):column.width=int(available*weight)
+    for row in t.rows:
+        for cell,weight in zip(row.cells,weights):cell.width=int(available*weight)
     content.append('| '+' | '.join(headers)+' |\n'+'\n'.join('| '+' | '.join(str(x) for x in row)+' |' for row in data))
     return t
 def figure(name,caption,width=6.0):
@@ -89,6 +97,8 @@ def figure(name,caption,width=6.0):
 title='Binary sEMG classification using a temporal proxy of quadriceps fatigue'
 p0=p(title,'Title')
 for run in p0.runs:run.font.color.rgb=RGBColor(0,0,0)
+for element in [p0._p.get_or_add_pPr(),doc.styles['Title'].element.get_or_add_pPr()]:
+    for border in list(element.findall(qn('w:pBdr'))):element.remove(border)
 p('Reanalysis of the supplied recordings using explicit weak labels and held-out recording groups')
 identity={}
 if args.previous_report:
@@ -185,6 +195,8 @@ p(f"The analyzed weak-label distribution is {counts['0']} early and {counts['1']
 h('5.4  Reproducibility settings',2)
 env=processing['environment'];total_runtime=sum(float(r['fit_predict_seconds']) for r in results if r['model']=='nested_selector')
 table(['Item','Value'],[['Seeds','20261028'],['Python and numeric libraries',json.dumps(env,sort_keys=True)],['Hardware',platform.processor()+'; CPU sklearn execution'],['Nested evaluation wall time',f'{total_runtime:.1f} s summed across outer fold timers'],['Regenerate assets','python -m emg_fatigue report --config configs/study.yaml'],['Processing configuration SHA256',processing['config_sha256']]],pattern=11)
+timers=[float(r['fit_predict_seconds']) for r in results if r['model']=='nested_selector']
+if max(timers)>3*sorted(timers)[len(timers)//2]:p(f'The measured wall timers include an exceptional fold interval of {max(timers):.1f} s. No CPU-only time or steady-state training benchmark is inferred from that interval; it remains included in the audit rather than being removed.')
 h('6.  Results')
 h('6.1  Main comparison table',2)
 models=['majority','logistic_rms_mdf','logistic_all','svm_rbf','random_forest','nested_selector']
@@ -225,7 +237,7 @@ p('4. The available evidence supports early/late proxy classification. Independe
 h('9.  Contribution of each member')
 p('The original roster is retained above when available from the supplied report. The new repository records assisted implementation under the authenticated account used for execution. It does not prove balanced student effort. Individual roles and effort percentages for the rebuilt work require the members’ own attestation; no authors, roles, percentages or retrospective commits have been fabricated. This administrative requirement remains outstanding for course submission.')
 h('10.  References')
-for i,r in enumerate(refs,1):p(f"[{i}] {r['authors']} ({r['year']}). {r['title']}. {r['journal']}. {r['url']}")
+for i,r in enumerate(refs,1):p(f"[{i}] {r['authors']}, “{r['title']},” {r['journal']}, {r['year']}. doi: {r['doi']}.")
 h('Appendix A - Additional figures')
 figure('sensitivity.png','Prespecified sensitivity analyses, fixed C=1 RMS+MDF logistic reference. Different retained-window populations are stated explicitly.')
 table(['Variation','Windows','Groups','Macro F1','SD'],[[r['analysis'],r.get('n_windows','NA'),r.get('groups','NA'),f"{float(r['macro_f1_mean']):.3f}" if r.get('macro_f1_mean') else 'NA',f"{float(r['macro_f1_sd']):.3f}" if r.get('macro_f1_sd') else 'NA'] for r in sens])
@@ -233,6 +245,10 @@ h('Appendix B - Full feature list')
 p('rms; mav; waveform_length_per_s; mdf_hz; mnf_hz; power_ratio_low_high; wavelet_A3; wavelet_D3; wavelet_D2; wavelet_D1. Metadata are excluded by an explicit column transformer. The all-feature schema is identical in fitting and prediction.')
 h('Appendix C - Repository map')
 p('io/contracts: source and configuration contracts. qc/preprocessing/activity/labels/features: data transformations. validation/evaluation: nested grouped OOF and metrics. inference: trusted local bundle and prediction. sensitivities: frozen variations and family ablations. reporting: numerical assets and sources. tests: software contracts and regressions. Raw signals, models, OOF predictions and this full report remain private; public code and deidentified fold metrics are separate.')
+for section in doc.sections:
+    for paragraph in section.footer.paragraphs:
+        for run in paragraph.runs:
+            if 'Report Template' in run.text:run.text=run.text.replace('Report Template','Binary sEMG reanalysis')
 final=manuscript/'EMG_Binary_Report.docx';doc.save(final)
 (manuscript/'EMG_Binary_Report.md').write_text('\n\n'.join(content)+'\n',encoding='utf-8')
 if template.read_bytes()!=template_bytes:raise RuntimeError('reference template changed')
