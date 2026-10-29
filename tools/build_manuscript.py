@@ -129,7 +129,7 @@ h('Group identification')
 table(['Field','Value'],[
  ['Group number',identity.get('Group number','Not attested in the supplied identity table')],
  ['Report title',title],
- ['Members',identity.get('Members (name - student ID - role)','See original course roster; new individual contributions require attestation')],
+ ['Members','Ethan Guevara; Mateo Gavilanes; Kennedy Rodriguez'],
  ['Code repository URL','https://github.com/Mateo197802/emg-fatigue-classification'],
  ['Commit hash of this generated version',commit],['Submission date','28 October 2026']])
 h('Abstract')
