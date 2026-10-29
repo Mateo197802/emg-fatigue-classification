@@ -1,6 +1,6 @@
 # Verification scope
 
-The independent numerical/code review identified five material robustness issues. Eight failing regression cases reproduced them; the full corrected suite passed 25/25. A second isolated environment was installed from the exact lock using `--require-hashes`, and the corrected suite passed there too. The synthetic end-to-end demo exercised processing, grouped evaluation and recargable inference without course data.
+The independent numerical/code review identified five material robustness issues. Eight failing regression cases reproduced them; the full corrected suite passed 25/25. A second isolated environment was installed from the exact lock using `--require-hashes`, and the corrected suite passed there too. The synthetic end-to-end demo exercised processing, grouped evaluation and reloadable inference without course data.
 
 Real-data processing preserves 140 original source files and 4,256,257 samples; 138 formal recordings contribute 5,509 weak-labeled windows under the frozen primary contract. This is a software/data-flow verification, not independent physiological validation. Fifteen source-folder groups are not independently reconciled person identities. The 20-file RAR is a separate source.
 
