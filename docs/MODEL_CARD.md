@@ -1,5 +1,7 @@
 # Model card
 
+The [supplemental phase experiment](PHASE_EXPERIMENT.md) uses a separate auxiliary 100-tree RF and second-stage logistic models. It showed no clear gain over the matched direct ten-feature logistic baseline. The auxiliary RF predicts EMG burst halves, not verified extension/flexion. It is distinct from the final 300-tree RF described below. The exploratory cascade is not promoted to the primary serialized artifact.
+
 The final private artifact is a complete preprocessing/feature-contract bundle and fitted scikit-learn pipeline. Full-cohort grouped inner selection chose a random forest with 300 trees, maximum depth 3, minimum leaf size 2 and balanced class weights. This is the choice from the frozen selection procedure, not evidence that random forest is universally superior.
 
 **Target:** `weak_elapsed_thirds_binary_v1`. Class 0 denotes eligible first-third windows and class 1 eligible last-third windows. The central third is outside training support. Neither class is independently confirmed physiological fatigue/nonfatigue.

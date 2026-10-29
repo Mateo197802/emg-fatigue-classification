@@ -29,8 +29,8 @@
 
 ## Tasks
 
-- [ ] T1 Add RED tests for OOF validation and confusion/count exports; implement evidence generator and preserve original experiment source/protocol.
-- [ ] T2 Generate private and public aggregate evidence, model map, architecture, references and README links; verify numerical equivalence and export privacy.
+- [x] T1 Add RED tests for OOF validation and confusion/count exports; implement evidence generator and preserve original experiment source/protocol.
+- [x] T2 Generate private and public aggregate evidence, model map, architecture, references and README links; verify numerical equivalence and export privacy.
 - [ ] T3 Integrate main report sections plus detailed appendices, and ten principal slides plus reserve evidence slides. Render and inspect all changed pages/slides.
 - [ ] T4 Run complete software checks and independent branch review; resolve material findings in one tested fix pass. Commit, publish and verify exact-head CI.
 - [ ] T5 Build a new complete private delivery with old numerical evidence plus the new supplement and updated code/artifacts. Verify ZIP CRC and every SHA256; preserve old releases.
@@ -40,3 +40,5 @@
 Ruling: native create_worktree cannot address this nested repository because its sourceRoot allowlist accepts only the parent workspace, which is not the repository. A normal Git worktree was therefore created in the workspace on codex/integrate-phase-supplement, preserving the original checkout and published release.
 
 Ruling: no experiment is rerun or tuned for a better score; this task integrates and verifies completed evidence. Documentation does not promote the experimental model to the primary artifact.
+
+T1–T2: seven expected RED cases for the absent evidence exporter, then all evidence tests GREEN. Added separate RED→GREEN cases for self-referential receipts and Windows CSV line endings. Public CSVs are normalized to LF before hashing so a Git checkout preserves receipt validity. Baseline equivalence, original completion hashes and auxiliary reconstruction metrics verified. All source data and model artifacts remain private.

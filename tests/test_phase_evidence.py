@@ -1,5 +1,6 @@
 from pathlib import Path
 import importlib.util
+import hashlib,json
 import numpy as np
 import pandas as pd
 import pytest
@@ -78,3 +79,27 @@ def test_public_csv_bytes_are_lf_before_hashing(tmp_path):
     m=module('evidence');p=tmp_path/'results.csv';p.write_bytes(b'model,n\r\na,4\r\n')
     m.normalize_public_csv(tmp_path)
     assert p.read_bytes()==b'model,n\na,4\n'
+
+
+def test_published_phase_receipt_binds_canonical_files():
+    root=Path(__file__).resolve().parents[1]/'results/phase_experiment'
+    receipt=json.loads((root/'evidence_receipt.json').read_text())
+    for name,digest in receipt['aggregate_hashes'].items():
+        data=(root/name).read_bytes()
+        assert b'\r\n' not in data
+        assert hashlib.sha256(data).hexdigest()==digest,name
+    assert receipt['primary_procedures']==6 and receipt['supplemental_variants']==5
+
+
+def test_published_matrices_keep_matched_baseline_and_distinct_targets():
+    root=Path(__file__).resolve().parents[1]/'results/phase_experiment'
+    f=pd.read_csv(root/'confusion_matrices.csv').set_index('model')
+    cols=['cm_0_0','cm_0_1','cm_1_0','cm_1_1']
+    np.testing.assert_array_equal(f.loc['baseline_10',cols],f.loc['logistic_all',cols])
+    assert len(f)==12 and (f.loc[f.target=='early_late_proxy','n']==5509).all()
+    assert f.loc['auxiliary_phase_head','target']=='burst_half_proxy'
+    assert f.loc['auxiliary_phase_head','n']==3337
+    for _,r in f.iterrows():
+        assert sum(r[cols])==r.n
+        assert abs(r.norm_0_0+r.norm_0_1-1)<1e-12
+        assert abs(r.norm_1_0+r.norm_1_1-1)<1e-12

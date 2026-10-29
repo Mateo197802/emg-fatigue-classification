@@ -1,5 +1,7 @@
 # Frozen primary results
 
+The original results below remain unchanged. The [phase supplement](PHASE_EXPERIMENT.md) adds five exploratory variants on identical held-out support, auxiliary burst-half evaluation, architecture, absolute/row-normalized confusions and target-specific evidence. The matched direct baseline is `logistic_all` (0.635485), not `nested_selector` (0.624004). The phase-conditioned result (0.629263) does not establish a gain.
+
 Target: weak_elapsed_thirds_binary_v1. These scores measure early/late proxy classification, not independently validated physiological fatigue. Fifteen source-folder recording groups are held out; person identity remains unverified.
 
 Source: 140 files / 4,256,257 samples; formal: 138; labeled windows: 5,509 (early 2,329, late 3,180). Both sides stay in the same group.

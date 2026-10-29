@@ -1,5 +1,7 @@
 # Verification scope
 
+Supplement integration adds tests for duplicate/missing OOF support, reference-label disagreement, nonbinary output, zero-support normalization, phase boundaries, group overlap, privacy whitelisting, receipt self-exclusion and canonical CSV bytes. Public matrix tests bind the committed aggregate hashes, exact baseline equivalence and distinct early/late versus burst-half supports. Confusions for six primary procedures, five phase variants and the auxiliary phase head are derived from completed private OOF; granular predictions remain private. These integrity tests do not validate knee phase or physiological fatigue.
+
 The independent numerical/code review identified five material robustness issues. Eight failing regression cases reproduced them; the full corrected suite passed 25/25. A second isolated environment was installed from the exact lock using `--require-hashes`, and the corrected suite passed there too. The synthetic end-to-end demo exercised processing, grouped evaluation and reloadable inference without course data.
 
 Real-data processing preserves 140 original source files and 4,256,257 samples; 138 formal recordings contribute 5,509 weak-labeled windows under the frozen primary contract. This is a software/data-flow verification, not independent physiological validation. Fifteen source-folder groups are not independently reconciled person identities. The 20-file RAR is a separate source.

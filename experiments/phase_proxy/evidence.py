@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+matplotlib.rcParams['svg.hashsalt']='emg-phase-evidence-v1'
 from matplotlib.patches import FancyBboxPatch
 from sklearn.metrics import confusion_matrix
 from emg_fatigue.contracts import read_config,sha256_file,write_json
@@ -94,7 +95,7 @@ def architecture(path):
     ax.text(.03,.38,'Both stages respect the outer held-out group.\nStage 2 training uses group-out-of-fold stage 1 scores.\nCross-fitting is repeated inside hyperparameter selection.',fontsize=12,va='top',linespacing=1.6,color='#17334a')
     ax.text(.03,.13,'No verified extension/flexion labels.\nNo force / Borg / MVC fatigue reference.\nThis is an offline exploratory experiment.',fontsize=12,va='top',linespacing=1.6,color='#8a4b30')
     fig.suptitle('Two-stage phase experiment: what was actually trained',fontsize=16,y=.99)
-    fig.tight_layout();fig.savefig(path,dpi=180);fig.savefig(Path(path).with_suffix('.svg'));plt.close(fig)
+    fig.tight_layout();fig.savefig(path,dpi=180);fig.savefig(Path(path).with_suffix('.svg'),metadata={'Date':None});plt.close(fig)
 
 
 def model_relationships(path):
@@ -112,7 +113,7 @@ def model_relationships(path):
     arrow((.20,.57),(.28,.70));arrow((.20,.46),(.28,.25));arrow((.59,.79),(.69,.81));arrow((.83,.72),(.83,.64));arrow((.69,.24),(.59,.24))
     ax.text(.02,.98,'How the original procedures and the phase experiment relate',fontsize=16,va='top',color='#17334a')
     ax.text(.02,.01,'Fatigue-side evaluation target: weak early/late proxy. Auxiliary target: local burst half.',fontsize=11,color='#8a4b30')
-    fig.tight_layout();fig.savefig(path,dpi=180);fig.savefig(Path(path).with_suffix('.svg'));plt.close(fig)
+    fig.tight_layout();fig.savefig(path,dpi=180);fig.savefig(Path(path).with_suffix('.svg'),metadata={'Date':None});plt.close(fig)
 
 
 def build(primary,experiment,out,public,figures,config):
