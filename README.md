@@ -1,5 +1,19 @@
 # Binary sEMG fatigue proxy classification
 
+## Defense presentation
+
+The revised private defense follows the signal-analysis workflow in **16 principal slides (600 seconds) and seven evidence appendices**: corpus, stored signal, descriptive preanalysis, preprocessing, windows and labels, features, grouped validation, model families, main performance and errors, auxiliary architecture, controls, phase results and conclusions. It removes the former administrative closing block. See the [slide-by-slide storyboard](docs/DEFENSE_STORYBOARD.md).
+
+The [input builder](tools/build_defense_inputs.py) verifies the frozen evaluation receipts and prepares private signal snippets and numerical summaries. The [presentation builder](tools/build_defense_v2.mjs) creates editable tables, charts, confusion matrices and the two-stage architecture, with source notes. No participant-level signals, private input JSON, PDF or PPTX are included in this public repository.
+
+```powershell
+python tools/build_defense_inputs.py --root '<private-frozen-output>' --archive '<authorized-primary-ZIP>' --output '<private-frozen-output>/slides_input_v2.json'
+# Run a copy of tools/build_defense_v2.mjs from a private build directory with
+# @oai/artifact-tool from the bundled Codex runtime, and environment variables
+# EMG_PRESENTATIONS_SKILL and EMG_RUNTIME_PYTHON. Preserve report_assets/.
+# node build_defense_v2.mjs '<private-frozen-output>' presentation_reorganized
+```
+
 ## Supplemental two-stage phase experiment
 
 The completed exploratory cascade did **not show a clear improvement**. On the same 5,509 windows and 15 held-out groups, direct ten-feature logistic regression obtained macro-F1 **0.6355 ± 0.1262**; the phase-conditioned variant obtained **0.6293 ± 0.1330**. Paired difference: **−0.0062**, 95% group-bootstrap interval **[−0.0232, +0.0082]**. The original primary model remains unchanged.
