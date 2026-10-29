@@ -105,9 +105,9 @@ def draw_confusions(table,models,path,title,normalized=False,auxiliary=False):
         ax.set_title(NAMES[model],fontsize=12,pad=5);ax.set_xlabel('Predicted',fontsize=10);ax.set_ylabel('Reference',fontsize=10)
     for ax in axes.ravel()[len(models):]:ax.set_visible(False)
     fig.suptitle(title,fontsize=15)
-    legend='0 = first burst half; 1 = second burst half. Not verified extension/flexion.' if auxiliary else '0 = early proxy; 1 = late proxy. Not independent physiological fatigue labels.'
-    fig.text(.5,.015,legend,ha='center',fontsize=11)
-    fig.tight_layout(rect=[0,.055,1,.94]);fig.savefig(path,dpi=180);plt.close(fig)
+    legend='0 = first burst half; 1 = second burst half.\nNot verified extension/flexion.' if auxiliary else '0 = early proxy; 1 = late proxy. Not independent physiological fatigue labels.'
+    fig.text(.5,.025 if auxiliary else .015,legend,ha='center',fontsize=10 if auxiliary else 11)
+    fig.tight_layout(rect=[0,.12 if auxiliary else .055,1,.94]);fig.savefig(path,dpi=180);plt.close(fig)
 
 
 def architecture(path):
