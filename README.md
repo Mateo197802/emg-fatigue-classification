@@ -10,7 +10,7 @@ The original exploratory project is retained separately: [proyecto-biomecanica-e
 - Candidate activity segmentation followed by complete 250 ms windows with 50% overlap.
 - Amplitude, spectral and wavelet features; mandatory majority and RMS+MDF logistic baselines.
 - Outer leave-one-recording-group-out evaluation with grouped inner tuning. Both sides and all series of a group stay together. Group-to-person identity is an explicit, unverified assumption of the source folder structure.
-- Model serialization, checksum verification, recarga and prediction using exactly the training feature schema.
+- Model serialization, checksum verification, reloading and prediction using exactly the training feature schema.
 - Prespecified sensitivity analyses, feature-family ablations, numerical tables and figures generated from frozen out-of-fold outputs.
 
 ## Installation

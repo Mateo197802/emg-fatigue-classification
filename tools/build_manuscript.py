@@ -68,6 +68,7 @@ def table(headers,data,pattern=1):
         cells=t.add_row().cells
         for i,x in enumerate(data_row):cells[i].text=str(x)
     for j,row in enumerate(t.rows):
+        no_split=OxmlElement('w:cantSplit');row._tr.get_or_add_trPr().append(no_split)
         for cell in row.cells:
             for paragraph in cell.paragraphs:
                 paragraph.paragraph_format.space_after=Pt(3)
@@ -76,6 +77,10 @@ def table(headers,data,pattern=1):
             for edge in ['top','left','bottom','right','insideH','insideV']:
                 tag=OxmlElement('w:'+edge);tag.set(qn('w:val'),'single');tag.set(qn('w:sz'),'4');tag.set(qn('w:color'),'D9D9D9');borders.append(tag)
             tcPr.append(borders)
+            if j==0:
+                shade=OxmlElement('w:shd');shade.set(qn('w:fill'),'1F3A5F');tcPr.append(shade)
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:run.font.color.rgb=RGBColor(255,255,255)
         if j==0:
             repeat=OxmlElement('w:tblHeader');row._tr.get_or_add_trPr().append(repeat)
     available=doc.sections[0].page_width-doc.sections[0].left_margin-doc.sections[0].right_margin
@@ -124,7 +129,7 @@ abstract=(f"Surface electromyography can capture changes associated with muscula
  f"Amplitude, spectral and wavelet features are compared using majority and RMS-plus-MDF logistic baselines, regularized logistic regression, radial-basis SVM and random forest. "
  f"Outer leave-one-recording-group-out validation and grouped inner tuning yield macro-F1 {ms('nested_selector','f1_macro')} for the selection procedure, compared with {ms('logistic_rms_mdf','f1_macro')} for the simple logistic baseline. "
  f"Prespecified window, activity, boundary and notch sensitivities and feature-family ablations quantify dependence on methodological choices. "
- f"Models and preprocessing are serialized and checked after recarga; every table is linked to machine-generated results. "
+ f"Models and preprocessing are serialized and checked after reloading; every table is linked to machine-generated results. "
  f"The central limitation is that no synchronized independent fatigue reference or independently reconciled person identity is available. "
  f"These results therefore demonstrate classification of an operational temporal proxy, rather than confirmed physiological fatigue or generalization to verified new people.")
 if not 200<=len(abstract.split())<=250:raise RuntimeError(f'abstract length {len(abstract.split())}')
@@ -144,13 +149,13 @@ table(['Ref.','Muscle / task','Reference / label','Features','Model','Performanc
  ['[3]','Controlled sEMG artifact experiment','Noise/filter conditions','Signal spectra','Filter comparison','Not a fatigue-label classifier'],
  ['[4]','sEMG fatigue task','Detailed label not recovered here','Learned feature fusion','CNN/BLSTM attention','Publisher states cross-subject objective; no number imported'],
  ['[5]','sEMG fatigue task','Detailed label/split not recovered here','Wavelet packet','LSTM','No unsupported score imported'],
- ['[6]','Biceps; sEMG+ECG','Self-reported relaxed/transition/fatigue every 120 s','Learned sequences','TCN and evidence fusion','Random sample-fold description; not grouped-equivalent'],
+ ['[6]','Biceps; sEMG+ECG','Self-report: relaxed / transition / fatigue; every 120 s','Learned sequences','TCN and evidence fusion','Random sample-fold description; not grouped-equivalent'],
  ['[7]','Gastrocnemius; cycling','Anaerobic-threshold/time phases','sEMG+ACC fusion','CNN attention','Different physiology and modalities'],
  ['[8]','ML science methodology','Leakage taxonomy','Not a fatigue feature study','Methodological analysis','Supports clean separation'],
  ['[9]','Small-sample prediction','Simulation/uncertainty','Not a fatigue label study','Cross-validation analysis','Supports reporting variability'],
  ['[10]','sEMG frequency tutorial','Measurement/analysis choices','Spectral estimation','Tutorial','No classifier score imported']],pattern=2)
 h('1.4  Gap and contribution',2)
-p('The missing local link is an independent fatigue reference. The contribution is an executable binary pipeline with declared weak supervision, physiologically motivated feature families, grouped nested validation, required baselines, full OOF audit, and actual recargable inference. The historical three-class file-position scores and upper-limb Borg/Cerqueira experiments are retained only in the original archive. They neither train nor validate the new local target.')
+p('The missing local link is an independent fatigue reference. The contribution is an executable binary pipeline with declared weak supervision, physiologically motivated feature families, grouped nested validation, required baselines, full OOF audit, and actual reloadable inference. The historical three-class file-position scores and upper-limb Borg/Cerqueira experiments are retained only in the original archive. They neither train nor validate the new local target.')
 h('2.  Dataset and acquisition')
 h('2.1  Protocol as executed',2)
 p('The supplied guide prescribes bilateral rectus femoris MyoWare 2.0 RAW acquisition at at least 1000 Hz per channel; 20 mm electrode separation; a single preferred-leg 1RM; the same resulting 70% reference load for both legs; 2 s concentric and 2 s eccentric movements to technical failure; Borg CR-10 every five repetitions; ten minutes between legs; resting baseline and pre/post MVC. The same absolute load is not necessarily 70% of each leg’s own 1RM. These are intended conditions. The stored files verify only timestamped signed count values and filenames carrying side/series codes. No synchronized force, video, Borg, electrode photo, load, cadence or failure reason is included. The export column Voltage_mV is ignored because its arithmetic conversion does not verify physical calibration.')
@@ -165,7 +170,7 @@ p('Quality diagnostics preserve the original bytes and flag clock gaps, jitter, 
 figure('qc_examples.png','Figure 1. A continuous accepted example and a gap-crossing interval excluded by the timestamp rule. This is a QC illustration selected without model-outcome information.')
 h('3.  Labelling strategy')
 h('3.1  Chosen strategy and justification',2)
-p('For each original file, u=(t−t_start)/(t_end−t_start). Complete eligible windows ending before u=1/3 receive 0; windows starting at u≥2/3 receive 1. Endpoints are the original observed timestamps, before QC. The middle and boundary-crossing windows are excluded. This implements weak_elapsed_thirds_binary_v1. Repetition-based thirds would be closer to the guide’s example but cannot be reconstructed as verified mechanical events from these files. Borg and MVC approaches were considered and are unavailable locally. The assumption of increasing fatigue with elapsed file time is explicitly weaker than either independent approach.')
+p('For each original file, the elapsed recording fraction u is time since the original start divided by the original duration. Complete eligible windows ending before one third receive 0; windows starting at or after two thirds receive 1. Endpoints are the original observed timestamps, before QC. The middle and boundary-crossing windows are excluded. This implements weak_elapsed_thirds_binary_v1. Repetition-based thirds would be closer to the guide’s example but cannot be reconstructed as verified mechanical events from these files. Borg and MVC approaches were considered and are unavailable locally. The assumption of increasing fatigue with elapsed file time is explicitly weaker than either independent approach.')
 h('3.2  Class definition and distribution',2)
 counts=processing['label_counts'];n=sum(counts.values())
 table(['Class','Exact eligible support','Windows','Percent'],[['0 early proxy','Complete first elapsed-time third',counts['0'],f"{100*counts['0']/n:.1f}%"],['1 late proxy','Complete last elapsed-time third',counts['1'],f"{100*counts['1']/n:.1f}%"]],pattern=5)
@@ -177,7 +182,7 @@ h('4.  Signal processing and feature extraction')
 h('4.1  Preprocessing chain',2)
 table(['Stage','Method','Parameters / limitation'],[['Band pass','Butterworth SOS, bidirectional','20–400 Hz; prototype order 4; 100 ms edge mask'],['Notch','Not primary; prespecified sensitivity','50/60 Hz prominence >10 dB; Q=30'],['Rectification','Separate RMS activity envelope','Unrectified stored-signal branch for PSD'],['Amplitude normalization','Train-fold StandardScaler','No fabricated %MVC'],['Artefact handling','Gap, jitter, constant-run checks','No crossing discontinuities; signed rails uncalibrated'],['Segmentation','Candidate activity, not repetitions','50 ms RMS; 25 ms hop; per-record Otsu'],['Window','Complete contiguous windows','250 ms; 50% overlap; occupancy ≥75%'],['Resampling / detrending','No resampling; mean removal','Nominal fs from median dt']],pattern=6)
 h('4.2  Features computed',2)
-table(['Feature','Family','Definition','Reason / condition'],[['RMS','Amplitude','sqrt(mean((x−mean(x))²))','Effective amplitude; effort and placement confound'],['MAV','Amplitude','mean(abs(x−mean(x)))','Amplitude distribution'],['Waveform length/s','Amplitude','sum(abs(diff(x)))/duration','Local variation'],['MDF','Frequency','50% cumulative Hann PSD in band','Spectral redistribution, not specific fatigue'],['MNF','Frequency','sum(fP)/sum(P)','Spectral mean'],['Low/high ratio','Frequency','[20,60)/[60,400] Hz power','Relative spectrum shape'],['A3,D3,D2,D1','Time-frequency','db4 level 3 relative energies','Multiscale variation under nonstationarity']],pattern=7)
+table(['Feature','Family','Definition','Reason / condition'],[['RMS','Amplitude','Root mean square of centered samples','Effective amplitude; effort and placement confound'],['MAV','Amplitude','Mean absolute centered value','Amplitude distribution'],['Waveform length/s','Amplitude','Absolute adjacent differences per second','Local variation'],['MDF','Frequency','50% cumulative Hann PSD in band','Spectral redistribution, not specific fatigue'],['MNF','Frequency','PSD-weighted mean frequency','Spectral mean'],['Low/high ratio','Frequency','Power in 20–60 Hz over 60–400 Hz','Relative spectrum shape'],['A3,D3,D2,D1','Time-frequency','db4 level 3 relative energies','Multiscale variation under nonstationarity']],pattern=7)
 h('4.3  Feature behaviour across the set',2)
 figure('trajectories.png','Figure 2. Candidate-active feature trajectories by recording fraction. First reduce to recording-bin medians, then group-bin medians; bands show across-group SD. They do not establish force loss.')
 h('4.4  Bilateral analysis',2)
@@ -200,7 +205,8 @@ if max(timers)>3*sorted(timers)[len(timers)//2]:p(f'The measured wall timers inc
 h('6.  Results')
 h('6.1  Main comparison table',2)
 models=['majority','logistic_rms_mdf','logistic_all','svm_rbf','random_forest','nested_selector']
-table(['Model','Accuracy','Precision macro','Recall macro','F1 macro','ROC AUC'],[[m]+[ms(m,k) for k in ['accuracy','precision_macro','recall_macro','f1_macro','roc_auc']] for m in models],pattern=12)
+display_models=['Majority','Logistic RMS + MDF','Logistic all','SVM RBF','Random forest','Nested selector']
+table(['Model','Accuracy','Precision macro','Recall macro','F1 macro','ROC AUC'],[[display]+[ms(m,k) for k in ['accuracy','precision_macro','recall_macro','f1_macro','roc_auc']] for m,display in zip(models,display_models)],pattern=12)
 p(f"The prespecified nested procedure achieved macro-F1 {ms('nested_selector','f1_macro')} (group-bootstrap 95% CI {ci('nested_selector','f1_macro')}). Average precision was {ms('nested_selector','average_precision')}; trapezoidal PR-AUC was {ms('nested_selector','pr_auc_trapezoidal')}. The RMS+MDF baseline achieved {ms('logistic_rms_mdf','f1_macro')}. Family point estimates do not establish a unique superior model, and choosing a winner from these outer estimates would add post-selection optimism.")
 for r in paired:p(f"Paired contrast {r['comparison']}: mean macro-F1 difference {float(r['mean_difference']):+.3f}; 95% group-bootstrap interval {float(r['ci95_lower']):+.3f} to {float(r['ci95_upper']):+.3f}, {r['paired_groups']} matched groups.")
 h('6.2  Per-class performance of the best model',2)
@@ -232,7 +238,7 @@ p('Before new acquisition, obtain the existing course coordinator’s acquisitio
 h('8.  Conclusions')
 p(f"1. An executable binary pipeline produced {processing['windows_labeled']:,} eligible weak-labeled windows from 138 formal recordings, with all quality and selection denominators retained.")
 p(f"2. The nested selection procedure achieved macro-F1 {ms('nested_selector','f1_macro')}; its observed mean did not clearly improve on the {ms('logistic_rms_mdf','f1_macro')} RMS+MDF baseline.")
-p('3. Signal processing, grouped OOF evaluation, complete model recarga and fragment reassembly are auditable software capabilities; they do not substitute for a fatigue reference.')
+p('3. Signal processing, grouped OOF evaluation, complete model reloading and fragment reassembly are auditable software capabilities; they do not substitute for a fatigue reference.')
 p('4. The available evidence supports early/late proxy classification. Independent physiological fatigue detection, calibrated force loss and verified unseen-person generalization remain unestablished.')
 h('9.  Contribution of each member')
 p('The original roster is retained above when available from the supplied report. The new repository records assisted implementation under the authenticated account used for execution. It does not prove balanced student effort. Individual roles and effort percentages for the rebuilt work require the members’ own attestation; no authors, roles, percentages or retrospective commits have been fabricated. This administrative requirement remains outstanding for course submission.')
