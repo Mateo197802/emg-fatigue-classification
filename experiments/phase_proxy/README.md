@@ -12,10 +12,10 @@ The chosen output directory must be new. It receives the phase support, burst au
 
 The stage 1 RF is fixed at 100 trees, depth 3, minimum leaf 5 and balanced weights. Stage 2 logistic C is selected from 0.1/1/10 using grouped validation; its training scores are generated outside each group. This repeats inside inner selection. Random auxiliary labels provide one capacity control, not an exhaustive permutation test.
 
-`evidence.py` verifies completed private inputs, baseline equivalence, target labels, duplicate-free OOF support and completion hashes before generating matrices. It consumes the original private supplement folder, including its separately reconstructed `run/phase_diagnostics/phase_oof_predictions.parquet`. That reconstruction script and its verification are in the private delivery; it is not necessary to rerun the fatigue experiment to export evidence.
+`evidence.py` verifies completed private inputs, baseline equivalence, target labels, duplicate-free OOF support and completion hashes before generating matrices. It accepts either the new run root directly or the original wrapper with a `run/` subdirectory. The published exporter reconstructs group-held-out stage-1 predictions from the frozen feature table, reproduces their recorded auxiliary metrics and builds the comparison figure itself. It does not require an unprovided private reconstruction script or prebuilt image, and does not retrain the second stage.
 
 ```powershell
-python experiments/phase_proxy/evidence.py --primary 'C:\private\primary' --experiment 'C:\private\phase-supplement' --private-out 'C:\private\phase-evidence' --public-dir results/phase_experiment --figures-dir docs/figures
+python experiments/phase_proxy/evidence.py --primary 'C:\private\primary' --experiment 'C:\private\phase-run-v2' --private-out 'C:\private\phase-evidence' --public-dir results/phase_experiment --figures-dir docs/figures
 python -m pytest -q
 ```
 

@@ -103,3 +103,26 @@ def test_published_matrices_keep_matched_baseline_and_distinct_targets():
         assert sum(r[cols])==r.n
         assert abs(r.norm_0_0+r.norm_0_1-1)<1e-12
         assert abs(r.norm_1_0+r.norm_1_1-1)<1e-12
+
+
+def test_evidence_accepts_completed_run_root_or_legacy_wrapper(tmp_path):
+    m=module('evidence');direct=tmp_path/'direct';direct.mkdir();(direct/'completion_receipt.json').write_text('{}')
+    wrapper=tmp_path/'legacy';(wrapper/'run').mkdir(parents=True);(wrapper/'run/completion_receipt.json').write_text('{}')
+    assert m.resolve_run(direct)==direct
+    assert m.resolve_run(wrapper)==wrapper/'run'
+    with pytest.raises(ValueError):m.resolve_run(tmp_path/'missing')
+
+
+def test_auxiliary_reconstruction_runs_from_published_code(tmp_path):
+    m=module('evidence');p=module('phase_spike');rng=np.random.default_rng(13)
+    frame=pd.DataFrame(rng.normal(size=(24,10)),columns=p.FEATURE_COLUMNS)
+    frame['subject_id']=np.repeat(['g1','g2','g3'],8);frame['phase_proxy']=[0,1]*12;frame['random_proxy']=[1,0]*12
+    frame['window_id']=['w'+str(i) for i in range(24)];frame['recording_id']=frame.subject_id
+    frame['label']=[0,1]*12;frame['time_fraction']=np.tile(np.arange(8)/8,3)
+    frame.to_parquet(tmp_path/'phase_features.parquet',index=False)
+    out=m.reconstruct_auxiliary(tmp_path)
+    saved=pd.read_parquet(out)
+    assert len(saved)==24 and not saved.window_id.duplicated().any()
+    assert saved.phase_score.between(0,1).all()
+    for a in json.loads((tmp_path/'phase_diagnostics/disjoint_group_requests.json').read_text()):
+        assert not set(a['train_groups'])&set(a['test_groups'])

@@ -279,7 +279,7 @@ p('rms; mav; waveform_length_per_s; mdf_hz; mnf_hz; power_ratio_low_high; wavele
 h('Appendix C - Repository map')
 p('io/contracts: source and configuration contracts. qc/preprocessing/activity/labels/features: data transformations. validation/evaluation: nested grouped OOF and metrics. inference: trusted local bundle and prediction. sensitivities: frozen variations and family ablations. reporting: numerical assets and sources. tests: software contracts and regressions. Raw signals, models, OOF predictions and this full report remain private; public code and deidentified fold metrics are separate.')
 if args.include_phase:
-    doc.add_page_break();h('Appendix D Phase architecture and audit')
+    h('Appendix D Phase architecture and audit')
     p('The auxiliary target is first/second EMG burst half. The final target is early/late recording position. Neither is a verified extension/flexion or physiological fatigue label. Bursts come from the existing activity mask; complete windows crossing a burst midpoint or edge lack auxiliary labels. Their absence does not exclude them from the fixed fatigue-side comparison.')
     figure('phase/phase_architecture.png','Figure D1. Actual two-stage architecture. Stage 2 preserves the EMG features and receives a cross-fitted auxiliary score. The dotted training reference is used only within training groups.')
     p('The auxiliary head uses 100 RF trees, depth 3 and minimum leaf 5. The primary final artifact uses 300 RF trees, depth 3 and minimum leaf 2. Both use balanced weights but learn different targets. The primary nested selector chooses one family internally; it is not an ensemble vote. The full-cohort final fit supplies a reloadable artifact and no additional OOF performance estimate.')

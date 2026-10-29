@@ -1,6 +1,6 @@
 """Verify completed private runs and export aggregate, target-specific evidence."""
 from pathlib import Path
-import argparse,json,shutil
+import argparse,json,shutil,importlib.util
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -53,6 +53,43 @@ def aggregate_hashes(public):
 
 def normalize_public_csv(public):
     for p in Path(public).glob('*.csv'):p.write_bytes(p.read_bytes().replace(b'\r\n',b'\n'))
+
+
+def resolve_run(experiment):
+    root=Path(experiment)
+    if (root/'completion_receipt.json').is_file():return root
+    if (root/'run/completion_receipt.json').is_file():return root/'run'
+    raise ValueError('no completed experiment found at run root or wrapper/run')
+
+
+def reconstruct_auxiliary(run):
+    """Rebuild only stage-1 diagnostics from frozen features; no stage-2 retraining."""
+    run=Path(run);script=Path(__file__).with_name('phase_spike.py')
+    spec=importlib.util.spec_from_file_location('original_phase_spike',script)
+    original=importlib.util.module_from_spec(spec);spec.loader.exec_module(original)
+    frame=pd.read_parquet(run/'phase_features.parquet');out=run/'phase_diagnostics';out.mkdir(exist_ok=True)
+    heads=original.PhaseScores(frame,out);groups=frame.subject_id.to_numpy();rows=[]
+    for group in sorted(set(groups)):
+        indices=np.flatnonzero(groups==group)
+        score=heads.get(sorted(set(groups)-{group}),indices,'phase','diagnostic/'+str(group))
+        part=frame.iloc[indices][['window_id','subject_id','recording_id','phase_proxy','label','time_fraction']].copy()
+        part['phase_score']=score;part['phase_prediction']=(score>=.5).astype(int);rows.append(part)
+    path=out/'phase_oof_predictions.parquet';pd.concat(rows,ignore_index=True).to_parquet(path,index=False);heads.save()
+    write_json(out/'reconstruction_receipt.json',{'phase_features_sha256':sha256_file(run/'phase_features.parquet'),'original_script_sha256':sha256_file(script),'predictions_sha256':sha256_file(path),'source':'group-held-out reconstruction of fixed original stage-1 head; no new fatigue-model fit'})
+    return path
+
+
+def draw_comparison(run,path):
+    summary=pd.read_csv(Path(run)/'metrics_summary.csv').query("metric=='f1_macro'").set_index('model')
+    results=pd.read_csv(Path(run)/'results.csv');fig,axes=plt.subplots(1,2,figsize=(12,4.6))
+    axes[0].barh([NAMES[m] for m in EXPERIMENT],[summary.loc[m,'mean'] for m in EXPERIMENT],xerr=[summary.loc[m,'sd'] for m in EXPERIMENT],color='#426b83')
+    axes[0].invert_yaxis();axes[0].set_xlim(0,1);axes[0].set_xlabel('Macro-F1 mean ± SD across groups')
+    base=results.query("model=='baseline_10'").set_index('fold_id').f1_macro
+    for model,color in [('phase_conditioned','#bc704a'),('random_conditioned','#6d8979')]:
+        d=results[results.model==model].set_index('fold_id').f1_macro-base
+        axes[1].plot(np.arange(1,len(d)+1),d,'o-',label=NAMES[model],color=color)
+    axes[1].axhline(0,color='black',ls='--',lw=1);axes[1].set_xlabel('Held-out group (opaque order)');axes[1].set_ylabel('Paired macro-F1 difference');axes[1].legend(fontsize=8)
+    fig.suptitle('Exploratory phase experiment — weak early/late target');fig.tight_layout();fig.savefig(path,dpi=180);plt.close(fig)
 
 
 def draw_confusions(table,models,path,title,normalized=False,auxiliary=False):
@@ -120,18 +157,18 @@ def build(primary,experiment,out,public,figures,config):
     primary=Path(primary);experiment=Path(experiment);out=Path(out);public=Path(public);figures=Path(figures)
     for p in [out,public,figures]:p.mkdir(parents=True,exist_ok=True)
     verify_evaluation(primary,config)
-    receipt=json.loads((experiment/'run/completion_receipt.json').read_text())
-    if receipt['status']!='complete' or (experiment/'run/RUNNING.json').exists():raise ValueError('phase run incomplete')
+    run=resolve_run(experiment);receipt=json.loads((run/'completion_receipt.json').read_text())
+    if receipt['status']!='complete' or (run/'RUNNING.json').exists():raise ValueError('phase run incomplete')
     for name,expected in receipt['output_hashes'].items():
-        if sha256_file(experiment/'run'/name)!=expected:raise ValueError('phase output checksum mismatch: '+name)
-    if sha256_file(experiment/'phase_spike.py')!=receipt['script_sha256']:raise ValueError('phase script identity mismatch')
-    if sha256_file(experiment/'PROTOCOLO_ANTES_DE_RESULTADOS.md')!=receipt['protocol_sha256']:raise ValueError('phase protocol identity mismatch')
-    p=pd.read_parquet(primary/'evaluation/oof_predictions.parquet');s=pd.read_parquet(experiment/'run/oof_predictions.parquet')
+        if sha256_file(run/name)!=expected:raise ValueError('phase output checksum mismatch: '+name)
+    if sha256_file(Path(__file__).with_name('phase_spike.py'))!=receipt['script_sha256']:raise ValueError('phase script identity mismatch')
+    if sha256_file(Path(__file__).with_name('PROTOCOLO_ANTES_DE_RESULTADOS.md'))!=receipt['protocol_sha256']:raise ValueError('phase protocol identity mismatch')
+    p=pd.read_parquet(primary/'evaluation/oof_predictions.parquet');s=pd.read_parquet(run/'oof_predictions.parquet')
     validate_predictions(p,PRIMARY,5509);validate_predictions(s,EXPERIMENT,5509)
     match=s.query("model=='baseline_10'").merge(p.query("model=='logistic_all'"),on='window_id',suffixes=('_s','_p'),validate='one_to_one')
     if len(match)!=5509 or not np.array_equal(match.label_s,match.label_p) or not np.array_equal(match.prediction_s,match.prediction_p):raise ValueError('baseline mismatch')
-    phase=pd.read_parquet(experiment/'run/phase_diagnostics/phase_oof_predictions.parquet')
-    auxiliary_metrics=pd.read_csv(experiment/'run/auxiliary_phase_metrics.csv')
+    phase=pd.read_parquet(reconstruct_auxiliary(run))
+    auxiliary_metrics=pd.read_csv(run/'auxiliary_phase_metrics.csv')
     for group,g in phase[phase.phase_proxy.notna()].groupby('subject_id'):
         measured=binary_metrics(g.phase_proxy.to_numpy().astype(int),g.phase_prediction.to_numpy(),g.phase_score.to_numpy())
         expected=auxiliary_metrics[auxiliary_metrics.subject_id==group]
@@ -152,11 +189,11 @@ def build(primary,experiment,out,public,figures,config):
         file='auxiliary_phase_confusion_'+('normalized' if normalized else 'counts')+'.png'
         draw_confusions(conf,['auxiliary_phase_head'],figures/file,'Auxiliary burst-half reference — '+('row proportions' if normalized else 'OOF counts'),normalized,True)
     architecture(figures/'phase_architecture.png');model_relationships(figures/'model_relationships.png')
-    shutil.copy2(experiment/'comparacion_fase.png',figures/'phase_comparison.png')
-    for name in ['metrics_summary.csv','paired_differences.csv']:shutil.copy2(experiment/'run'/name,public/name)
+    draw_comparison(run,figures/'phase_comparison.png')
+    for name in ['metrics_summary.csv','paired_differences.csv']:shutil.copy2(run/name,public/name)
     private=out/'opaque_mapping';private.mkdir(exist_ok=True)
     shutil.copy2(primary/'public_export/public_export_salt.txt',private/'public_export_salt.txt')
-    public_fold_export(pd.read_csv(experiment/'run/results.csv'),public,private)
+    public_fold_export(pd.read_csv(run/'results.csv'),public,private)
     auxiliary_metrics['model']='auxiliary_phase_head'
     public_fold_export(auxiliary_metrics,out/'auxiliary_export',private)
     shutil.copy2(out/'auxiliary_export/results.csv',public/'auxiliary_phase_fold_metrics.csv')
