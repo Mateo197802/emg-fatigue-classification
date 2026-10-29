@@ -13,7 +13,7 @@ const data=JSON.parse(await fs.readFile(path.join(workspaceDir,'slides_input.jso
 const assets=path.join(workspaceDir,'report_assets');
 const assetNames=['qc_examples.png','split_scheme.png','model_comparison.png','confusion.png','held_out_groups.png','sensitivity.png','ablation.png'];
 const embeddedImages=new Map(await Promise.all(assetNames.map(async name=>[name,new Uint8Array(await fs.readFile(path.join(assets,name)))])));
-const output=path.join(workspaceDir,process.argv[3]??'presentation');const build=path.join(output,'build');
+const output=path.join(workspaceDir,process.argv[3]??'presentation');const build=path.join(workspaceDir,`deck_build_${path.basename(output)}`);
 await fs.mkdir(build,{recursive:true});await fs.mkdir(output,{recursive:true});
 const deck=Presentation.create({slideSize:{width:1280,height:720}});
 const blue='#234f6b',ink='#182a36',muted='#4b5e6c',green='#39735d';
