@@ -50,6 +50,10 @@ def aggregate_hashes(public):
     return {p.name:sha256_file(p) for p in Path(public).iterdir() if p.is_file() and p.name!='evidence_receipt.json'}
 
 
+def normalize_public_csv(public):
+    for p in Path(public).glob('*.csv'):p.write_bytes(p.read_bytes().replace(b'\r\n',b'\n'))
+
+
 def draw_confusions(table,models,path,title,normalized=False,auxiliary=False):
     ncols=1 if len(models)==1 else 3;nrows=int(np.ceil(len(models)/ncols))
     fig,axes=plt.subplots(nrows,ncols,figsize=(12,6.4) if len(models)>1 else (5.5,4.6),squeeze=False)
@@ -160,6 +164,7 @@ def build(primary,experiment,out,public,figures,config):
         registry.append({'model':model,'display_name':NAMES[model],'role':'primary_procedure' if model in PRIMARY else 'auxiliary_head' if model=='auxiliary_phase_head' else 'supplemental_variant','target':'burst_half_proxy' if model=='auxiliary_phase_head' else 'early_late_proxy','oof_support':3337 if model=='auxiliary_phase_head' else 5509,'reference_equivalence':'same predictions as primary logistic_all' if model=='baseline_10' else '','deployed_primary_artifact':False})
     registry.append({'model':'final_primary_rf_artifact','display_name':'Serialized final primary RF','role':'full_cohort_fit_not_OOF_estimator','target':'early_late_proxy','oof_support':0,'reference_equivalence':'full-cohort inner selection; no additional OOF estimate','deployed_primary_artifact':True})
     pd.DataFrame(registry).to_csv(public/'model_registry.csv',index=False)
+    normalize_public_csv(public)
     # Bundle the original script verbatim separately from this new exporter.
     evidence={'status':'verified','primary_procedures':6,'supplemental_variants':5,'auxiliary_heads':1,'early_late_windows_per_procedure':5509,'auxiliary_reference_windows':3337,'primary_oof_rows':len(p),'supplemental_oof_rows':len(s),'original_phase_script_sha256':receipt['script_sha256'],'protocol_sha256':receipt['protocol_sha256'],'baseline_matches_primary':True,'auxiliary_reconstruction_matches_original_metrics':True,'primary_target':'weak early/late recording position','auxiliary_target':'first/second EMG activity burst half; not verified extension','deployment':'primary model unchanged; exploratory cascade is not promoted','aggregate_hashes':aggregate_hashes(public)}
     write_json(public/'evidence_receipt.json',evidence);write_json(out/'evidence_receipt.json',evidence)

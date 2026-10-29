@@ -72,3 +72,9 @@ def test_export_receipt_does_not_hash_itself(tmp_path):
     m=module('evidence');(tmp_path/'results.csv').write_text('model,n\na,4\n')
     (tmp_path/'evidence_receipt.json').write_text('old receipt')
     assert set(m.aggregate_hashes(tmp_path))=={'results.csv'}
+
+
+def test_public_csv_bytes_are_lf_before_hashing(tmp_path):
+    m=module('evidence');p=tmp_path/'results.csv';p.write_bytes(b'model,n\r\na,4\r\n')
+    m.normalize_public_csv(tmp_path)
+    assert p.read_bytes()==b'model,n\na,4\n'
