@@ -128,22 +128,22 @@
 
 - [x] Reorganize the narrative in this order: corpus and quantitative pre-analysis; raw signal and channel limitations; preprocessing; window type/length/overlap and rationale; label derivation; explicit filter/feature formulas; nested validation method; direct models and performance; phase auxiliary architecture and its separate result; conclusions and limits.
 - [x] Draw legible Spanish and English SVG/PNG diagrams separating the executed proxy from the proposed reference-backed cascade. Add method, QC/filter path, window overlap, reference-label path, direct baseline, phase classifier, OOF cascade, soft-gated experts and grouped validation. Mark each component as executed, proposed or blocked by missing data.
-- [ ] Add quantitative corpus tables and signal/pre-analysis plots with sample counts, duration, sample-rate/gap/QC summaries, per-subject support and feature summaries. Do not expose identities or raw data publicly.
+- [x] Add aggregate corpus tables and private signal/pre-analysis plots with sample counts, duration, sample-rate/gap/QC summaries and support by recording group. A verified per-subject breakdown is unavailable because identities remain unverified; no identities or raw data are exposed publicly.
 - [x] Add signal-quality and preprocessing evidence from actual recordings where supported: raw/filtered waveform, PSD before/after, filter response for verified sampling rates, invalid intervals, representative windows and a clearly marked schematic overlap illustration. The signal figure and receipt stay private.
 - [x] Add equations for the analog Butterworth prototype relation, digital SOS band-pass and coefficients by verified `fs`, optional notch, window/overlap, Hann periodogram, each feature schema, candidate label rule and architecture score/fusion. State parameter rationale and sensitivity conditions.
 - [x] Remove the “Evidencia pendiente” placeholder; use a concise, evidence-backed limitation. Reorder the main talk to cover corpus and quantitative pre-analysis, signal, preprocessing, window choice and formulas, reference labels, methodology, direct models and performance, auxiliary phase architecture and its separate result, then conclusions.
 - [x] Keep the report template and list only the authors' names: Ethan Guevara, Mateo Gavilanes, and Kennedy Rodriguez; omit individual roles and student IDs.
-- [ ] Rebuild and inspect the report/deck/script PDFs after the source commit. The DOCX/PPTX and Spanish/English Markdown scripts are built; 27 report pages and 29 slides have passed visual inspection, but PDF delivery/export is still pending.
-- [ ] Close when every scientific claim links to code, data receipt, result file or cited reference, and Spanish/English materials agree on target names and results.
+- [x] Rebuild and inspect the report/deck/script PDFs after the source commit. The final report has 27 pages, the deck has 29 slides, and the Spanish/English scripts have 7/6 pages; rendered pages and contact sheets were inspected.
+- [x] Close the materials audit: scientific claims link to code, data receipts, result files or references, and Spanish/English materials use consistent target names and results. True-fatigue/verified-phase performance claims remain explicitly unavailable under G0.
 
 ### Task 6: Package, publish, and verify the revised delivery
 
 **Files:** `LEEME_PRIMERO.md`, `README.md`, `docs/INFORME_EVIDENCIAS.md`, evidence map/ledger, public GitHub branch, new versioned private ZIP and its checksum manifest.
 
-- [ ] Update GitHub with the reproducible code, protocol, diagrams and safe aggregate evidence only. Keep participant-level data, raw signals, calibration forms, OOF rows, identity keys and serialized models private.
-- [ ] Build a new private ZIP without replacing the previous delivery. Include report, presentation, bilingual scripts, diagrams, source inventory receipt, model/evaluation evidence, reproducibility commands, checksum manifest and a first-read guide.
-- [ ] Run the full requested test suite, clean-environment reproduction, document/PDF rendering checks, slide visual inspection, GitHub Actions on the exact published commit, privacy scan, ZIP CRC and SHA-256 coverage checks.
-- [ ] Close only when public GitHub, report, slides, scripts and ZIP use the same frozen results and the new package verifier reports no missing, changed or unsafe members. Do not merge a review branch automatically.
+- [x] Publish the reproducible code, protocol, diagrams and safe aggregate evidence on the GitHub branch. Participant-level data, raw signals, calibration forms, granular OOF rows, identity keys and serialized models remain private.
+- [x] Build a new private ZIP without replacing the previous delivery. It contains the report, presentation, bilingual scripts, diagrams, source inventory receipt, model/evaluation evidence, reproducibility commands, checksum manifests and first-read guide.
+- [x] Run the full software suite, clean-environment reconstruction checks, document/PDF rendering and slide inspection, exact-commit GitHub Actions, public-tree privacy audit, ZIP CRC and SHA-256 coverage checks. These software/package checks do not validate physiological labels.
+- [x] Close delivery consistency: public GitHub, report, slides, scripts and ZIP reference the same frozen results and the package verifier reports no missing, changed or unsafe members. The review branch remains unmerged.
 
 ## Decision gates and deliverables
 
@@ -165,7 +165,7 @@ The legacy proxy keeps its frozen 250 ms configuration so historical results rem
 - The public source now includes fail-closed reference-label and window contracts, an explicit source-crosswalk contract, a separately versioned waveform-length schema, the 500/250 ms reference-window configuration, equations, architecture diagrams, and a teacher-feedback response. The historical weak-label experiment remains separate.
 - Signal evidence and source hashes are private. The 27-page manuscript and 29-slide deck were rebuilt in versioned staging; all manuscript pages and the deck were visually inspected. Deck geometry validation reports 0 findings and 0 warnings. Spanish and English Markdown scripts contain 29 slide entries each.
 - The full local suite passed 89 tests. `git diff --check` passed. These checks cover contracts, diagrams, presentation copy, feature schema and existing behavior; they do not constitute a fatigue model evaluation.
-- Still pending: final independent review, commit/push and exact-commit CI; regenerate the manuscript with the committed source revision, export and inspect the report/deck/script PDFs, rebuild the private versioned ZIP, and verify privacy, archive CRC and package hashes. No true-fatigue or verified phase model can be trained until Gate G0 passes.
+- Delivery completed on the published source revision recorded in the package receipt. Independent review, exact-head CI, rendered report/deck/script PDFs, public-tree privacy audit, ZIP CRC and package hashes were checked. The previous package remains unchanged. No true-fatigue or verified phase model can be trained until Gate G0 passes.
 
 ## Completion record (2026-11-09)
 
@@ -177,9 +177,9 @@ The legacy proxy keeps its frozen 250 ms configuration so historical results rem
 | Formulas and diagrams | Implemented | `docs/reference_fatigue_protocol.md`, `docs/figures/` |
 | Full software suite | Passed | 89 passed on the clean bundled runtime |
 | Manuscript and slide source | Built and visually inspected | 27 report pages; 29 slides, 0 geometry findings/warnings |
-| Report/deck/script PDFs | Pending | Rebuild after source commit, then render and inspect |
+| Report/deck/script PDFs | Passed | 27-page report; 29-slide deck; Spanish/English scripts 7/6 pages; rendered and visually inspected |
 | True-fatigue/extension-flexion training | Not performed | Required synchronized references absent from supplied ZIP |
-| Final package and GitHub publication | Pending | Preserve the existing package; publish a versioned ZIP and branch snapshot |
+| Final package and GitHub publication | Passed for the gated scope | Branch published, exact-head CI passed, new ZIP verified; previous package unchanged; G0 remains failed |
 
 ## Evidence basis for the design
 
