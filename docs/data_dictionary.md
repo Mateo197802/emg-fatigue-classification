@@ -19,6 +19,16 @@
 | mdf_hz, mnf_hz | Hann in-band PSD-derived median/mean frequency, Hz |
 | power_ratio_low_high | PSD bin-sum ratio [20,60) Hz / [60,400] Hz |
 | wavelet_A3/D3/D2/D1 | Relative coefficient energies, dimensionless |
+| feature_schema_version | `emg_window_features_v1` for historical results; `emg_window_features_v2_sample_span` for corrected waveform-length calculations |
+| waveform_length_per_s | Historical v1 convention: `Σ|x[n]−x[n−1]| / (N/fs)`, counts/s |
+| waveform_length_per_s_sample_span | Corrected v2 convention: `Σ|x[n]−x[n−1]| / ((N−1)/fs)`, counts/s; never silently substituted for v1 |
+| label_evidence | `weak_elapsed_time` for historical labels; reference-backed rows require an approved torque/reference contract |
+| reference_level | `session`, `repetition`, `time_series`, or `window`; do not expand a coarse level to windows without a validated mapping |
+| evidence_status | `synthetic_only` for synthetic fixtures; `reference_approved` only after calibrated, synchronized and approved reference validation |
+| abstention_reason | Explicit invalid/QC/phase-transition/onset-boundary reason; unknown or missing references are never encoded as class 0 |
+| participant_id_verified | False in the supplied corpus; `subject_id` is folder-derived and is only a conditional grouping key |
+| phase label | Future reference-backed state from synchronized knee angle/video; EMG burst-half labels remain proxy labels |
+| fatigue label | Future reference-backed state from approved mechanical reference; elapsed-time early/late labels remain proxy labels |
 | inventory.csv, input_hashes.json | Private source membership and original byte hashes |
 | features.parquet, labels.csv | Private window products and eligibility reasons |
 | processing_receipt.json | Frozen config, feature bytes, source hashes and environment |

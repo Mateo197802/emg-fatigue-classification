@@ -2,11 +2,13 @@
 
 **Entrega estructurada:** abrir [LÉEME PRIMERO](LEEME_PRIMERO.md), el [informe de evidencias](docs/INFORME_EVIDENCIAS.md) y el [mapa entre afirmaciones, artículo, diapositivas y archivos](docs/MAPA_EVIDENCIA.csv). El ZIP privado conserva el artículo, la presentación vigente, datos, modelos y comprobantes. El [verificador portátil](tools/verify_delivery.py) comprueba todos los archivos del paquete y su snapshot del código.
 
+La [respuesta técnica a los comentarios del docente](docs/PROFESSOR_FEEDBACK_RESPONSE_2026-11-09.md) explica qué tarea aprendió cada modelo, cómo se procesó la señal, las fórmulas y ventanas, las métricas proxy y la arquitectura de referencia propuesta. El ZIP solo contiene EMG: por eso no acredita fatiga fisiológica ni extensión/flexión observadas.
+
 ## Defense presentation
 
-The revised private defense follows the signal-analysis workflow in **16 principal slides (600 seconds) and seven evidence appendices**: corpus, stored signal, descriptive preanalysis, preprocessing, windows and labels, features, grouped validation, model families, main performance and errors, auxiliary architecture, controls, phase results and conclusions. It removes the former administrative closing block. See the [slide-by-slide storyboard](docs/DEFENSE_STORYBOARD.md).
+The revised private defense follows the signal-analysis workflow in **16 principal slides (600 seconds) and thirteen evidence appendices**: corpus, signal, descriptive preanalysis, preprocessing, windowing, labels, features, grouped validation, model families and proxy performance, auxiliary architecture and results, equations, and the proposed reference-backed direct/cascade/expert comparison. It removes the former administrative closing block. See the [slide-by-slide storyboard](docs/DEFENSE_STORYBOARD.md).
 
-The [input builder](tools/build_defense_inputs.py) verifies the frozen evaluation receipts and prepares private signal snippets and numerical summaries. The [presentation builder](tools/build_defense_v2.mjs) creates editable tables, charts, confusion matrices and the two-stage architecture, with source notes. No participant-level signals, private input JSON, PDF or PPTX are included in this public repository.
+The [input builder](tools/build_defense_inputs.py) verifies the frozen evaluation receipts and prepares private signal snippets and numerical summaries. The [presentation builder](tools/build_defense_v2.mjs) creates editable tables, charts, confusion matrices, window and reference-architecture diagrams, and Spanish/English speaking scripts. The [signal-evidence builder](tools/build_signal_evidence.py) creates a private anonymized figure with a real waveform, Hann periodograms and the sampling-rate-specific filter response. Its image and receipt belong in the private package and must not be committed. No participant-level signals, private input JSON, PDF or PPTX are included in this public repository.
 
 ```powershell
 python tools/build_defense_inputs.py --root '<private-frozen-output>' --archive '<authorized-primary-ZIP>' --output '<private-frozen-output>/slides_input_v2.json'
@@ -35,16 +37,26 @@ flowchart LR
 
 See the **[full supplemental report and model relationships](docs/PHASE_EXPERIMENT.md)**, [commented references](docs/PHASE_REFERENCES.md), [all 12 target-specific confusion matrices](results/phase_experiment/confusion_matrices.csv), [aggregate/fold results](results/phase_experiment), [original experiment source and reproduction instructions](experiments/phase_proxy), and [evidence tests](tests/test_phase_evidence.py). Absolute and row-normalized matrices for all six primary procedures, five supplemental variants and the auxiliary head are shown in the report. Full OOF, manuscript, slide deck and models remain in the updated private delivery.
 
+The **[executed proxy architecture](docs/figures/executed_proxy_architecture_es.svg)** distinguishes the early/late target and burst-half auxiliary task. The **[reference-backed target architecture](docs/figures/reference_fatigue_architecture_es.svg)** is clearly marked as proposed because synchronized force/torque and kinematics are not present. Both diagrams can be rebuilt with `python tools/build_reference_architecture.py`.
+
 The supplemental `baseline_10` reproduces primary `logistic_all`; it is different from the primary nested selector (macro-F1 0.6240). The auxiliary RF, primary RF family and final serialized RF are different fits and roles, explicitly related in the model map. This experiment does not establish verified extension recognition, physiological fatigue or robustness to unseen acquisition domains.
 
 This project implements offline binary classification of early and late candidate-active windows from the intended rectus femoris knee-extension study. Labels are a **weak elapsed-time approximation** of nonfatigue/fatigue. The supplied recordings do not include an independent synchronized fatigue reference. Consequently, the reported scores establish agreement with this operational label, not validated physiological fatigue, force loss, or fatigue onset.
+
+## Reference-backed fatigue task
+
+The archive was rechecked on 2026-11-09. It contains EMG CSVs plus bibliography and signal-QC spreadsheets, but no time-resolved calibrated force/torque or synchronized angle/video reference. This means the repository does **not yet train a verified fatigue detector or extension/flexion classifier**. The existing early/late and burst-half experiments remain proxy results. See the [reference-data checklist](docs/REFERENCE_DATA_REQUIREMENTS.md) and the [proposed reference-backed protocol](docs/reference_fatigue_protocol.md).
+
+The next fatigue experiment is specified separately from the frozen proxy run: 500 ms windows with 50% overlap are primary; 250 ms is a sensitivity analysis. Its force-derived labels use matched-angle torque, repeatability-based MDC95 and a persistence rule. Its phase-first model is compared with a direct fatigue model and soft-gated phase experts using participant-disjoint folds and out-of-fold phase scores. These methods are planned and are not presented as completed results. The [protocol](docs/reference_fatigue_protocol.md) gives the filter, periodogram, window, feature, label and architecture equations. The [windowing diagram](docs/figures/windowing_protocol_es.svg) keeps historical 250 ms settings separate from the prospective protocol; the [model diagram](docs/figures/reference_models_es.svg) shows which independent references supervise each head.
+
+The exact required columns, synchronization evidence and missing-data gate are listed in the [reference-data requirements](docs/REFERENCE_DATA_REQUIREMENTS.md). The separate [reference-backed protocol](docs/reference_fatigue_protocol.md) gives the windows, filter, feature equations, model comparison and evaluation criteria.
 
 The original exploratory project is retained separately: [proyecto-biomecanica-emg](https://github.com/EthanGL1/proyecto-biomecanica-emg/tree/772b7a39c18ecfd34bfbd5f20fa0a14d2ddfa003). This repository implements a new binary task; its metrics must not be substituted for the old three-class scores or for Borg/Cerqueira results from other tasks.
 
 ## What runs
 
 - CSV/ZIP/RAR readers, input hashes, clock and signal QC, gap-preserving filtering and explicit abstention.
-- Candidate activity segmentation followed by complete 250 ms windows with 50% overlap.
+- Historical proxy pipeline: candidate activity segmentation followed by complete 250 ms windows with 50% overlap. The reference-backed experiment uses a separate, planned 500 ms primary-window contract.
 - Amplitude, spectral and wavelet features; mandatory majority and RMS+MDF logistic baselines.
 - Outer leave-one-recording-group-out evaluation with grouped inner tuning. Both sides and all series of a group stay together. Group-to-person identity is an explicit, unverified assumption of the source folder structure.
 - Model serialization, checksum verification, reloading and prediction using exactly the training feature schema.
@@ -107,6 +119,6 @@ The frozen numerical comparison is in [docs/RESULTS.md](docs/RESULTS.md), with t
 
 Every numerical table and figure has a source mapping in private `report_assets/table_sources.json`. `results.csv` in private output has one row per model × outer fold, all required metrics, support and confusion counts. Public `results/results.csv`, when present, contains only whitelisted fold metrics with opaque IDs; it contains no subject identity, paths, signal windows or granular predictions. The private export mapping is not published.
 
-The complete editable manuscript follows the supplied template and remains private with the course data. The report generator takes the template locally; this repository does not redistribute the university template, participant data or the previous private manuscript. Ten references with DOI metadata and bounded reading notes are in `references/verified_references.json`.
+The complete editable manuscript follows the supplied template and remains private with the course data. The report generator takes the template locally; this repository does not redistribute the university template, participant data or the previous private manuscript. The core bibliography contains ten DOI-indexed sources in `references/verified_references.json`; the manuscript adds three phase-specific sources from `references/phase_references.json` when the supplement is included, for thirteen references total.
 
 See [the protocol](docs/protocol.md), [the data dictionary](docs/data_dictionary.md), [discrepancy resolution](docs/discrepancy_resolution.md), [privacy boundaries](docs/privacy.md) and [the execution ledger](docs/EXECUTION_LEDGER.md).

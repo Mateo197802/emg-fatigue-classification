@@ -13,6 +13,77 @@ from .evaluation import binary_metrics
 METRICS=['accuracy','precision_macro','recall_macro','f1_macro','balanced_accuracy','roc_auc','average_precision','pr_auc_trapezoidal','cohen_kappa','specificity_class1','precision_class0','recall_class0','f1_class0','support_class0','precision_class1','recall_class1','f1_class1','support_class1','n_test','cm_0_0','cm_0_1','cm_1_0','cm_1_1','auc_status','score_type']
 
 
+def report_equation_rows():
+    """Return equations and status-qualified parameters for the sEMG protocols."""
+    return [
+        ('Butterworth analog prototype',
+         '|H(jω)|² = 1 / (1 + (ω/ωc)^(2n));  s_k = ωc exp(jπ(2k+n−1)/(2n)), k=1..n',
+         'Low-pass prototype relation. The executed digital band-pass is obtained by the bilinear-transform design for 20–400 Hz; order n=4 refers to the prototype and yields digital order 8.'),
+        ('Butterworth SOS',
+         'H(z) = product[r=1..4] (b0,r + b1,r z^-1 + b2,r z^-2) / (1 + a1,r z^-1 + a2,r z^-2); '
+         'y[n] = b0 x[n] + b1 x[n-1] + b2 x[n-2] - a1 y[n-1] - a2 y[n-2]',
+         '20–400 Hz; prototype order 4, digital band-pass order 8; coefficients are designed per run from fs; SOS forward/backward with sosfiltfilt; 100 ms masked at each edge'),
+        ('Notch sensitivity',
+         'w0 = 2 pi f0/fs; alpha = sin(w0)/(2Q); b = [1,-2cos(w0),1]/(1+alpha); '
+         'a = [1,-2cos(w0)/(1+alpha),(1-alpha)/(1+alpha)]',
+         'Not applied in primary processing; apply at 50 or 60 Hz only when prominence >10 dB; Q=30'),
+        ('Otsu activity',
+         't* = argmax[t] w0(t) w1(t) (mu0(t)-mu1(t))^2',
+         'RMS envelope frames of 50 ms with 25 ms hop; 128-bin histogram; candidate activity only, not a fatigue label'),
+        ('Window indices',
+         'N = round(0.25 fs); H = round(N(1-0.50)); window k = x[kH : kH+N]',
+         'Current analyzed run uses 250 ms windows, 50% overlap, and at least 75% candidate-active occupancy; at 1 kHz N=250 and H=125 samples'),
+        ('Reference window indices',
+         'N = round(T fs); H = round(N(1-o)); t_k = t_0 + kH/fs; Δf = fs/N',
+         'Proposed reference-backed primary: T=500 ms and o=50%; 250 ms is a sensitivity analysis. At 1 kHz: primary N=500, H=250, Δf≈2 Hz; sensitivity N=250, H=125, Δf≈4 Hz. Not run because Gate 0 fails.'),
+        ('Hann PSD',
+         'w[n] = 0.5 (1-cos(2 pi n/(N-1))); Pxx[k] = c_k |sum[n] x[n] w[n] exp(-i 2 pi kn/N)|^2 / (fs sum[n] w[n]^2); c_k=1 at DC/Nyquist and 2 at interior positive-frequency bins',
+         'SciPy one-sided density periodogram with detrend=False; unrectified centered window; spectral features use 20–400 Hz; nominal bin spacing fs/N is 4 Hz for N=250 at 1 kHz'),
+        ('RMS',
+         'RMS = sqrt((1/N) sum[n=1..N] x[n]^2)',
+         'Amplitude in stored ADC counts; x is centered within each window'),
+        ('MAV',
+         'MAV = (1/N) sum[n=1..N] abs(x[n])',
+         'Amplitude in stored ADC counts; x is centered within each window'),
+        ('Waveform length per second',
+         'WL/s = (fs/N) sum[n=2..N] abs(x[n]-x[n-1])',
+         'Stored counts per second; x is centered within each window'),
+        ('Corrected waveform length',
+         'WL/s_v2 = sum[n=2..N] abs(x[n]-x[n-1]) / ((N−1)/fs)',
+         'Versioned v2 feature using sample-span duration; not used in the historical result and not silently substituted for WL/s'),
+        ('MDF',
+         'MDF = min f_m such that sum[k:f_k<=f_m] Pxx[k] >= 0.5 sum[k] Pxx[k]',
+         'Median frequency of the Hann periodogram restricted to 20–400 Hz; not specific to fatigue'),
+        ('MNF',
+         'MNF = sum[k] f_k Pxx[k] / sum[k] Pxx[k]',
+         'Mean frequency of the Hann periodogram restricted to 20–400 Hz'),
+        ('Power ratio',
+         'R = sum[k:20<=f_k<60] Pxx[k] / sum[k:60<=f_k<=400] Pxx[k]',
+         'Dimensionless ratio from the unrectified periodogram'),
+        ('Wavelet energies',
+         'E_j = sum[m] c_j[m]^2 / sum[j in {A3,D3,D2,D1}] sum[m] c_j[m]^2',
+         'db4 discrete wavelet transform, level 3, symmetric extension; each relative energy is dimensionless'),
+        ('Candidate torque label',
+         'T_ref = median(T_1,T_2,T_3); MDC95 = 1.96 × sqrt(2) × SEM; fatigue onset candidate if median(T_(r-2:r)) < T_ref − MDC95 for 2 consecutive evaluations',
+         'Candidate only; needs approved torque construct, calibration, matched-angle repetitions, repeatability estimate, synchronization and reviewer approval. Not applied to ZIP data.'),
+        ('Kinematic phase label',
+         'ω(t) = dθ(t)/dt; y_phase = flexion if ω>δ, extension if ω<−δ, transition/abstain if |ω|≤δ',
+         'δ must derive from sensor noise and angle sign convention; requires synchronized, calibrated kinematics. Not applied to ZIP data.'),
+        ('Direct fatigue model',
+         'p_direct = σ(β_0 + βᵀX); σ(z)=1/(1+e^(−z))',
+         'Proposed interpretable baseline. X is the prespecified feature vector; target requires independent approved fatigue labels.'),
+        ('Phase cascade',
+         'p_cascade = σ(a_0 + aᵀX + η_ext q_ext + η_flex q_flex)',
+         'Proposed second stage. q_ext and q_flex are cross-fitted out-of-fold (OOF) phase probabilities during training and model predictions at test time; true test labels are never inputs.'),
+        ('Soft-gated phase experts',
+         'p_expert = q_ext f_ext(X) + q_flex f_flex(X), with q_ext+q_flex=1',
+         'Proposed experts, weighted by predicted phase probabilities; compare on the same participant-held-out folds and fatigue-label support as direct/cascade.'),
+        ('Executed burst-half cascade',
+         'q(X)=B^(−1) Σ_b p_b(burst_half=1|X), B=100; p_proxy=σ(β_0+βᵀX+γq+δ_R q·RMS+δ_M q·MDF+δ_N q·MNF)',
+         'Historical auxiliary experiment: predicts EMG burst halves, not extension/flexion; stage 2 predicts early/late recording proxy, not physiological fatigue.'),
+    ]
+
+
 def export_public_results(frame,public_dir,private_dir):
     public_dir=Path(public_dir);private_dir=Path(private_dir)
     public_dir.mkdir(parents=True,exist_ok=True);private_dir.mkdir(parents=True,exist_ok=True)

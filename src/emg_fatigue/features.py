@@ -7,6 +7,11 @@ AMPLITUDE=['rms','mav','waveform_length_per_s']
 SPECTRAL=['mdf_hz','mnf_hz','power_ratio_low_high']
 WAVELET=['wavelet_A3','wavelet_D3','wavelet_D2','wavelet_D1']
 FEATURE_COLUMNS=AMPLITUDE+SPECTRAL+WAVELET
+FEATURE_SCHEMA_V2='emg_window_features_v2_sample_span'
+FEATURE_COLUMNS_V2=[
+    'rms','mav','waveform_length_per_s_sample_span','mdf_hz','mnf_hz',
+    'power_ratio_low_high',*WAVELET,
+]
 
 
 def window_features(x,fs):
@@ -25,6 +30,41 @@ def window_features(x,fs):
       'mdf_hz':float(freq[min(np.searchsorted(np.cumsum(power),.5*total),len(freq)-1)]),
       'mnf_hz':float(np.sum(freq*power)/total),
       'power_ratio_low_high':float(p[(f>=20)&(f<60)].sum()/high)}
+    result.update(dict(zip(WAVELET,e.tolist())))
+    if not np.isfinite(list(result.values())).all():raise ValueError('nonfinite features')
+    return {k:float(v) for k,v in result.items()}
+
+
+def window_features_v2(x,fs):
+    """Extract the corrected feature schema without changing historical outputs.
+
+    Version 2 uses the measured sample-span duration ``(N - 1) / fs`` for
+    waveform length per second. The v1 feature remains available under its
+    original name and is not silently substituted in saved results.
+    """
+    x=np.asarray(x,dtype=float)
+    if x.ndim!=1 or not np.isfinite(x).all() or len(x)<56:
+        raise ValueError('invalid or short feature window')
+    if not np.isfinite(fs) or fs<=800:
+        raise ValueError('sampling rate must exceed twice the 400 Hz analysis band')
+    x=x-x.mean();energy=float(np.mean(x*x))
+    if energy<=1e-20:raise ValueError('zero window energy')
+    f,p=signal.periodogram(x,fs,window='hann',detrend=False,scaling='density')
+    band=(f>=20)&(f<=400);freq=f[band];power=p[band]
+    total=float(power.sum());high=float(p[(f>=60)&(f<=400)].sum())
+    if total<=1e-20 or high<=1e-20:raise ValueError('insufficient spectral energy')
+    coeffs=pywt.wavedec(x,'db4',mode='symmetric',level=3)
+    e=np.array([np.sum(c*c) for c in coeffs]);e=e/e.sum()
+    result={
+        'rms':np.sqrt(energy),
+        'mav':float(np.mean(np.abs(x))),
+        'waveform_length_per_s_sample_span':float(
+            np.sum(np.abs(np.diff(x)))/((len(x)-1)/fs)
+        ),
+        'mdf_hz':float(freq[min(np.searchsorted(np.cumsum(power),.5*total),len(freq)-1)]),
+        'mnf_hz':float(np.sum(freq*power)/total),
+        'power_ratio_low_high':float(p[(f>=20)&(f<60)].sum()/high),
+    }
     result.update(dict(zip(WAVELET,e.tolist())))
     if not np.isfinite(list(result.values())).all():raise ValueError('nonfinite features')
     return {k:float(v) for k,v in result.items()}

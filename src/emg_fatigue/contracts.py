@@ -47,6 +47,73 @@ class StudyConfig:
         return hashlib.sha256(json.dumps(asdict(self),sort_keys=True).encode()).hexdigest()
 
 
+@dataclass(frozen=True)
+class ReferenceStudyConfig:
+    """Separate, gated protocol for labels from independent biomechanical data."""
+
+    study_id: str
+    primary_window_s: float
+    sensitivity_window_s: float
+    overlap: float
+    window_type: str
+    spectral_taper: str
+    psd_method: str
+    analysis_band_hz: tuple
+    filter_prototype_order: int
+    edge_mask_s: float
+    data_gate: str
+    fatigue_label_definition_id: str
+    fatigue_definition_approved: bool
+    phase_definition_approved: bool
+    participant_ids_verified: bool
+    angle_convention: str | None
+
+    def __post_init__(self):
+        if self.primary_window_s != 0.5 or self.sensitivity_window_s != 0.25:
+            raise ValueError('reference protocol requires 500 ms primary and 250 ms sensitivity windows')
+        if self.overlap != 0.5 or self.window_type != 'fixed_length_sliding':
+            raise ValueError('unsupported reference window protocol')
+        if self.spectral_taper != 'hann' or self.psd_method != 'periodogram':
+            raise ValueError('unsupported reference spectral estimator')
+        if tuple(self.analysis_band_hz) != (20.0, 400.0) or self.filter_prototype_order != 4:
+            raise ValueError('unsupported reference filter specification')
+        if not np.isfinite(self.edge_mask_s) or self.edge_mask_s <= 0:
+            raise ValueError('edge_mask_s must be finite and positive')
+        if self.data_gate not in {'failed', 'passed'}:
+            raise ValueError('data_gate must be failed or passed')
+        if not self.study_id.strip() or not self.fatigue_label_definition_id.strip():
+            raise ValueError('study and label-definition identifiers are required')
+        for value in (
+            self.fatigue_definition_approved,
+            self.phase_definition_approved,
+            self.participant_ids_verified,
+        ):
+            if value is not True and value is not False:
+                raise ValueError('approval and identity states must be boolean')
+
+    def require_training_ready(
+        self,
+        *,
+        fatigue_reference_approved=False,
+        phase_reference_approved=False,
+        participant_ids_verified=False,
+    ):
+        if fatigue_reference_approved is not True:
+            raise ValueError('fatigue reference is missing or unapproved')
+        if phase_reference_approved is not True:
+            raise ValueError('phase reference is missing or unapproved')
+        if participant_ids_verified is not True:
+            raise ValueError('participant grouping is not independently verified')
+        if not self.fatigue_definition_approved:
+            raise ValueError('fatigue label definition approval is absent from this config')
+        if not self.phase_definition_approved:
+            raise ValueError('phase label definition approval is absent from this config')
+        if not self.participant_ids_verified:
+            raise ValueError('participant identity approval is absent from this config')
+        if self.data_gate != 'passed':
+            raise ValueError('G0 data gate has not passed')
+
+
 @dataclass
 class Recording:
     recording_id: str
@@ -69,6 +136,14 @@ def read_config(path):
     if unknown:raise ValueError(f'unknown configuration keys: {sorted(unknown)}')
     if 'band_hz' in data:data['band_hz']=tuple(data['band_hz'])
     return StudyConfig(**data)
+
+
+def read_reference_config(path):
+    data=yaml.safe_load(Path(path).read_text(encoding='utf-8')) or {}
+    unknown=set(data)-{f.name for f in fields(ReferenceStudyConfig)}
+    if unknown:raise ValueError(f'unknown reference configuration keys: {sorted(unknown)}')
+    if 'analysis_band_hz' in data:data['analysis_band_hz']=tuple(data['analysis_band_hz'])
+    return ReferenceStudyConfig(**data)
 
 
 def output_root(value=None):

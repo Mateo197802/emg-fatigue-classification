@@ -2,7 +2,19 @@
 
 La entrega reconstruye una ruta reproducible desde los registros sEMG hasta las predicciones, compara seis procedimientos principales y prueba cinco variantes de una cascada auxiliar. La comparación por grupos no mostró una mejora clara al incorporar el score de fase. Este documento permite localizar la evidencia de cada conclusión sin confundir ventanas, grupos, modelos o referencias de clase.
 
-El artículo completo se entrega en `EMG_Binary_Report.pdf` y `.docx`: 21 páginas y 13 referencias. La presentación vigente tiene 16 diapositivas principales para 600 segundos y 7 anexos. El [mapa de evidencia](MAPA_EVIDENCIA.csv) proporciona las correspondencias exactas. Los registros privados mencionados abajo están dentro del ZIP, bajo las rutas indicadas en el mapa.
+**Actualización de objetivo, 2026-11-09:** una nueva inspección de los archivos disponibles encontró sEMG, bibliografía y tablas de filtros/QC, pero no referencias sincronizadas de torque/fuerza o cinemática. Por ello, las métricas descritas en este informe siguen siendo de la etiqueta temporal temprana/tardía; no son accuracy/F1 de fatiga fisiológica. La especificación del nuevo objetivo está en [referencias de datos necesarias](REFERENCE_DATA_REQUIREMENTS.md) y [protocolo de fatiga con referencias](reference_fatigue_protocol.md). La ventana de 500 ms pertenece al experimento nuevo propuesto; no modifica retrospectivamente el pipeline proxy de 250 ms ni sus resultados congelados.
+
+La nueva búsqueda local quedó registrada en un recibo de auditoría privado. Los hashes del ZIP principal, del ZIP anidado y del RAR coinciden con los manifiestos originales; la inspección recuperó cero archivos con las referencias requeridas.
+
+![Experimento proxy ejecutado](figures/executed_proxy_architecture_es.png)
+
+![Arquitectura propuesta con referencias independientes](figures/reference_fatigue_architecture_es.png)
+
+![Comparación de ventanas](figures/windowing_protocol_es.png)
+
+![Modelos prospectivos para fase y fatiga](figures/reference_models_es.png)
+
+El artículo revisado incluye fórmulas explícitas de filtros, ventanas, características, reglas candidatas de etiqueta y las tres arquitecturas propuestas. Incluye además un diagnóstico privado de una señal real, el periodograma antes/después y la respuesta del filtro al `fs` medido. La presentación revisada mantiene 16 diapositivas principales para 600 segundos y añade 13 anexos de evidencia. El número final de páginas, hashes y archivos se registra en el comprobante de la nueva entrega privada.
 
 ## Corpus y señal
 
@@ -29,6 +41,8 @@ La actividad candidata usa RMS de 50 ms, avance de 25 ms y umbral Otsu por regis
 
 Las diez características son RMS, MAV, longitud de forma de onda por segundo, MDF, MNF, razón de potencia 20–60/60–400 Hz y cuatro energías relativas wavelet db4 A3/D3/D2/D1. Tiempo, identidad, pierna y serie no entran como predictores. [Contrato](protocol.md), [configuración](../configs/study.yaml), [preprocesamiento](../src/emg_fatigue/preprocessing.py), [características](../src/emg_fatigue/features.py).
 
+El informe muestra el prototipo Butterworth análogo, el diseño digital SOS, la ecuación recursiva, la condición del notch, la ventana Hann y la escala de densidad del periodograma unilateral. La longitud de forma de onda corregida v2 usa `(N−1)/fs` y queda versionada aparte; no modifica el resultado histórico. El protocolo prospectivo describe además las ecuaciones de etiquetas cinemáticas y por torque.
+
 ## Metodología y rendimiento principal
 
 La validación externa retiene cada grupo completo una vez. Ambas piernas y todas las series permanecen juntas. Cuatro particiones agrupadas internas seleccionan parámetros usando macro-F1 medio por grupo. Escalador y modelo se ajustan sólo con entrenamiento. Las predicciones OOF y las búsquedas internas quedan guardadas. Los intervalos pareados usan bootstrap de los 15 grupos.
@@ -44,6 +58,8 @@ La validación externa retiene cada grupo completo una vez. Ambas piernas y toda
 
 El selector frente a RMS+MDF presenta diferencia media −0,0032 e IC 95% [−0,0591, +0,0509]. No hay ventaja clara del procedimiento complejo. Elegir retrospectivamente la mejor familia observada produciría una comparación distinta de la prespecificada. [Resultados principales](RESULTS.md), [modelo](MODEL_CARD.md).
 
+Estos son resultados del proxy temprano/tardío y no métricas para fatiga/no fatiga. No se cambió la definición de clase ni se ajustaron parámetros para maximizar Accuracy o macro-F1 frente a una etiqueta no observada.
+
 La matriz OOF del selector es `[[1473,856],[995,2185]]`, con filas de referencia y columnas de predicción. Los promedios por grupo se distinguen de métricas calculadas sobre esta matriz agrupada.
 
 ## Arquitectura auxiliar y relación entre modelos
@@ -58,6 +74,8 @@ flowchart LR
 ```
 
 La primera etapa aprende primera/segunda mitad de ráfagas EMG de 0,5–8 s. Usa RF de 100 árboles, profundidad 3 y mínimo 5 muestras por hoja. La referencia auxiliar contiene 3.337 ventanas, 1.663 primeras y 1.674 segundas mitades, de 996 ráfagas candidatas. La segunda etapa conserva los diez features y añade score y, en la variante principal, score×RMS/MDF/MNF. Sus scores de entrenamiento se obtienen fuera de muestra por grupo, repitiendo el procedimiento dentro de la selección interna.
+
+El protocolo prospectivo compara tres modelos para un estudio con referencias: un baseline directo de fatiga `X → p(fatiga)`; una cascada `X + q_fase(OOF) → p(fatiga)`; y expertos de extensión/flexión combinados por probabilidades de fase. Todas las salidas usarían el mismo objetivo mecánico, pliegues externos y soporte. Esta arquitectura no está entrenada: el ZIP carece de torque/fuerza sincronizados, cinemática sincronizada y clave independiente de participantes.
 
 El RF final principal tiene 300 árboles y es otro ajuste. El selector anidado elige una configuración, no combina votos. El directo suplementario `baseline_10` reproduce `logistic_all`; esta igualdad evita atribuir a la fase diferencias entre comparadores. [Arquitectura detallada](PHASE_EXPERIMENT.md), [registro de funciones](../results/phase_experiment/model_registry.csv), [fuente y protocolo original](../experiments/phase_proxy).
 
@@ -84,7 +102,7 @@ Se publican 12 filas de matrices por procedimiento/objetivo con conteos y propor
 | Identidad del comparador directo | Clases idénticas a `logistic_all`; máxima diferencia de score 5,1×10⁻¹³ |
 | Reconstrucción auxiliar | 9.289 scores reconstruidos idénticos a los originales, diferencia máxima 0 |
 | Conservación del modelo y originales | Hashes del modelo, cuatro insumos originales y entrega anterior |
-| PDF/Word/PPTX y guion | Recibo editorial, 21 páginas, 23 diapositivas y 600 segundos de narración |
+| PDF/Word/PPTX y guiones | Recibo editorial, 29 diapositivas, 600 segundos principales y guiones español/inglés |
 | Integridad completa del ZIP y del código | SHA256SUMS, manifiesto del snapshot Git y verificador portátil |
 | Revisión publicada | Commit y CI exacta registrados en VERIFICACION_FINAL.json |
 

@@ -10,7 +10,7 @@ El proyecto procesa la señal sEMG, compara clasificadores y evalúa una arquite
 2. [Mapa de evidencia](docs/MAPA_EVIDENCIA.csv): conecta cada afirmación con la sección del informe, las diapositivas y los archivos que la respaldan.
 3. [Protocolo](docs/protocol.md) y [resultados principales](docs/RESULTS.md).
 4. [Experimento de fase](docs/PHASE_EXPERIMENT.md), [relación de modelos](results/phase_experiment/model_registry.csv), [matrices](results/phase_experiment/confusion_matrices.csv) y [bibliografía](docs/PHASE_REFERENCES.md).
-5. [Presentación](docs/DEFENSE_STORYBOARD.md): 16 diapositivas principales para 600 segundos y 7 anexos de evidencia.
+5. [Presentación](docs/DEFENSE_STORYBOARD.md): 16 diapositivas principales para 600 segundos y 13 anexos. Incluye señal, preprocesamiento, fórmulas y la arquitectura de referencia propuesta.
 6. [Instalación y reproducción](README.md#installation), [pruebas](tests), [alcance de la verificación](docs/VERIFICATION.md) y [CI de GitHub](https://github.com/Mateo197802/emg-fatigue-classification/actions).
 
 ## Qué contiene cada entrega
@@ -18,7 +18,7 @@ El proyecto procesa la señal sEMG, compara clasificadores y evalúa una arquite
 | Ubicación | Contenido |
 |---|---|
 | Este GitHub | Código, protocolo, resultados agregados, matrices, arquitectura, referencias, pruebas y manifiesto SHA256 |
-| ZIP privado completo | Lo anterior, informe PDF de 21 páginas y Word, presentación de 23 diapositivas en PPTX/PDF, guion, originales, predicciones OOF, búsquedas, modelo y recibos |
+| ZIP privado versionado | Informe PDF/Word con las ecuaciones completas, presentación PPTX/PDF con 16 diapositivas principales y 13 anexos, guiones español/inglés MD/PDF, evidencia privada de señal, originales, OOF, búsquedas, modelo y recibos |
 | `LEEME_PRIMERO.md` en la raíz del ZIP | Acceso directo a los archivos del paquete y comandos para comprobar su integridad |
 
 El ZIP conserva las fuentes originales y distingue los resultados principales del suplemento. El modelo principal de 300 árboles conserva sus pesos. El RF auxiliar de 100 árboles y la logística de la cascada cumplen funciones diferentes. `baseline_10` reproduce `logistic_all`; no constituye otro resultado independiente.
@@ -33,4 +33,4 @@ python codigo/tools/verify_delivery.py --zip 'C:/ruta/EMG_COMPLETO_INTEGRADO_PRI
 
 Junto al ZIP se entregan `COMPROBANTE_PAQUETE.json`, `VERIFICACION_FINAL.json` y `SHA256SUMS_ENTREGA.txt`. Sus hashes comprueban consistencia del contenido. El estado de la CI debe corresponder al commit de `VERIFICACION_FINAL.json`. Los comprobantes distinguen la revisión del informe, la revisión de la presentación y la del código publicado.
 
-Los originales y las predicciones individuales están en el paquete privado. Este repositorio publica evidencia agregada. Las pruebas y hashes acreditan la implementación y la trazabilidad; las etiquetas disponibles conservan el alcance temporal declarado.
+Los originales, la figura derivada de una señal y las predicciones individuales están en el paquete privado. Este repositorio publica evidencia agregada y el código para regenerar los diagramas. Las etiquetas disponibles son temporales; no hay una métrica válida de fatiga/no fatiga fisiológica porque el ZIP no trae una referencia independiente sincronizada.

@@ -39,4 +39,24 @@ Ruling: initial hash generation with pip-tools was replaced by official PyPI rel
 
 Ruling: public model×fold results use whitelist-only opaque fold identifiers with a private persistent salt; source recordings, names, granular OOF and models stay private. This satisfies the results.csv format without copying the private dataset into Git.
 
+## Professor-feedback correction and reference-data audit (2026-11-09)
+
+The historical weak elapsed-time analysis remains unchanged at 250 ms and 50% overlap. It predicts the historical temporal proxy, not independently measured fatigue. The burst-half auxiliary task predicts the first/second half of candidate EMG activity bursts, not verified extension/flexion.
+
+The read-only source audit receipt is `audit_emg_2026-10-28/reference_data_recovery_2026-11-09.json`. It records the main ZIP SHA-256 `2c4f50e5c826b001778eb5b8fa6df0e397c0c4d210f5a257ff6820ab0cece354`, the nested EMG ZIP SHA-256 `0723c36b27a6d5b7258d5f29c26de7898a83261011b8f323ccd42e5c5a5b2776`, and RAR SHA-256 `15b61b870269a95da894d3225cc43e95fb2465eb0ba80107664bbf015f799e75`. The audit found no calibrated time-resolved force/torque, synchronized knee-angle/video, repetition events, MVC/Borg records or independent identity/session key.
+
+A private 160-row source crosswalk was generated at `audit_emg_2026-10-28/reference_source_crosswalk_2026-11-09.csv`; its SHA-256 is `2c108ada3a9fdc1f293ce22b05daa8affabc44cb4b660347431dcf6999fccf09`. It maps 140 ZIP recordings and 20 RAR recordings to source/member hashes, marks identity verification false for every row, and leaves cross-archive links unresolved. No subject identities were inferred by comparing filename codes.
+
+Ruling: Do not freeze an extension/flexion sign or angular-velocity deadband without the actual calibrated kinematic sensor, its sign convention, noise/resolution estimate, and synchronization residual — the archive contains no such measurements, so any fixed direction would be invented — cost if wrong: all phase labels could be reversed or displaced in time.
+
+Ruling: Keep the reference-backed 500 ms/50% windowing configuration distinct from the frozen 250 ms historical proxy; compute sample count, hop and nominal bin spacing from each verified recording rate — the corpus rate is close to 1 kHz but not assumed exact — cost if wrong: coefficient/feature resolution and phase alignment would differ from the stated method.
+
+Ruling: Candidate torque/MDC95/persistence labels are accepted by code only for clearly synthetic test fixtures unless a versioned label definition and written biomechanics approval receipt are supplied — repeatability, matched-angle boundaries and onset semantics cannot be verified from sEMG-only files — cost if wrong: waiting for approval could delay an otherwise valid model, while proceeding without it could label measurement noise as fatigue.
+
+Task 0 update: G0 failed for both physiological fatigue and verified phase. True-label model fitting and associated Accuracy/F1 comparison are therefore unavailable; work continues on label-contract validation, signal/window/feature engineering, plots, formulas, documentation and delivery without producing physiological performance claims.
+
+The 2026-11-09 correction package adds strict reference-label and window contracts with abstention, a private source crosswalk, a separately versioned corrected feature schema, a distinct 500/250 ms reference-window design, formula documentation, and bilingual proxy/target architecture diagrams. These additions do not change the frozen historical predictions or create physiological labels.
+
+Final local checks for this source snapshot: 89 tests passed; `git diff --check HEAD` passed; the public-tree audit scanned 125 tracked paths against the supplied archive and found no restricted artifact types, exact source archive member paths or credential patterns. The branch has not yet been pushed at this ledger revision. PDF export, final private ZIP rebuild and exact-commit CI remain delivery gates.
+
 Final execution: T0–T6 complete for the declared weak-label scope. T7 numerical assets, report/deck generators and private draft are complete; final artifact hashes/visual checks are recorded privately. All 9 sensitivities and 3 ablations completed under the corrected code. Main result: 90 model×fold rows, 33,054 OOF rows, 15 groups and 5,509 labeled windows. Final/first predicted classes match exactly; maximum score difference 4.44e-16. Real complete CSV versus reassembled fragments differs by at most 2.22e-16 in score; 20 separate RAR recordings processed for inference only. G4 physiological evidence, identity reconciliation, channel calibration and contribution attestation remain explicitly unestablished.

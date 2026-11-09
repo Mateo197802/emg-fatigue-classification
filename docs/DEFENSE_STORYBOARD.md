@@ -1,24 +1,40 @@
-# Presentación de la defensa
+# Defensa del análisis sEMG
 
-Revisión solicitada el 28 de octubre de 2026. Se elimina el bloque «Evidencia pendiente» y se reorganiza la exposición en 16 diapositivas principales, con 600 segundos de narración, y siete anexos.
+La narración principal dura 600 segundos en 16 diapositivas. Trece diapositivas de anexo conservan matrices, fórmulas, diagramas y evidencia de señal para preguntas. El objetivo del experimento ejecutado se nombra como clasificación temporal proxy temprano/tardío. No hay accuracy ni F1 medidos frente a fatiga/no fatiga fisiológica.
 
-1. Objetivo e integrantes.
+## Recorrido principal
+
+1. Objetivo, señal y autores: Ethan Guevara; Mateo Gavilanes; Kennedy Rodriguez.
 2. Corpus y denominadores cuantitativos.
-3. Señal registrada y diagnóstico temporal.
+3. Señal almacenada, señal filtrada y control de reloj/adquisición.
 4. Preanálisis descriptivo de RMS, MDF y MNF.
-5. Preprocesamiento.
-6. Ventanas y etiquetas.
-7. Diez características EMG.
-8. Validación por grupos.
-9. Modelos y selección de parámetros.
-10. Rendimiento principal.
-11. Errores y variación entre grupos.
-12. Arquitectura auxiliar de dos etapas.
-13. Variantes y controles.
-14. Rendimiento con la arquitectura auxiliar.
-15. Resultados de cada etapa y matrices de confusión.
-16. Conclusiones.
+5. Preprocesamiento y criterios de calidad.
+6. Construcción de ventanas y etiquetas temporales proxy.
+7. Diez características por ventana.
+8. Validación anidada por grupos.
+9. Familias de modelos y selección interna.
+10. Rendimiento de los modelos sobre las etiquetas proxy.
+11. Matriz de confusión y variabilidad entre grupos.
+12. Arquitectura auxiliar ejecutada: mitades de ráfaga EMG, no extensión/flexión.
+13. Variantes y control aleatorio del experimento auxiliar.
+14. Rendimiento auxiliar sobre el mismo objetivo proxy.
+15. Resultados separados de cada etapa y sus matrices.
+16. Conclusiones, límites de las métricas y requisitos para medir fatiga real.
 
-Los anexos conservan relación entre modelos, sensibilidades, matrices completas y bibliografía. Las tablas, curvas y arquitectura principal son editables. Las curvas muestran señal original o resúmenes de resultados congelados. No se reentrenan modelos ni se seleccionan ejemplos por rendimiento. Las clases siguen siendo temprana/tardía y las etiquetas auxiliares siguen siendo mitades de ráfagas EMG.
+## Anexos de evidencia
 
-`tools/build_defense_inputs.py` prepara entradas privadas a partir del archivo y tablas congeladas. `tools/build_defense_v2.mjs` construye la presentación reorganizada. El paquete privado conserva entradas, notas y comprobantes. GitHub conserva código y resultados agregados, sin señal cruda ni identificadores de participantes.
+17. Relación entre todos los procedimientos, modelos y ajustes.
+18. Sensibilidades y ablaciones.
+19. Conteos OOF de los modelos principales.
+20. Matrices principales normalizadas por fila.
+21. Conteos OOF de las variantes auxiliares.
+22. Matrices auxiliares normalizadas por fila.
+23. Bibliografía sobre movimiento y EMG.
+24. Ventanas históricas de 250 ms frente a la propuesta de 500 ms y su análisis de sensibilidad.
+25. Fórmulas del filtro Butterworth, SOS, notch, ventana y periodograma Hann.
+26. Fórmulas, unidades y razones de las características; distinción entre WL v1 y v2.
+27. Arquitectura propuesta: etiqueta cinemática, etiqueta mecánica, baseline directo, cascada y expertos suaves.
+28. Ecuaciones de etiquetas y de las arquitecturas; límites de fine-tuning y RL.
+29. Señal real, PSD antes/después y respuesta del filtro a la frecuencia efectiva del registro. Esta figura queda solo en el paquete privado.
+
+El artículo, los anexos y los guiones usan la misma terminología y los mismos resultados congelados. La figura de señal se deriva de una grabación continua elegida por QC sin revisar la clase ni el resultado del modelo. El repositorio público contiene el generador, no la señal ni la imagen derivada.
