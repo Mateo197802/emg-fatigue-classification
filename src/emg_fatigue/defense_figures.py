@@ -164,15 +164,23 @@ def plot_confusion_grid_es(
     models: list[str],
     *,
     normalized: bool,
+    columns: int = 3,
 ):
     """Plot pooled OOF matrices with Spanish model and axis labels."""
     _require_columns(frame, {"model", *CONFUSION_COLUMNS}, "confusion data")
     if not models:
         raise ValueError("At least one confusion-matrix model is required")
+    if columns < 1:
+        raise ValueError("columns must be positive")
 
-    columns = 3
     rows = int(np.ceil(len(models) / columns))
-    fig, axes = plt.subplots(rows, columns, figsize=(12, 3.45 * rows), squeeze=False)
+    if columns == 2:
+        figsize = (10, 2.7 * rows)
+        title_size, axis_size, value_size = 15, 11, 15
+    else:
+        figsize = (12, 3.45 * rows)
+        title_size, axis_size, value_size = 12, 9, 11
+    fig, axes = plt.subplots(rows, columns, figsize=figsize, squeeze=False)
     scale_max = 1.0 if normalized else max(
         float(frame.loc[frame["model"].eq(model), CONFUSION_COLUMNS].to_numpy(dtype=float).sum())
         for model in models
@@ -193,27 +201,27 @@ def plot_confusion_grid_es(
             row_totals = matrix.sum(axis=1, keepdims=True)
             matrix = np.divide(matrix, row_totals, out=np.zeros_like(matrix), where=row_totals > 0)
         image = axis.imshow(matrix, cmap="Blues", vmin=0, vmax=(1.0 if normalized else scale_max))
-        axis.set_title(CONFUSION_LABELS_ES.get(model, model), fontsize=12, fontweight="bold", pad=8)
+        axis.set_title(CONFUSION_LABELS_ES.get(model, model), fontsize=title_size, fontweight="bold", pad=8)
         axis.set_xticks([0, 1], labels=["0", "1"])
         axis.set_yticks([0, 1], labels=["0", "1"])
-        axis.set_xlabel("Predicción", fontsize=9)
-        axis.set_ylabel("Referencia", fontsize=9)
-        axis.tick_params(labelsize=9)
+        axis.set_xlabel("Predicción", fontsize=axis_size)
+        axis.set_ylabel("Referencia", fontsize=axis_size)
+        axis.tick_params(labelsize=axis_size)
         threshold = (float(matrix.max()) / 2.0) if matrix.size else 0.0
         for row_index in range(2):
             for column_index in range(2):
                 value = matrix[row_index, column_index]
                 label = f"{value:.2f}" if normalized else f"{int(value):,}"
                 color = "white" if value > threshold else "#182a36"
-                axis.text(column_index, row_index, label, ha="center", va="center", color=color, fontsize=11)
+                axis.text(column_index, row_index, label, ha="center", va="center", color=color, fontsize=value_size)
         for spine in axis.spines.values():
             spine.set_visible(False)
 
     for index in range(len(models), rows * columns):
         axes.flat[index].axis("off")
     kind = "Proporción por fila" if normalized else "Conteos OOF agrupados"
-    fig.suptitle(f"{kind} · clase 0 temprana · clase 1 tardía", fontsize=15, fontweight="bold")
-    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    fig.suptitle(f"{kind} · clase 0 temprana · clase 1 tardía", fontsize=title_size + 2, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.95 if columns == 2 else 0.96))
     return fig
 
 
@@ -245,6 +253,19 @@ def write_spanish_confusion_figures(
     outputs: dict[str, Path] = {}
     for name, (frame, models, normalized) in specs.items():
         figure = plot_confusion_grid_es(frame, models, normalized=normalized)
+        target = output_dir / name
+        figure.savefig(target, dpi=180, bbox_inches="tight", facecolor="white")
+        plt.close(figure)
+        outputs[name] = target
+
+    report_specs = {
+        "primary_confusions_counts_report.png": (primary, primary_models, False),
+        "primary_confusions_normalized_report.png": (primary, primary_models, True),
+        "phase_confusions_counts_report.png": (supplemental, supplemental_models, False),
+        "phase_confusions_normalized_report.png": (supplemental, supplemental_models, True),
+    }
+    for name, (frame, models, normalized) in report_specs.items():
+        figure = plot_confusion_grid_es(frame, models, normalized=normalized, columns=2)
         target = output_dir / name
         figure.savefig(target, dpi=180, bbox_inches="tight", facecolor="white")
         plt.close(figure)

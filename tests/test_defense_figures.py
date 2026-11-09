@@ -145,6 +145,22 @@ def test_normalized_confusion_grid_displays_reference_row_proportions():
     assert [text.get_text() for text in figure.axes[0].texts] == ["0.80", "0.20", "0.25", "0.75"]
 
 
+def test_confusion_grid_supports_two_column_report_layout():
+    from emg_fatigue.defense_figures import plot_confusion_grid_es
+
+    models = ["baseline_10", "phase_score", "phase_conditioned", "phase_only", "random_conditioned"]
+    data = pd.DataFrame([
+        {"model": model, "cm_0_0": 80, "cm_0_1": 20, "cm_1_0": 25, "cm_1_1": 75}
+        for model in models
+    ])
+
+    figure = plot_confusion_grid_es(data, models, normalized=False, columns=2)
+
+    assert len(figure.axes) == 6
+    assert len([axis for axis in figure.axes if axis.axison]) == 5
+    assert figure.get_size_inches()[0] == 10
+
+
 def test_confusion_writer_renders_and_hashes_all_required_procedures(tmp_path):
     from emg_fatigue.defense_figures import write_spanish_confusion_figures
 
