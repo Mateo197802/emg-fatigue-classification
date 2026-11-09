@@ -240,8 +240,12 @@ The legacy proxy keeps its frozen 250 ms configuration so historical results rem
 
 - The active proxy class strings now describe early/late recording position, not non-fatigue/fatigue. Numeric class encoding and the weak elapsed-time target rule are unchanged. Legacy model bundles remain display-compatible through inference-time name translation.
 - The README and data dictionary now state explicitly that the window is an observation and the historical target is a temporal proxy.
-- Focused verification passed: 8 tests covering historical boundary behavior, corrected display vocabulary, legacy-bundle prediction naming, documentation, and rejected-run schema.
-- The new full report/deck/package regeneration remains open. No reference-backed fatigue or verified movement-phase scores are available because G0 is still not passed.
+- The report abstract now says early-versus-late recording-position proxy and explicitly says the target is not physiological fatigue status. The README heading was changed to the same neutral target vocabulary.
+- The time-decile RMS/MDF/MNF trajectories were removed from current report assets and presentation evidence. They were replaced by quantified run-level QC, ADC-count summaries, extreme-repeat flags and 50/60 Hz line-prominence counts. Repetition/phase trajectories remain unavailable without synchronized reviewed markers.
+- A comparison receipt confirms 33,090 processed windows across 30 columns; only `label_name` changed from stage v6 to the corrected vocabulary. Numeric features, numeric labels, window identifiers and the historical evaluation receipt are byte/value consistent, so the old scores remain valid only for their temporal proxy. No model was refit to seek a higher score.
+- The current audited delivery has a 27-page report, a 30-slide deck (16 principal and 14 appendix slides), and Spanish/English scripts of 7/6 pages. Formulas for the filters, windows, Hann periodogram, features, labels and architectures appear in the report and appendix slides. The report and architecture diagrams were rendered and visually inspected.
+- The v5 private package preserves the v4 archive unchanged, carries the reanalysis and pre-analysis receipts, removes the two obsolete time-decile trajectory artifacts from its current assets, and passes its archive, code-manifest and visible-folder verifiers. Exact source commit, CI URL, hashes and test receipt are recorded in `COMPROBANTE_PAQUETE.json` and `MANIFIESTO_EVIDENCIA_FINAL.json`.
+- The final software suite passed 150 tests and the public-tree audit passed. These checks do not supply missing fatigue labels: G0 remains failed, so no true fatigue/no-fatigue model or verified extension/flexion model was fitted and no physiological Accuracy/F1 is available.
 
 ## Corrección adicional solicitada por el docente (2026-11-09)
 
@@ -249,7 +253,7 @@ The legacy proxy keeps its frozen 250 ms configuration so historical results rem
 - **Preanálisis:** se retirarán del informe, la presentación y los guiones las curvas RMS/MDF/MNF por deciles de tiempo. Esa dimensión se solapa con la etiqueta proxy. En su lugar se mostrarán estadísticas de QC del ZIP; las trayectorias por repetición/fase quedarán como no disponibles sin marcadores sincronizados.
 - **Accuracy/F1:** no se perseguirá una puntuación mayor cambiando el proxy, límites, ventanas o pliegues. El incremento solo se evaluará sobre etiquetas independientes y participantes retenidos. Con el ZIP actual, la mejora de Accuracy/F1 de fatiga está bloqueada por G0.
 - **Arquitecturas:** la comparación planeada es directa vs cascada con probabilidades de fase OOF vs expertos por fase con compuerta probabilística, siempre que existan referencias mecánicas y cinemáticas. Fine-tuning requiere una fuente externa compatible; RL no corresponde a clasificación estática sin acciones ni recompensas.
-- **Estado incremental:** vocabulario proxy, preanálisis de QC, cambios a README/diccionario, fuentes del informe/deck/guiones y pruebas están en la rama. Falta regenerar todos los archivos privados, renderizarlos, revisar diagramas/lectura y construir/verificar un ZIP nuevo; el ZIP previo permanece intacto.
+- **Estado de entrega:** vocabulario proxy, preanálisis de QC, README/diccionario, informe, presentación, guiones bilingües y paquete privado v5 fueron regenerados y verificados; la entrega v4 permanece intacta. El modelo fisiológico objetivo sigue pendiente de referencias sincronizadas y aprobadas.
 
 ## Evidence basis for the design
 
