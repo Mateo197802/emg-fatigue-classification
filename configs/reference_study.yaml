@@ -9,6 +9,8 @@ analysis_band_hz: [20.0, 400.0]
 filter_prototype_order: 4
 edge_mask_s: 0.10
 data_gate: failed
+fatigue_data_gate: failed
+phase_data_gate: failed
 fatigue_label_definition_id: candidate_torque_mdc95_persistence_v1
 fatigue_definition_approved: false
 phase_definition_approved: false

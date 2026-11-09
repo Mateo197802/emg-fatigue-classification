@@ -1,6 +1,6 @@
 # EMG Defense Script
 
-16 principal slides. Scheduled talk time: 600 seconds. Thirteen appendix slides for questions.
+16 principal slides. Scheduled talk time: 600 seconds. Fourteen appendix slides for questions.
 
 ## 1. Temporal-proxy classification with sEMG
 
@@ -78,9 +78,9 @@ Source: evaluation.py and inner_search.csv.
 
 Scheduled time: 45 s.
 
-All procedures use the same 5,509 early/late windows and fifteen held-out groups. The nested selector has macro-F1 0.6240 versus 0.6272 for logistic RMS plus MDF. The paired difference is -0.0032, with a 95 percent group-bootstrap interval from -0.0591 to +0.0509. No complex-model gain is demonstrated. These values are not Accuracy or F1 for physiological fatigue.
+All procedures use the same 5,509 early/late windows and fifteen held-out groups. The nested selector has mean Accuracy 0.6628 and macro-F1 0.6240; logistic RMS plus MDF has 0.6535 and 0.6272. The paired Accuracy difference is +0.0093, 95 percent group-bootstrap interval [-0.0373, +0.0546]; the macro-F1 difference is -0.0032, interval [-0.0591, +0.0509]. Both intervals include zero. These are metrics of recording position, not physiological fatigue.
 
-Source: evaluation/metrics_summary.csv and paired_differences.csv.
+Source: evaluation/metrics_summary.csv and paired_differences.csv; accuracy_paired_differences.csv.
 
 ## 11. Main proxy errors
 
@@ -110,15 +110,15 @@ Source: model_registry.csv and phase protocol.
 
 Scheduled time: 40 s.
 
-The direct model reaches 0.6355 macro-F1; the conditioned model reaches 0.6293. Their paired difference is -0.0062, with a 95 percent interval from -0.0232 to +0.0082. Six groups improve, eight decline and one ties. The result does not show an improvement on the temporal proxy and says nothing about true fatigue detection.
+For the temporal proxy, direct logistic reaches Accuracy 0.6752 and macro-F1 0.6355; the conditioned variant reaches 0.6701 and 0.6293. The paired Accuracy difference is -0.0051, 95 percent interval [-0.0222, +0.0095]; the macro-F1 difference is -0.0062, interval [-0.0232, +0.0082]. Both include zero. The result does not show an improvement on the temporal proxy and says nothing about true fatigue detection.
 
-Source: phase_experiment/metrics_summary.csv and paired_differences.csv.
+Source: phase_experiment/metrics_summary.csv, paired_differences.csv and accuracy_paired_differences.csv.
 
 ## 15. Targets for each cascade stage
 
 Scheduled time: 35 s.
 
-The auxiliary confusion matrix evaluates burst-half labels, while the second-stage matrix evaluates early-versus-late recording position. They use different supports. The first matrix is not extension versus flexion, and neither matrix is fatigue versus no fatigue.
+The auxiliary confusion matrix evaluates burst-half labels, while the second-stage matrix evaluates early-versus-late recording position. The auxiliary head has mean group Accuracy 0.5775 ± 0.0783 and macro-F1 0.5420 ± 0.1028. The conditioned second stage has Accuracy 0.6701 ± 0.1022 and macro-F1 0.6293 ± 0.1330 on its own support. The first matrix is not extension versus flexion, and neither is fatigue versus no fatigue.
 
 Source: confusion_matrices.csv and auxiliary_phase_fold_metrics.csv.
 
@@ -194,7 +194,15 @@ The historical analysis uses 250 millisecond windows with 50 percent overlap. A 
 
 Source: Frozen historical configuration and configs/reference_study.yaml.
 
-## 25. Appendix: filter and window equations
+## 25. Appendix: candidate feature formulas and audit
+
+Appendix for questions.
+
+Five candidate features were computed on 9,289 QC-valid active windows without reading labels or fitting a model. Integrated EMG and variance were perfectly rank-correlated with MAV and RMS under fixed duration. This is a descriptive redundancy result, not evidence of predictive value. The candidates were not added to the classifier; independent reference labels are required before testing Accuracy or macro-F1.
+
+Source: docs/CANDIDATE_FEATURE_AUDIT_2026-11-09.md; granular outputs remain private.
+
+## 26. Appendix: filter and window equations
 
 Appendix for questions.
 
@@ -202,7 +210,7 @@ The fourth-order Butterworth analog prototype is transformed to a digital band-p
 
 Source: SciPy signal documentation: https://docs.scipy.org/doc/scipy/reference/signal.html.
 
-## 26. Appendix: feature equations
+## 27. Appendix: feature equations
 
 Appendix for questions.
 
@@ -210,7 +218,7 @@ The ten input features summarize amplitude, spectrum and relative wavelet energy
 
 Source: features.py, feature_schema.json and docs/reference_fatigue_protocol.md.
 
-## 27. Appendix: independent-reference architecture
+## 28. Appendix: independent-reference architecture
 
 Appendix for questions.
 
@@ -218,7 +226,7 @@ Synchronized angle or reviewed video provides extension and flexion supervision.
 
 Source: docs/reference_fatigue_protocol.md.
 
-## 28. Appendix: label and model equations
+## 29. Appendix: label and model equations
 
 Appendix for questions.
 
@@ -226,7 +234,7 @@ Phase labels are derived from angular velocity and an approved deadband. The can
 
 Source: docs/reference_fatigue_protocol.md and historical model registry.
 
-## 29. Appendix: real signal and filter response
+## 30. Appendix: real signal and filter response
 
 Appendix for questions.
 

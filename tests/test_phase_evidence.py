@@ -105,6 +105,25 @@ def test_published_matrices_keep_matched_baseline_and_distinct_targets():
         assert abs(r.norm_1_0+r.norm_1_1-1)<1e-12
 
 
+def test_published_accuracy_contrasts_are_paired_and_do_not_claim_a_gain():
+    root=Path(__file__).resolve().parents[1]/'results/phase_experiment'
+    frame=pd.read_csv(root/'accuracy_paired_differences.csv')
+    assert set(frame.candidate)=={'nested_selector','phase_conditioned'}
+    assert set(frame.metric)=={'accuracy'}
+    assert (frame.n_paired_groups==15).all()
+    assert (frame.bootstrap_replicates==5000).all()
+    assert (frame.ci95_lower<0).all() and (frame.ci95_upper>0).all()
+    assert not {'subject_id','source_member','recording_id'} & set(frame.columns)
+    assert set(frame.baseline)=={'logistic_rms_mdf','baseline_10'}
+
+
+def test_spanish_confusion_figure_labels_are_renderable(tmp_path):
+    m=module('evidence');tables=pd.read_csv(Path(__file__).resolve().parents[1]/'results/phase_experiment/confusion_matrices.csv')
+    output=tmp_path/'matriz_es.png'
+    m.draw_confusions(tables,['baseline_10'],output,'Procedimientos — conteos OOF agrupados',spanish=True)
+    assert output.is_file() and output.stat().st_size>1000
+
+
 def test_evidence_accepts_completed_run_root_or_legacy_wrapper(tmp_path):
     m=module('evidence');direct=tmp_path/'direct';direct.mkdir();(direct/'completion_receipt.json').write_text('{}')
     wrapper=tmp_path/'legacy';(wrapper/'run').mkdir(parents=True);(wrapper/'run/completion_receipt.json').write_text('{}')

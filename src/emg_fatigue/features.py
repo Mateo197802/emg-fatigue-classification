@@ -14,10 +14,21 @@ FEATURE_COLUMNS_V2=[
 ]
 
 
+def _validated_centered_window(x,fs):
+    try:
+        x=np.asarray(x,dtype=float)
+        fs=float(fs)
+    except (TypeError,ValueError,OverflowError) as error:
+        raise ValueError('signal and sampling rate must be numeric') from error
+    if x.ndim!=1 or len(x)<56 or not np.isfinite(x).all():
+        raise ValueError('invalid or short feature window; samples must be finite and one-dimensional')
+    if not np.isfinite(fs) or fs<=800:
+        raise ValueError('sampling rate must be finite and exceed the 400 Hz Nyquist limit')
+    return x-x.mean(),fs
+
+
 def window_features(x,fs):
-    x=np.asarray(x,dtype=float)
-    if x.ndim!=1 or not np.isfinite(x).all() or len(x)<56:raise ValueError('invalid or short feature window')
-    x=x-x.mean();energy=float(np.mean(x*x))
+    x,fs=_validated_centered_window(x,fs);energy=float(np.mean(x*x))
     if energy<=1e-20:raise ValueError('zero window energy')
     f,p=signal.periodogram(x,fs,window='hann',detrend=False,scaling='density')
     band=(f>=20)&(f<=400);freq=f[band];power=p[band]
@@ -42,12 +53,7 @@ def window_features_v2(x,fs):
     waveform length per second. The v1 feature remains available under its
     original name and is not silently substituted in saved results.
     """
-    x=np.asarray(x,dtype=float)
-    if x.ndim!=1 or not np.isfinite(x).all() or len(x)<56:
-        raise ValueError('invalid or short feature window')
-    if not np.isfinite(fs) or fs<=800:
-        raise ValueError('sampling rate must exceed twice the 400 Hz analysis band')
-    x=x-x.mean();energy=float(np.mean(x*x))
+    x,fs=_validated_centered_window(x,fs);energy=float(np.mean(x*x))
     if energy<=1e-20:raise ValueError('zero window energy')
     f,p=signal.periodogram(x,fs,window='hann',detrend=False,scaling='density')
     band=(f>=20)&(f<=400);freq=f[band];power=p[band]

@@ -44,3 +44,29 @@ def test_report_includes_reference_window_and_corrected_feature_formulas():
     assert "not used" in equations["Corrected waveform length"][1].lower()
     assert "OOF" in equations["Phase cascade"][1]
     assert "not extension/flexion" in equations["Executed burst-half cascade"][1]
+
+
+def test_protocol_equation_catalog_imports_without_plotting_or_dataframe_stack():
+    import os
+    import subprocess
+    import sys
+
+    code = r"""
+import builtins, sys
+sys.path.insert(0, 'src')
+original_import = builtins.__import__
+def guarded_import(name, *args, **kwargs):
+    if name.split('.')[0] in {'matplotlib', 'numpy', 'pandas'}:
+        raise ModuleNotFoundError('blocked optional analysis dependency: ' + name)
+    return original_import(name, *args, **kwargs)
+builtins.__import__ = guarded_import
+from emg_fatigue.protocol_equations import report_equation_rows
+assert len(report_equation_rows()) >= 20
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=os.getcwd(),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr

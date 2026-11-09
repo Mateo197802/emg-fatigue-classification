@@ -16,8 +16,15 @@ def line_prominence(x,fs):
 
 
 def filter_run(x,fs,config):
-    x=np.asarray(x,dtype=float)
-    if fs<=2*config.band_hz[1]:raise ValueError('sampling below band requirement')
+    try:
+        x=np.asarray(x,dtype=float)
+        fs=float(fs)
+    except (TypeError,ValueError,OverflowError) as error:
+        raise ValueError('signal and sampling rate must be numeric') from error
+    if x.ndim!=1:raise ValueError('filter input must be one-dimensional')
+    if not np.isfinite(x).all():raise ValueError('filter input must contain only finite samples')
+    if not np.isfinite(fs) or fs<=0:raise ValueError('sampling rate must be finite and positive')
+    if fs<=2*config.band_hz[1]:raise ValueError('sampling rate must exceed the Nyquist limit for the configured band')
     sos=signal.butter(config.filter_order,config.band_hz,btype='bandpass',fs=fs,output='sos')
     pad=3*(2*len(sos)+1)
     edge=max(pad,int(np.ceil(config.edge_s*fs)))

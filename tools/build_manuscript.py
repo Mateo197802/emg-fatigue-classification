@@ -6,7 +6,7 @@ reads no raw recordings. The retained template is never modified.
 import argparse, csv, hashlib, json, platform, subprocess, sys
 from copy import deepcopy
 from pathlib import Path
-from statistics import mean
+from statistics import mean, stdev
 from docx import Document
 from docx.text.paragraph import Paragraph
 from docx.shared import Inches, Pt, RGBColor
@@ -22,7 +22,7 @@ args=parser.parse_args()
 root=Path(args.output_root).resolve();assets=root/'report_assets'
 repo=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(repo/'src'))
-from emg_fatigue.reporting import report_equation_rows
+from emg_fatigue.protocol_equations import report_equation_rows
 def rows(path):
     with Path(path).open(encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
 processing=json.loads((root/'processing_receipt.json').read_text())
@@ -35,7 +35,7 @@ if args.include_phase:
     phase_receipt=json.loads((phase_public/'evidence_receipt.json').read_text())
     for name,digest in phase_receipt['aggregate_hashes'].items():
         if hashlib.sha256((phase_public/name).read_bytes()).hexdigest()!=digest:raise ValueError('phase evidence checksum mismatch: '+name)
-    phase_summary=rows(phase_public/'metrics_summary.csv');phase_conf=rows(phase_public/'confusion_matrices.csv');phase_pairs=rows(phase_public/'paired_differences.csv')
+    phase_summary=rows(phase_public/'metrics_summary.csv');phase_conf=rows(phase_public/'confusion_matrices.csv');phase_pairs=rows(phase_public/'paired_differences.csv');phase_accuracy_pairs=rows(phase_public/'accuracy_paired_differences.csv')
     phase_aux=rows(phase_public/'auxiliary_phase_fold_metrics.csv')
     refs+=json.loads((repo/'references/phase_references.json').read_text(encoding='utf-8'))
     def phase_ms(model,name):
@@ -139,7 +139,7 @@ table(['Field','Value'],[
  ['Report title',title],
  ['Members','Ethan Guevara; Mateo Gavilanes; Kennedy Rodriguez'],
  ['Code repository URL','https://github.com/Mateo197802/emg-fatigue-classification'],
- ['Commit hash of this generated version',commit],['Submission date','28 October 2026']])
+ ['Source commit used for this build',commit],['Revision date','9 November 2026']])
 h('Abstract')
 abstract=(f"Surface electromyography can capture changes associated with muscular fatigue, but a classifier must be evaluated against an explicitly defined reference. "
  f"This study implements a binary early-versus-late temporal approximation of acute quadriceps fatigue in the supplied knee-extension recordings. "
@@ -211,6 +211,16 @@ p('Unless stated otherwise, x[n] is the window-centered filtered signal in store
 feature_specs=[('RMS','Amplitude','RMS','Effective amplitude; effort and electrode placement also affect it'),('MAV','Amplitude','MAV','Mean absolute amplitude'),('Waveform length/s','Amplitude','Waveform length per second','Local absolute change per unit time'),('MDF','Frequency','MDF','Median power frequency; spectral redistribution is not specific to fatigue'),('MNF','Frequency','MNF','Power-weighted mean frequency'),('Low/high ratio','Frequency','Power ratio','Relative 20–60 Hz to 60–400 Hz power'),('A3,D3,D2,D1','Time-frequency','Wavelet energies','db4 level 3 relative energies describe multiscale variation')]
 table(['Feature','Family','Equation','Reason / condition'],[[name,family,equations[eq_name][0],reason+'; '+equations[eq_name][1]] for name,family,eq_name,reason in feature_specs],pattern=7,font_size=8.5)
 p('Historical WL/s divides by N/fs, while the versioned v2 definition divides by the observed sample span (N−1)/fs. V2 preserves the same adjacent-difference numerator and explicitly changes only the duration convention. It is available for controlled sensitivity work; it was not retroactively inserted into the frozen historical results.')
+h('4.2.1  Candidate features reviewed but not added',3)
+p('A separate, target-free redundancy audit computed five candidate descriptors from the same QC-valid active windows. They were not used to fit a classifier. For each window, T=N/fs and x[n] is the centered, filtered signal; spectral probabilities use Hann-periodogram bins in the closed 20–400 Hz band.')
+table(['Candidate feature','Formula used','Units / decision'],[
+ ['Zero crossings per second','C_ZCR/T; C_ZCR=Σ 1[(x[n]≥τx ∧ x[n+1]<−τx) ∨ (x[n]≤−τx ∧ x[n+1]>τx)], τx=0','s⁻¹; candidate only'],
+ ['Slope-sign changes per second','d[n]=x[n+1]−x[n]; C_SSC/T; C_SSC=Σ 1[(d[n]>τd ∧ d[n+1]<−τd) ∨ (d[n]<−τd ∧ d[n+1]>τd)], τd=0','s⁻¹; candidate only'],
+ ['Integrated EMG','Σ|x[n]|/fs','counts·s; redundant with MAV at fixed duration'],
+ ['Population variance','(1/N)Σ(x[n]−x̄)²','counts²; redundant with RMS after centering'],
+ ['Normalized spectral entropy','pₖ=Pxx[k]/Σ_{j∈B}Pxx[j]; −Σ_{k∈B}pₖ ln(pₖ)/ln(K), K=|B|','unitless; descriptive candidate only'],
+],pattern=7,font_size=7.7)
+p('The audit covered 9,289 QC-valid candidate-active windows and used no label or model fit. Spearman correlations were MAV–iEMG 1.000 and RMS–variance 1.000 at both window and group-median levels; adding those pairs would duplicate fixed-duration amplitude information. MNF–entropy was 0.862 across overlapping windows and 0.957 across 15 folder-derived group medians; MDF–zero crossings was 0.740/0.887; wavelet D1–slope changes was 0.840/0.975; and zero crossings–slope changes was 0.736/0.904. These are descriptive correlations, not independent-sample inference or evidence of predictive gain. No candidate was added to the classifier; testing their predictive value requires independent reference labels and nested, training-only feature selection.')
 h('4.3  Feature behaviour across the set',2)
 figure('trajectories.png','Figure 3. Candidate-active feature trajectories by recording fraction. First reduce to recording-bin medians, then group-bin medians; bands show across-group SD. They do not establish force loss.')
 h('4.4  Bilateral analysis',2)
@@ -259,6 +269,9 @@ display_models=['Majority','Logistic RMS + MDF','Logistic all','SVM RBF','Random
 table(['Model','Accuracy','Precision macro','Recall macro','F1 macro','ROC AUC'],[[display]+[ms(m,k) for k in ['accuracy','precision_macro','recall_macro','f1_macro','roc_auc']] for m,display in zip(models,display_models)],pattern=12)
 p(f"The prespecified nested procedure achieved macro-F1 {ms('nested_selector','f1_macro')} (group-bootstrap 95% CI {ci('nested_selector','f1_macro')}). Average precision was {ms('nested_selector','average_precision')}; trapezoidal PR-AUC was {ms('nested_selector','pr_auc_trapezoidal')}. The RMS+MDF baseline achieved {ms('logistic_rms_mdf','f1_macro')}. Family point estimates do not establish a unique superior model, and choosing a winner from these outer estimates would add post-selection optimism.")
 for r in paired:p(f"Paired contrast {r['comparison']}: mean macro-F1 difference {float(r['mean_difference']):+.3f}; 95% group-bootstrap interval {float(r['ci95_lower']):+.3f} to {float(r['ci95_upper']):+.3f}, {r['paired_groups']} matched groups.")
+if args.include_phase:
+    acc_pair=next(r for r in phase_accuracy_pairs if r['candidate']=='nested_selector')
+    p(f"Paired Accuracy difference for nested selector minus RMS+MDF was {float(acc_pair['mean_difference']):+.4f}; 95% group-bootstrap interval [{float(acc_pair['ci95_lower']):+.4f}, {float(acc_pair['ci95_upper']):+.4f}] across {acc_pair['n_paired_groups']} groups. This interval crosses zero. The aggregate calculation and bootstrap settings are in results/phase_experiment/accuracy_paired_differences.csv.")
 h('6.2  Per-class performance of the best model',2)
 p('Here “best model” means the prespecified nested selection procedure, not the family with the largest retrospectively observed point estimate. Class metrics are mean ± SD across held-out groups; support below is the pooled OOF count.')
 table(['Class','Precision','Recall','F1','Support'],[[f'{i} '+('early proxy' if i==0 else 'late proxy'),ms('nested_selector',f'precision_class{i}'),ms('nested_selector',f'recall_class{i}'),ms('nested_selector',f'f1_class{i}'),pooled[f'support_class{i}']] for i in [0,1]],pattern=13)
@@ -277,10 +290,12 @@ if args.include_phase:
     h('6.7  Supplemental phase experiment',2)
     phase_names=['Direct logistic 10','10 features plus phase score','Phase conditioned','Phase score only','Random label control']
     phase_models=['baseline_10','phase_score','phase_conditioned','phase_only','random_conditioned']
-    table(['Procedure','Macro F1 mean and SD','ROC AUC mean and SD'],[[name,phase_ms(model,'f1_macro'),phase_ms(model,'roc_auc')] for model,name in zip(phase_models,phase_names)])
+    table(['Procedure','Accuracy mean and SD','Macro F1 mean and SD','ROC AUC mean and SD'],[[name,phase_ms(model,'accuracy'),phase_ms(model,'f1_macro'),phase_ms(model,'roc_auc')] for model,name in zip(phase_models,phase_names)])
     c=next(r for r in phase_pairs if r['comparison']=='phase_conditioned_minus_baseline_10')
     p(f"The principal phase-conditioned contrast against direct ten-feature logistic regression was {float(c['mean_delta']):+.4f} macro-F1, with a paired group-bootstrap 95% interval [{float(c['ci95_lower']):+.4f}, {float(c['ci95_upper']):+.4f}]. Six groups improved, eight worsened and one tied. The interval crosses zero; there is no clear improvement. The random-label control reached {phase_ms('random_conditioned','f1_macro')}. The direct supplemental baseline reproduces primary logistic_all predictions; it is not the nested selection procedure reported in section 6.1.")
-    p(f"The auxiliary phase head achieved mean macro-F1 {mean(float(r['f1_macro']) for r in phase_aux):.4f} against EMG burst halves, not observed knee movement. No extra classifier or split establishes physiological fatigue. All procedure-specific absolute and row-normalized OOF confusion matrices are included in Appendices E–G.")
+    acc_phase_pair=next(r for r in phase_accuracy_pairs if r['candidate']=='phase_conditioned')
+    p(f"For paired group Accuracy, conditioned minus direct was {float(acc_phase_pair['mean_difference']):+.4f}, with a 95% group-bootstrap interval [{float(acc_phase_pair['ci95_lower']):+.4f}, {float(acc_phase_pair['ci95_upper']):+.4f}]. This interval also crosses zero; neither Accuracy nor macro-F1 shows a clear gain for the auxiliary phase condition.")
+    p(f"The auxiliary phase head achieved Accuracy {mean(float(r['accuracy']) for r in phase_aux):.4f} ± {stdev(float(r['accuracy']) for r in phase_aux):.4f} and macro-F1 {mean(float(r['f1_macro']) for r in phase_aux):.4f} ± {stdev(float(r['f1_macro']) for r in phase_aux):.4f} across held-out groups. Its target is EMG burst halves, not observed knee movement. No extra classifier or split establishes physiological fatigue. All procedure-specific absolute and row-normalized OOF confusion matrices are included in Appendices E–G.")
 h('7.  Discussion')
 h('7.1  Interpretation',2)
 p('The implementation now answers a declared binary operational task with actual inference, but its biological interpretation remains limited by supervision. The exact-time oracle reaches perfect agreement by definition and demonstrates why a high temporal-label score would not itself validate fatigue. The nested model score does not clearly exceed the simple RMS+MDF baseline. The final full-cohort artifact is selected using internal grouped validation, and is not an additional generalization experiment. It should be used as an auditable research prototype for this weak target.')

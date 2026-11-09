@@ -57,7 +57,7 @@ function cm(s,model,x,y,w=555,h=242){
  table(s,['Real / predicha','Clase 0','Clase 1'],[['Clase 0',q.cm_0_0,q.cm_0_1],['Clase 1',q.cm_1_0,q.cm_1_1]],x,y,w,h,[w*.44,w*.28,w*.28],26);
 }
 function ms(q){return q.mean.toFixed(4)+' ± '+q.sd.toFixed(4);}
-const imageNames=['sensitivity.png','ablation.png','signal_preprocessing_evidence.png',...['primary_confusions_counts.png','primary_confusions_normalized.png','phase_confusions_counts.png','phase_confusions_normalized.png'].map(n=>'phase/'+n)];
+const imageNames=['sensitivity_es.png','ablation_es.png','signal_preprocessing_evidence_es.png',...['primary_confusions_counts_es.png','primary_confusions_normalized_es.png','phase_confusions_counts_es.png','phase_confusions_normalized_es.png'].map(n=>'phase/'+n)];
 const images=new Map(await Promise.all(imageNames.map(async n=>[n,new Uint8Array(await fs.readFile(path.join(workspaceDir,'report_assets',n)))])));
 function image(s,n,x,y,w,h){s.images.add({blob:images.get(n),contentType:'image/png',alt:n,fit:'contain',position:{left:x,top:y,width:w,height:h}});}
 
@@ -75,7 +75,7 @@ function image(s,n,x,y,w,h){s.images.add({blob:images.get(n),contentType:'image/
  const c=d.corpus,s=slide('Corpus y análisis cuantitativo',35,
  `El archivo principal contiene 140 CSV y 4.256.257 muestras. Las 138 grabaciones R1 a R5 entran al procesamiento y dos R0 quedan como controles. Hay quince grupos derivados de carpetas. Ambas piernas y todas las series permanecen juntas al validar. El RAR se conserva separado y no agrega dos sujetos verificados. La duración mediana entre timestamps es ${c.duration_median_s.toFixed(1)} segundos y puede incluir huecos.`,
  'inventory.csv y coverage.csv');
- table(s,['Contenido','Cantidad','Uso'],[['Grabaciones fuente','140','ZIP principal'],['Grabaciones R1–R5','138','Análisis formal'],['Controles R0','2','Sin entrenamiento'],['Grupos de registro','15','Validación externa']],56,160,790,335,[350,150,290]);
+ table(s,['Contenido','Cantidad','Uso'],[['Grabaciones fuente','140','ZIP principal'],['Grabaciones R1–R5','138','Análisis formal'],['Controles R0','2','Sin entrenamiento'],['Grupos de registro','15','Pliegues por grupo']],56,160,790,335,[350,150,290]);
  t(s,'4.256.257',890,183,335,72,48,C.blue,true);t(s,'muestras originales',890,267,335,50,25,C.muted);
  t(s,`${c.right_recordings} derecha\n${c.left_recordings} izquierda`,890,365,335,100,28,C.ink,true);
  t(s,`Duración mediana ${c.duration_median_s.toFixed(1)} s por grabación formal`,56,535,1168,48,29,C.ink,true);
@@ -148,7 +148,7 @@ function image(s,n,x,y,w,h){s.images.add({blob:images.get(n),contentType:'image/
  block(s,56,180,335,210,'14 grupos','Entrenamiento externo\nAmbas piernas y series');arrow(s,404,248);
  block(s,474,180,335,210,'4 particiones internas','Escalador y búsqueda\nMacro-F1 por grupo');arrow(s,824,248);
  block(s,896,180,328,210,'1 grupo retenido','Predicción OOF\nSin ajustar parámetros');
- t(s,'15 rondas externas',56,453,1168,58,39,C.blue,true);
+ t(s,'15 pliegues agrupados',56,453,1168,58,39,C.blue,true);
  t(s,'Cada ventana se evalúa una vez por procedimiento. La incertidumbre se calcula por grupo.',56,535,1168,95,28);
 }
 {
@@ -162,13 +162,14 @@ function image(s,n,x,y,w,h){s.images.add({blob:images.get(n),contentType:'image/
  t(s,'El selector elige un modelo. El ajuste final no agrega una estimación OOF.',56,596,1168,56,25,C.blue,true);
 }
 {
+ const acc=d.accuracy_contrasts.primary,f1=d.primary_f1_pair;
  const s=slide('Rendimiento de los modelos para el proxy temporal',45,
- 'Todos usan las mismas 5.509 ventanas con objetivo temprano/tardío, no fatiga/no fatiga. Macro-F1 muestra media y desviación entre quince grupos. AUC es también media por grupo. El selector alcanza 0,6240 frente a 0,6272 del modelo simple. La diferencia es menos 0,0032, con intervalo de menos 0,0591 a más 0,0509. No aparece ventaja clara del procedimiento complejo. Estas métricas no estiman Accuracy o F1 de fatiga fisiológica.',
+ `Todos usan las mismas 5.509 ventanas con objetivo temprano/tardío, no fatiga/no fatiga. Accuracy, macro-F1 y AUC son medias ± desviación entre quince grupos. Para el selector frente a RMS+MDF, Δ Accuracy=${acc.mean_difference.toFixed(4)}, IC 95% [${acc.ci95_lower.toFixed(4)}, ${acc.ci95_upper.toFixed(4)}]; Δ macro-F1=${f1.mean_difference.toFixed(4)}, IC 95% [${f1.ci95_lower.toFixed(4)}, ${f1.ci95_upper.toFixed(4)}]. Ambos intervalos incluyen cero; no hay mejora clara ni métrica de fatiga fisiológica, porque la etiqueta sigue siendo posición temporal.`,
  'evaluation/metrics_summary.csv y paired_differences.csv');
  const n=[['Mayoría','majority'],['Logística RMS + MDF','logistic_rms_mdf'],['Logística 10','logistic_all'],['SVM RBF','svm_rbf'],['Random forest','random_forest'],['Selector anidado','nested_selector']];
- table(s,['Procedimiento','Macro-F1 media ± DE','AUC media'],n.map(([label,id])=>[label,ms(d.primary[id].f1_macro),d.primary[id].roc_auc.mean.toFixed(4)]),56,157,1168,386,[440,438,290],26);
- t(s,'Selector frente a RMS + MDF: Δ −0,0032',56,572,1168,42,28,C.blue,true);
- t(s,'IC 95% [−0,0591, +0,0509]. La complejidad no mostró una mejora clara.',56,620,1168,38,23,C.muted);
+ table(s,['Procedimiento','Accuracy media ± DE','Macro-F1 media ± DE','AUC media'],n.map(([label,id])=>[label,ms(d.primary[id].accuracy),ms(d.primary[id].f1_macro),d.primary[id].roc_auc.mean.toFixed(4)]),56,157,1168,386,[350,300,330,188],21);
+ t(s,`Δ Accuracy ${acc.mean_difference.toFixed(4).replace('.',',')}; Δ Macro-F1 ${f1.mean_difference.toFixed(4).replace('.',',')}`,56,572,1168,42,28,C.blue,true);
+ t(s,`IC 95% Accuracy [${acc.ci95_lower.toFixed(4).replace('.',',')}, ${acc.ci95_upper.toFixed(4).replace('.',',')}]; Macro-F1 [${f1.ci95_lower.toFixed(4).replace('.',',')}, ${f1.ci95_upper.toFixed(4).replace('.',',')}]. Ambos cruzan cero.`,56,620,1168,38,21,C.muted);
 }
 {
  const s=slide('Errores del procedimiento principal',35,
@@ -203,22 +204,23 @@ function image(s,n,x,y,w,h){s.images.add({blob:images.get(n),contentType:'image/
  t(s,'Referencia auxiliar: 3.337 ventanas de 996 ráfagas EMG candidatas.',56,615,1168,39,23,C.muted);
 }
 {
+ const acc=d.accuracy_contrasts.phase,f1=d.paired.find(r=>r.comparison==='phase_conditioned_minus_baseline_10');
  const s=slide('Rendimiento auxiliar sobre el mismo proxy temporal',40,
- 'El directo obtuvo 0,6355 de macro-F1, agregar score 0,6326, condicionar 0,6293, sólo score 0,6184 y el aleatorio 0,6356. El contraste principal condicionado menos directo es menos 0,0062 y su intervalo de menos 0,0232 a más 0,0082 cruza cero. Seis grupos mejoran, ocho empeoran y uno empata. Esta prueba no usó extensión/flexión observadas ni etiqueta fisiológica de fatiga; solo indica que la fase candidata no mejoró la clasificación temporal en este experimento.',
+ `Para el proxy temporal, el directo alcanza Accuracy 0,6752 y macro-F1 0,6355; el condicionado, Accuracy 0,6701 y macro-F1 0,6293. El contraste pareado condicionado−directo es Δ Accuracy=${acc.mean_difference.toFixed(4)} (IC 95% [${acc.ci95_lower.toFixed(4)}, ${acc.ci95_upper.toFixed(4)}]) y Δ macro-F1=${f1.mean_delta.toFixed(4)} (IC 95% [${f1.ci95_lower.toFixed(4)}, ${f1.ci95_upper.toFixed(4)}]). Ambos intervalos incluyen cero. Esta prueba no usó extensión/flexión observadas ni etiqueta fisiológica de fatiga.`,
  'phase_experiment/metrics_summary.csv y paired_differences.csv');
  const n=[['Directo 10','baseline_10'],['EMG + score','phase_score'],['Condicionado por fase','phase_conditioned'],['Sólo score','phase_only'],['Control aleatorio','random_conditioned']];
- table(s,['Variante','Macro-F1 media ± DE','AUC media'],n.map(([name,id])=>[name,ms(d.phase[id].f1_macro),d.phase[id].roc_auc.mean.toFixed(4)]),56,155,1168,342,[440,438,290],26);
- t(s,'Δ condicionado − directo = −0,0062',56,535,1168,52,33,C.blue,true);
- t(s,'IC 95% [−0,0232, +0,0082]     6 mejoran, 8 empeoran y 1 empata',56,603,1168,51,24);
+ table(s,['Variante','Accuracy media ± DE','Macro-F1 media ± DE','AUC media'],n.map(([name,id])=>[name,ms(d.phase[id].accuracy),ms(d.phase[id].f1_macro),d.phase[id].roc_auc.mean.toFixed(4)]),56,155,1168,342,[350,300,330,188],21);
+ t(s,`Δ Accuracy ${acc.mean_difference.toFixed(4).replace('.',',')}; Δ Macro-F1 ${f1.mean_delta.toFixed(4).replace('.',',')}`,56,535,1168,52,30,C.blue,true);
+ t(s,`IC 95% Accuracy [${acc.ci95_lower.toFixed(4).replace('.',',')}, ${acc.ci95_upper.toFixed(4).replace('.',',')}]; Macro-F1 [${f1.ci95_lower.toFixed(4).replace('.',',')}, ${f1.ci95_upper.toFixed(4).replace('.',',')}]. Ambos cruzan cero.`,56,603,1168,51,20);
 }
 {
  const s=slide('Resultados de cada etapa de la cascada',35,
- 'Las matrices tienen objetivos y soportes distintos. La auxiliar usa 1.663 primeras mitades y 1.674 segundas, con macro-F1 0,5420 y AUC 0,6212. La logística condicionada usa las 5.509 ventanas tempranas y tardías. Acierta 1.538 tempranas y 2.141 tardías. No se comparan los totales ni se interpreta la primera matriz como extensión y flexión observadas. Tampoco es una matriz de fatiga/no fatiga.',
+ 'Las matrices tienen objetivos y soportes distintos. La auxiliar usa 1.663 primeras mitades y 1.674 segundas: Accuracy media por grupo 0,5775 ± 0,0783, macro-F1 0,5420 ± 0,1028 y AUC 0,6212 ± 0,1288. La logística condicionada usa las 5.509 ventanas tempranas y tardías: Accuracy 0,6701 ± 0,1022 y macro-F1 0,6293 ± 0,1330. No se comparan los totales ni se interpreta la primera matriz como extensión y flexión observadas. Ninguna es una matriz de fatiga/no fatiga.',
  'confusion_matrices.csv y auxiliary_phase_fold_metrics.csv');
  t(s,'Etapa 1: mitad de ráfaga EMG',56,160,555,70,29,C.blue,true);cm(s,'auxiliary_phase_head',56,254);
- t(s,'0 = primera mitad, 1 = segunda mitad\nMacro-F1 0,5420 ± 0,1028\nAUC 0,6212 ± 0,1288',56,535,555,110,24);
+ t(s,`0 = primera mitad, 1 = segunda mitad\nAccuracy por grupo ${ms(d.auxiliary.accuracy)}\nMacro-F1 0,5420 ± 0,1028\nAUC 0,6212 ± 0,1288`,56,528,555,125,21);
  t(s,'Etapa 2: clase temporal',671,160,555,70,29,C.blue,true);cm(s,'phase_conditioned',671,254);
- t(s,'0 = temprano, 1 = tardío\nMacro-F1 0,6293 ± 0,1330\nAUC 0,8431 ± 0,0741',671,535,555,110,24);
+ t(s,'0 = temprano, 1 = tardío\nAccuracy 0,6701 ± 0,1022\nMacro-F1 0,6293 ± 0,1330\nAUC 0,8431 ± 0,0741',671,528,555,125,21);
 }
 {
  const s=slide('Conclusiones',35,
@@ -244,14 +246,14 @@ function image(s,n,x,y,w,h){s.images.add({blob:images.get(n),contentType:'image/
  const s=slide('Anexo: Sensibilidades y ablaciones',0,
  'Nueve sensibilidades prespecificadas y tres ablaciones. Las primeras usan logística fija RMS y MDF, con soportes distintos según exclusiones. Las ablaciones usan selección interna. Se conservan los resultados originales sin seleccionar el escenario más favorable.',
  'sensitivity_summary.csv y ablation_summary.csv');
- image(s,'sensitivity.png',35,165,650,440);image(s,'ablation.png',700,190,545,355);
+ image(s,'sensitivity_es.png',35,165,650,440);image(s,'ablation_es.png',700,190,545,355);
  t(s,'El soporte cambia entre sensibilidades. Los resultados principales permanecen fijos.',56,616,1168,40,22,C.muted);
 }
 for(const [title,name,caption] of [
- ['Anexo: Matrices de los modelos principales','primary_confusions_counts.png','Conteos OOF. Cada procedimiento usa 5.509 ventanas.'],
- ['Anexo: Confusiones principales normalizadas','primary_confusions_normalized.png','Proporciones por fila. Clase 0 temprana, clase 1 tardía.'],
- ['Anexo: Matrices de las variantes auxiliares','phase_confusions_counts.png','Mismo soporte de 5.509 ventanas. Directo reproduce logística 10.'],
- ['Anexo: Confusiones auxiliares normalizadas','phase_confusions_normalized.png','Proporciones por fila. Matrices de la segunda etapa.']]){
+ ['Anexo: Matrices de los modelos principales','primary_confusions_counts_es.png','Conteos OOF. Cada procedimiento usa 5.509 ventanas.'],
+ ['Anexo: Confusiones principales normalizadas','primary_confusions_normalized_es.png','Proporciones por fila. Clase 0 temprana, clase 1 tardía.'],
+ ['Anexo: Matrices de las variantes auxiliares','phase_confusions_counts_es.png','Mismo soporte de 5.509 ventanas. Directo reproduce logística 10.'],
+ ['Anexo: Confusiones auxiliares normalizadas','phase_confusions_normalized_es.png','Proporciones por fila. Matrices de la segunda etapa.']]){
  const s=slide(title,0,caption+' La incertidumbre principal se calcula entre grupos.',
  'results/phase_experiment/confusion_matrices.csv');
  image(s,'phase/'+name,56,145,1168,465);t(s,caption,56,622,1168,35,22,C.muted);
@@ -272,21 +274,40 @@ for(const [title,name,caption] of [
  'Configuración histórica congelada y configs/reference_study.yaml');
  const x0=330,scale=.82;
  const rows=[
-   {y:165,label:'Proxy histórico ejecutado',length:250,hop:125,fill:'#f9dede',param:'250 ms · 50% solape'},
-   {y:305,label:'Fatiga con referencias · primario propuesto',length:500,hop:250,fill:'#e5f2e8',param:'500 ms · 50% solape'},
-   {y:445,label:'Fatiga con referencias · sensibilidad',length:250,hop:125,fill:'#edf0f4',param:'250 ms · 50% solape'},
+   {y:155,label:'Proxy histórico ejecutado',length:250,hop:125,fill:'#f9dede'},
+   {y:285,label:'Fatiga con referencias · primario propuesto',length:500,hop:250,fill:'#e5f2e8'},
+   {y:415,label:'Fatiga con referencias · sensibilidad',length:250,hop:125,fill:'#edf0f4'},
  ];
  for(const row of rows){
-  t(s,row.label,56,row.y-8,260,52,22,C.ink,true);t(s,row.param,850,row.y-7,360,45,20,C.muted,true);
-  for(let start=0;start+row.length<=1000;start+=row.hop){
-   const sh=s.shapes.add({geometry:'rect',position:{left:x0+start*scale,top:row.y+44,width:row.length*scale,height:48},fill:row.fill,line:{fill:C.blue,width:1.5}});
-  }
+  const starts=[];for(let start=0;start+row.length<=1000;start+=row.hop)starts.push(start);
+  t(s,row.label,56,row.y-8,520,34,22,C.ink,true);
+  t(s,`W=${row.length} ms · H=${row.hop} ms · ${starts.length} ventanas completas`,750,row.y-7,475,35,18,C.muted,true);
+  starts.forEach((start,index)=>{
+   const left=x0+start*scale,top=row.y+40+(index%2?18:0),width=row.length*scale;
+   s.shapes.add({geometry:'rect',position:{left,top,width,height:34},fill:row.fill,line:{fill:C.blue,width:1.5}});
+   t(s,`W${index+1}`,left,top+2,width,28,14,C.ink,true);
+  });
  }
-  r(s,x0,545,820,2,C.muted);for(let i=0;i<=4;i++){const xx=x0+i*205;r(s,xx,538,2,16,C.muted);t(s,String(i*250),xx-23,558,55,24,15,C.muted);}
-  t(s,'Tiempo (ms)',675,584,160,24,16,C.muted,true);
-  t(s,'N = round(T × fs)     H = round(N × (1 − ρ))     Δf = fs/N',56,612,1168,29,20,C.blue,true);
-  t(s,'A 1 kHz: 500 ms → N=500, H=250, Δf≈2 Hz; 250 ms → N=250, H=125, Δf≈4 Hz.',56,645,1168,26,16,C.muted);
+  r(s,x0,540,820,2,C.muted);for(let i=0;i<=4;i++){const xx=x0+i*205;r(s,xx,533,2,16,C.muted);t(s,String(i*250),xx-23,551,55,24,15,C.muted);}
+  t(s,'Tiempo (ms)',675,578,160,24,16,C.muted,true);
+  t(s,'N = round(T × fs)     H = round(N × (1 − ρ))     Δf = fs/N',56,610,1168,29,20,C.blue,true);
+  t(s,'A 1 kHz: 500 ms → N=500, H=250, Δf≈2 Hz; 250 ms → N=250, H=125, Δf≈4 Hz.',56,642,1168,26,16,C.muted);
 }
+{
+ const s=slide('Anexo: Características candidatas y auditoría',0,
+ 'Se calcularon cinco características candidatas en ventanas activas válidas sin consultar etiquetas ni ajustar un modelo. Las fórmulas se muestran para dejar trazable qué se evaluó. iEMG y varianza fueron redundantes con MAV y RMS bajo duración fija. Las correlaciones se describen como auditoría exploratoria: las ventanas se solapan, los 15 grupos vienen de carpetas y la identidad no está verificada. Ninguna característica se agregó a los clasificadores, y no se puede atribuir mejora de Accuracy o F1 sin referencias independientes de fatiga.',
+ 'docs/CANDIDATE_FEATURE_AUDIT_2026-11-09.md; salida granular privada');
+ t(s,'Para una ventana centrada x[n]: T=N/fs; I es el indicador; τx=τd=0 en esta auditoría.',56,112,1168,24,15,C.muted);
+ table(s,['Candidata','Fórmula implementada','Unidad / decisión'],[
+  ['Cruces por cero/s','C_ZCR/T\nC_ZCR=Σ I{(x[n]≥τx ∧ x[n+1]<−τx) ∨ (x[n]≤−τx ∧ x[n+1]>τx)}','s⁻¹ · exploratoria'],
+  ['Cambios de pendiente/s','d[n]=x[n+1]−x[n]; C_SSC/T\nC_SSC=Σ I{(d[n]>τd ∧ d[n+1]<−τd) ∨ (d[n]<−τd ∧ d[n+1]>τd)}','s⁻¹ · exploratoria'],
+  ['iEMG','Σ_n |x[n]| / fs','cuentas·s · redundante con MAV'],
+  ['Varianza poblacional','Σ_n (x[n]−x̄)² / N','cuentas² · redundante con RMS'],
+  ['Entropía espectral normalizada','p[k]=Pxx[k]/Σ_{j∈B}Pxx[j]\nH_norm=−Σ_{k∈B}p[k] ln(p[k]) / ln(K)','adimensional · banda 20–400 Hz'],
+ ],56,143,1168,412,[225,680,263],16);
+ t(s,'Auditoría descriptiva: 9.289 ventanas QC válidas; MAV–iEMG ρ=1,000 y RMS–varianza ρ=1,000.',56,574,1168,36,18,C.blue,true);
+ t(s,'Sin etiquetas ni entrenamiento. Las correlaciones entre ventanas solapadas no son evidencia predictiva ni inferencia independiente.',56,616,1168,56,18,C.muted);
+  }
 {
  const s=slide('Anexo: Filtros y ecuaciones de ventana',0,
  'El pasa banda digital se diseña por separado para cada frecuencia de muestreo verificada. El prototipo Butterworth de orden cuatro se transforma en un pasa banda digital de orden ocho y se implementa en secciones de segundo orden. La forma recursiva muestra los coeficientes y el filtrado hacia adelante y atrás. Notch es solo una sensibilidad activada si el diagnóstico PSD muestra interferencia de red prominente; no forma parte del procesamiento principal. Las fórmulas del periodograma corresponden a la ventana Hann y al estimador unilateral de densidad que usa scipy.signal.periodogram, no a Welch. Las ventanas se extraen sin cruzar huecos o transiciones de referencia.',
@@ -305,7 +326,7 @@ for(const [title,name,caption] of [
  const s=slide('Anexo: Características y fórmulas',0,
  'El vector X contiene diez variables calculadas por ventana. RMS y MAV resumen amplitud; longitud de onda resume cambio local; MDF, MNF y la razón de bandas resumen distribución espectral; cuatro coeficientes db4 dan energía relativa por escala. Todos los valores se calculan sobre la señal centrada, filtrada y expresada en cuentas del convertidor. Las amplitudes no son milivoltios calibrados. El análisis histórico usa longitud de onda dividida por N sobre fs; la versión corregida usa el lapso entre primera y última muestra. Esta segunda versión tiene nombre de esquema separado y no cambia resultados congelados.',
  'features.py, feature_schema.json y docs/reference_fatigue_protocol.md');
- table(s,['Feature','Fórmula','Unidades / condición'],[
+ table(s,['Característica','Fórmula','Unidades / condición'],[
   ['RMS','√[(1/N)Σₙx[n]²]','Cuentas ADC; amplitud eficaz.'],
   ['MAV','(1/N)Σₙ|x[n]|','Cuentas ADC; amplitud absoluta media.'],
   ['WL/s histórico v1','(fs/N)Σₙ₌₁ᴺ⁻¹|x[n]−x[n−1]|','Cuentas ADC/s; divisor histórico N/fs.'],
@@ -326,14 +347,14 @@ for(const [title,name,caption] of [
  processBox(s,1060,143,164,84,'y_fatiga','Definición aprobada','#e5f2e8',20,16);
  arrow(s,344,158);arrow(s,1025,158);
  processBox(s,56,290,260,98,'X por ventana','Las mismas 10 features','#dceaf7',21,18);
- processBox(s,390,290,280,98,'Modelo de fase','X → q_ext, q_flex','#fff0d8',21,19);
+ processBox(s,390,290,280,98,'Modelo de fase','X → q_ext, q_flex\nEtiqueta: Y_fase','#fff0d8',21,17);
  processBox(s,750,290,300,98,'Probabilidades OOF','Para etapa 2 al entrenar;\npredichas en prueba','#edf0f4',21,17);
- arrow(s,325,312);arrow(s,680,312);t(s,'y_fase supervisa',410,260,220,24,16,C.green,true);
+ arrow(s,325,312);arrow(s,680,312);
  processBox(s,56,455,350,112,'Directo','X → p(fatiga)','#fff0d8',23,20);
  processBox(s,465,455,350,112,'Cascada','X + q_fase(OOF) → p(fatiga)','#fff0d8',23,18);
  processBox(s,874,455,350,112,'Expertos por fase','q_ext·f_ext(X) + q_flex·f_flex(X)','#fff0d8',23,18);
- t(s,'Y_FATIGA DE REFERENCIA SUPERVISA LAS TRES CABEZAS',56,410,1168,34,18,C.green,true);
- t(s,'X alimenta las tres cabezas; las probabilidades de fase entran a la cascada y a los expertos.',56,578,1168,28,17,C.orange,true);
+ t(s,'Y_FATIGA SUPERVISA LOS TRES MODELOS DE FATIGA',56,410,1168,34,18,C.green,true);
+ t(s,'X alimenta los tres modelos de fatiga; las probabilidades de fase entran a la cascada y a los expertos.',56,578,1168,28,17,C.orange,true);
  t(s,'Evaluar en los mismos pliegues: Accuracy, macro-F1, calibración y matrices.',56,610,1168,30,17,C.ink,true);
  t(s,'Sin referencias sincronizadas, no hay modelo ni métricas de fatiga.',56,646,1168,24,16,C.red,true);
 }
@@ -355,10 +376,10 @@ for(const [title,name,caption] of [
  const s=slide('Anexo: Señal real y respuesta del filtro',0,
  'La figura procede de un intervalo de un segundo elegido por la primera ventana continua válida según control de calidad, sin mirar las etiquetas ni el resultado de ningún modelo. Se muestran cuentas ADC originales centradas, salida del mismo filtro SOS, periodogramas Hann antes y después, y respuesta digital exacta para la frecuencia de muestreo registrada. La tasa efectiva fue prácticamente mil hercios. La imagen es evidencia de procesamiento, no de rendimiento fisiológico ni de una clase de fatiga.',
  'signal_preprocessing_evidence.receipt.json; figura agregada privada sin identificador de registro');
- image(s,'signal_preprocessing_evidence.png',56,138,720,520);
+ image(s,'signal_preprocessing_evidence_es.png',56,138,720,455);
  t(s,'≈1.000 Hz\n\n20–400 Hz\n\nOrden prototipo 4\nOrden digital 8\n\n100 ms enmascarados por borde',822,174,360,300,27,C.blue,true);
  t(s,'Espectro Hann de un solo intervalo; el método ejecutado es periodograma, no Welch. Las cuentas ADC no son una amplitud física calibrada.',822,490,360,132,20,C.muted);
- t(s,'Ilustración privada sin etiquetas de fatiga o movimiento.',56,641,1168,33,18,C.red,true);
+ t(s,'Ilustración privada; no contiene etiquetas fisiológicas de fatiga o fase.',56,610,720,34,17,C.red,true);
 }
 const englishScript=[
  ['Temporal-proxy classification with sEMG','This study classifies an early-versus-late proxy created from each recording’s position in time. The ZIP does not contain independent measurements to claim true muscle-fatigue detection. I will describe the corpus, signal, pre-analysis, preprocessing, models, and the auxiliary experiment, separating completed results from the proposed design.','Integrative biomechanics project'],
@@ -370,12 +391,12 @@ const englishScript=[
  ['Ten features per window','The input contains three amplitude features, three spectral features and four relative db4 wavelet energies. The two-stage proxy experiment and direct comparator use the same ten original features. Time, file identity, side and series are excluded. The scaler is learned only from training folds, and no MVC normalization is claimed.','features.py and feature_schema.json'],
  ['Grouped validation method','Each outer round holds out one entire recording-derived group. The other groups are used for grouped inner model selection. Scaling and fitting use training data only. Each eligible window receives an out-of-fold prediction. Uncertainty is summarized across groups rather than treating overlapping windows as independent subjects.','evaluation.py, splits.json and evaluation_receipt.json'],
  ['Models and parameter selection','The majority model is a trivial reference. Logistic regression on RMS and MDF is the simple baseline. Full logistic regression, an RBF support-vector machine and a random forest test more flexible mappings. Nested selection chooses a family inside grouped validation; it does not average model votes.','evaluation.py and inner_search.csv'],
- ['Performance on the temporal proxy','All procedures use the same 5,509 early/late windows and fifteen held-out groups. The nested selector has macro-F1 0.6240 versus 0.6272 for logistic RMS plus MDF. The paired difference is -0.0032, with a 95 percent group-bootstrap interval from -0.0591 to +0.0509. No complex-model gain is demonstrated. These values are not Accuracy or F1 for physiological fatigue.','evaluation/metrics_summary.csv and paired_differences.csv'],
+ ['Performance on the temporal proxy','All procedures use the same 5,509 early/late windows and fifteen held-out groups. The nested selector has mean Accuracy 0.6628 and macro-F1 0.6240; logistic RMS plus MDF has 0.6535 and 0.6272. The paired Accuracy difference is +0.0093, 95 percent group-bootstrap interval [-0.0373, +0.0546]; the macro-F1 difference is -0.0032, interval [-0.0591, +0.0509]. Both intervals include zero. These are metrics of recording position, not physiological fatigue.','evaluation/metrics_summary.csv and paired_differences.csv; accuracy_paired_differences.csv'],
  ['Main proxy errors','The pooled confusion matrix shows errors for the early and late temporal classes. Group-level macro-F1 varies substantially, so pooled counts do not replace across-group uncertainty. Without independent references, these errors cannot be assigned a physiological cause or interpreted as fatigue mistakes.','evaluation/oof_predictions.parquet and evaluation/results.csv'],
  ['Auxiliary EMG cascade','The first stage is a random forest that classifies first versus second halves of candidate EMG bursts. Its score enters a logistic second stage together with the original ten features and selected interactions. The auxiliary label is an EMG burst half, not observed knee extension or flexion.','phase_spike.py and the frozen exploratory protocol'],
  ['Auxiliary experiment design','The variants use identical windows, temporal labels, scaling and held-out groups. We compare the direct ten-feature logistic model, EMG plus score, conditioned interactions, score only and a random-label control. The auxiliary head was fit on 3,337 windows from 996 candidate bursts.','model_registry.csv and phase protocol'],
- ['Auxiliary performance on the same proxy','The direct model reaches 0.6355 macro-F1; the conditioned model reaches 0.6293. Their paired difference is -0.0062, with a 95 percent interval from -0.0232 to +0.0082. Six groups improve, eight decline and one ties. The result does not show an improvement on the temporal proxy and says nothing about true fatigue detection.','phase_experiment/metrics_summary.csv and paired_differences.csv'],
- ['Targets for each cascade stage','The auxiliary confusion matrix evaluates burst-half labels, while the second-stage matrix evaluates early-versus-late recording position. They use different supports. The first matrix is not extension versus flexion, and neither matrix is fatigue versus no fatigue.','confusion_matrices.csv and auxiliary_phase_fold_metrics.csv'],
+ ['Auxiliary performance on the same proxy','For the temporal proxy, direct logistic reaches Accuracy 0.6752 and macro-F1 0.6355; the conditioned variant reaches 0.6701 and 0.6293. The paired Accuracy difference is -0.0051, 95 percent interval [-0.0222, +0.0095]; the macro-F1 difference is -0.0062, interval [-0.0232, +0.0082]. Both include zero. The result does not show an improvement on the temporal proxy and says nothing about true fatigue detection.','phase_experiment/metrics_summary.csv, paired_differences.csv and accuracy_paired_differences.csv'],
+ ['Targets for each cascade stage','The auxiliary confusion matrix evaluates burst-half labels, while the second-stage matrix evaluates early-versus-late recording position. The auxiliary head has mean group Accuracy 0.5775 ± 0.0783 and macro-F1 0.5420 ± 0.1028. The conditioned second stage has Accuracy 0.6701 ± 0.1022 and macro-F1 0.6293 ± 0.1330 on its own support. The first matrix is not extension versus flexion, and neither is fatigue versus no fatigue.','confusion_matrices.csv and auxiliary_phase_fold_metrics.csv'],
  ['Conclusions','The executed experiment predicts a temporal proxy, not muscular fatigue versus no fatigue. The nested selector does not clearly improve on RMS plus MDF; the burst-half score also fails to improve the direct proxy model. This ZIP cannot produce valid physiological fatigue Accuracy or macro-F1. A future evaluation needs synchronized calibrated force or torque; phase supervision needs synchronized kinematics.','Primary evaluation and auxiliary experiment'],
  ['Appendix: relationships among the models','The project includes six principal procedures, five supplemental variants, an auxiliary head and a separate full-cohort fitted artifact. The matched ten-feature logistic baseline is distinct from the nested selection procedure. These roles should not be counted as independent evidence or independent cohorts.','model_registry.csv'],
  ['Appendix: sensitivities and ablations','Prespecified sensitivities and feature-family ablations test how proxy results change under alternate analysis choices. Some sensitivities use different retained windows. We report these scenarios as sensitivity checks and do not select the most favorable one as the headline result.','sensitivity_summary.csv and ablation_summary.csv'],
@@ -385,6 +406,7 @@ const englishScript=[
  ['Appendix: normalized auxiliary matrices','These row-normalized matrices show error proportions for each supplemental procedure. The first-stage head predicts EMG burst halves, not knee movement phase.','Normalized supplemental confusion matrices'],
  ['Appendix: references for movement phase','The cited literature motivates measuring movement phase and controlling kinematics when interpreting EMG. Those studies do not validate our burst-half labels or demonstrate improved fatigue prediction from this architecture.','docs/PHASE_REFERENCES.md'],
  ['Appendix: window lengths and overlap','The historical analysis uses 250 millisecond windows with 50 percent overlap. A separate study with independent references would use 500 milliseconds as its primary window and 250 milliseconds as a sensitivity analysis. At one kilohertz these yield nominal bin spacings of two and four hertz. Longer windows improve nominal frequency spacing; overlap increases temporal sampling but creates dependent observations.','Frozen historical configuration and configs/reference_study.yaml'],
+ ['Appendix: candidate feature formulas and audit','Five candidate features were computed on 9,289 QC-valid active windows without reading labels or fitting a model. Integrated EMG and variance were perfectly rank-correlated with MAV and RMS under fixed duration. This is a descriptive redundancy result, not evidence of predictive value. The candidates were not added to the classifier; independent reference labels are required before testing Accuracy or macro-F1.','docs/CANDIDATE_FEATURE_AUDIT_2026-11-09.md; granular outputs remain private'],
  ['Appendix: filter and window equations','The fourth-order Butterworth analog prototype is transformed to a digital band-pass of order eight and implemented as second-order sections. Coefficients depend on verified sampling rate. Forward-backward filtering is offline. The optional notch is used only if line-noise diagnostics justify it. The historical spectrum uses a one-sided Hann periodogram, not Welch averaging.','SciPy signal documentation: https://docs.scipy.org/doc/scipy/reference/signal.html'],
  ['Appendix: feature equations','The ten input features summarize amplitude, spectrum and relative wavelet energy. The corrected waveform-length feature uses the interval between first and last samples and has a separate schema. It does not replace the frozen historical version or alter its results.','features.py, feature_schema.json and docs/reference_fatigue_protocol.md'],
  ['Appendix: independent-reference architecture','Synchronized angle or reviewed video provides extension and flexion supervision. Calibrated synchronized force or torque provides the approved fatigue label. The same feature matrix feeds the direct model, phase cascade and soft-gated experts. OOF phase probabilities are used in cascade training, and held-out participants are evaluated on matched support. This architecture has not been trained on the supplied ZIP.','docs/reference_fatigue_protocol.md'],
@@ -393,13 +415,13 @@ const englishScript=[
 ];
 const main=script.filter(v=>v.seconds>0);
 const seconds=main.reduce((a,b)=>a+b.seconds,0);
-if(main.length!==16||seconds!==600||deck.slides.items.length!==29)throw new Error('Slide/time contract: '+seconds+' / '+deck.slides.items.length);
-await fs.writeFile(path.join(output,'Guion_defensa.md'),'# Guion de la defensa\n\n16 diapositivas principales. Tiempo previsto: 600 segundos. Trece anexos para preguntas.\n\n'+script.map(v=>`## ${v.index}. ${v.title}\n\n${v.seconds?'Tiempo previsto: '+v.seconds+' s.':'Anexo para preguntas.'}\n\n${v.notes}\n\nFuente: ${v.source}.`).join('\n\n')+'\n');
+if(main.length!==16||seconds!==600||deck.slides.items.length!==30)throw new Error('Slide/time contract: '+seconds+' / '+deck.slides.items.length);
+await fs.writeFile(path.join(output,'Guion_defensa.md'),'# Guion de la defensa\n\n16 diapositivas principales. Tiempo previsto: 600 segundos. Catorce anexos para preguntas.\n\n'+script.map(v=>`## ${v.index}. ${v.title}\n\n${v.seconds?'Tiempo previsto: '+v.seconds+' s.':'Anexo para preguntas.'}\n\n${v.notes}\n\nFuente: ${v.source}.`).join('\n\n')+'\n');
 if(englishScript.length!==script.length)throw new Error('English script does not match slide count');
-const mdScript=(title,entries,lang)=>'# '+title+'\n\n16 principal slides. Scheduled talk time: 600 seconds. Thirteen appendix slides for questions.\n\n'+entries.map((v,i)=>`## ${i+1}. ${v[0]}\n\n${script[i].seconds?'Scheduled time: '+script[i].seconds+' s.':'Appendix for questions.'}\n\n${v[1]}\n\nSource: ${v[2]}.`).join('\n\n')+'\n';
-await fs.writeFile(path.join(output,'Guion_defensa_ES.md'),'# Guion de la defensa\n\n16 diapositivas principales. Tiempo previsto: 600 segundos. Trece anexos para preguntas.\n\n'+script.map(v=>`## ${v.index}. ${v.title}\n\n${v.seconds?'Tiempo previsto: '+v.seconds+' s.':'Anexo para preguntas.'}\n\n${v.notes}\n\nFuente: ${v.source}.`).join('\n\n')+'\n');
+const mdScript=(title,entries,lang)=>'# '+title+'\n\n16 principal slides. Scheduled talk time: 600 seconds. Fourteen appendix slides for questions.\n\n'+entries.map((v,i)=>`## ${i+1}. ${v[0]}\n\n${script[i].seconds?'Scheduled time: '+script[i].seconds+' s.':'Appendix for questions.'}\n\n${v[1]}\n\nSource: ${v[2]}.`).join('\n\n')+'\n';
+await fs.writeFile(path.join(output,'Guion_defensa_ES.md'),'# Guion de la defensa\n\n16 diapositivas principales. Tiempo previsto: 600 segundos. Catorce anexos para preguntas.\n\n'+script.map(v=>`## ${v.index}. ${v.title}\n\n${v.seconds?'Tiempo previsto: '+v.seconds+' s.':'Anexo para preguntas.'}\n\n${v.notes}\n\nFuente: ${v.source}.`).join('\n\n')+'\n');
 await fs.writeFile(path.join(output,'Defense_Script_EN.md'),mdScript('EMG Defense Script',englishScript,'en'));
-await fs.writeFile(path.join(build,'slide_content.json'),JSON.stringify({main_slides:16,reserve_slides:13,total:29,seconds,slides:script},null,2)+'\n');
+await fs.writeFile(path.join(build,'slide_content.json'),JSON.stringify({main_slides:16,reserve_slides:14,total:30,seconds,slides:script},null,2)+'\n');
 const {finalizePresentation,applyPresentationChartFont}=await import(pathToFileURL(path.join(skill,'container_tools/artifact_tool_utils.mjs')).href);
 if(applyPresentationChartFont)for(const s of deck.slides.items)for(const ch of s.charts.items)applyPresentationChartFont(ch,{fontFamily:'Arial'});
 const candidatePath=path.join(build,'candidate.pptx');await(await PresentationFile.exportPptx(deck)).save(candidatePath);
@@ -409,7 +431,7 @@ await finalizePresentation({workspaceDir,candidatePath,finalPath,pythonExecutabl
  layoutValidatorPath:path.join(skill,'container_tools/inspect_presentation_layout_geometry.py'),
  layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-heading-fit',
   ...[...new Set(tableOwners)].flatMap(n=>['--require-native-table-slide',String(n)])],
- explicitTotalSlideCount:29,requiredNativeTableOwnerSlides:[...new Set(tableOwners)],
+ explicitTotalSlideCount:30,requiredNativeTableOwnerSlides:[...new Set(tableOwners)],
  requiredNativeChartOwnerSlides:[...new Set(chartOwners)],materializeLiteralChartWorkbooks:true,
  fontPolicy:{basis:'design',families:['Arial']},verifyArtifactToolImport:true,receiptPath:path.join(build,'validation.json')});
 for(let i=0;i<deck.slides.items.length;i++){

@@ -67,6 +67,8 @@ class ReferenceStudyConfig:
     phase_definition_approved: bool
     participant_ids_verified: bool
     angle_convention: str | None
+    fatigue_data_gate: str = 'failed'
+    phase_data_gate: str = 'failed'
 
     def __post_init__(self):
         if self.primary_window_s != 0.5 or self.sensitivity_window_s != 0.25:
@@ -81,6 +83,10 @@ class ReferenceStudyConfig:
             raise ValueError('edge_mask_s must be finite and positive')
         if self.data_gate not in {'failed', 'passed'}:
             raise ValueError('data_gate must be failed or passed')
+        if self.fatigue_data_gate not in {'failed', 'passed'}:
+            raise ValueError('fatigue_data_gate must be failed or passed')
+        if self.phase_data_gate not in {'failed', 'passed'}:
+            raise ValueError('phase_data_gate must be failed or passed')
         if not self.study_id.strip() or not self.fatigue_label_definition_id.strip():
             raise ValueError('study and label-definition identifiers are required')
         for value in (
@@ -91,6 +97,56 @@ class ReferenceStudyConfig:
             if value is not True and value is not False:
                 raise ValueError('approval and identity states must be boolean')
 
+    def require_fatigue_training_ready(
+        self,
+        *,
+        fatigue_reference_approved=False,
+        participant_ids_verified=False,
+    ):
+        if fatigue_reference_approved is not True:
+            raise ValueError('fatigue reference is missing or unapproved')
+        if participant_ids_verified is not True:
+            raise ValueError('participant grouping is not independently verified')
+        if not self.fatigue_definition_approved:
+            raise ValueError('fatigue label definition approval is absent from this config')
+        if not self.participant_ids_verified:
+            raise ValueError('participant identity approval is absent from this config')
+        if self.fatigue_data_gate != 'passed':
+            raise ValueError('fatigue data gate has not passed')
+
+    def require_phase_training_ready(
+        self,
+        *,
+        phase_reference_approved=False,
+        participant_ids_verified=False,
+    ):
+        if phase_reference_approved is not True:
+            raise ValueError('phase reference is missing or unapproved')
+        if participant_ids_verified is not True:
+            raise ValueError('participant grouping is not independently verified')
+        if not self.phase_definition_approved:
+            raise ValueError('phase label definition approval is absent from this config')
+        if not self.participant_ids_verified:
+            raise ValueError('participant identity approval is absent from this config')
+        if self.phase_data_gate != 'passed':
+            raise ValueError('phase data gate has not passed')
+
+    def require_phase_conditioned_training_ready(
+        self,
+        *,
+        fatigue_reference_approved=False,
+        phase_reference_approved=False,
+        participant_ids_verified=False,
+    ):
+        self.require_fatigue_training_ready(
+            fatigue_reference_approved=fatigue_reference_approved,
+            participant_ids_verified=participant_ids_verified,
+        )
+        self.require_phase_training_ready(
+            phase_reference_approved=phase_reference_approved,
+            participant_ids_verified=participant_ids_verified,
+        )
+
     def require_training_ready(
         self,
         *,
@@ -98,20 +154,12 @@ class ReferenceStudyConfig:
         phase_reference_approved=False,
         participant_ids_verified=False,
     ):
-        if fatigue_reference_approved is not True:
-            raise ValueError('fatigue reference is missing or unapproved')
-        if phase_reference_approved is not True:
-            raise ValueError('phase reference is missing or unapproved')
-        if participant_ids_verified is not True:
-            raise ValueError('participant grouping is not independently verified')
-        if not self.fatigue_definition_approved:
-            raise ValueError('fatigue label definition approval is absent from this config')
-        if not self.phase_definition_approved:
-            raise ValueError('phase label definition approval is absent from this config')
-        if not self.participant_ids_verified:
-            raise ValueError('participant identity approval is absent from this config')
-        if self.data_gate != 'passed':
-            raise ValueError('G0 data gate has not passed')
+        """Backward-compatible alias for the stricter phase-conditioned gate."""
+        return self.require_phase_conditioned_training_ready(
+            fatigue_reference_approved=fatigue_reference_approved,
+            phase_reference_approved=phase_reference_approved,
+            participant_ids_verified=participant_ids_verified,
+        )
 
 
 @dataclass

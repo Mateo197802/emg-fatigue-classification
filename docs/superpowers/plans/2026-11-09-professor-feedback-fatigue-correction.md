@@ -35,6 +35,51 @@
 - Keep the primary direct-fatigue model and the auxiliary phase-conditioned architecture as distinct, comparable procedures. No reinforcement-learning experiment is in scope for this offline labeled-classification objective.
 - Strict reference-label/window contracts, formula documentation and diagrams have been implemented as gated protocol tooling. They do not validate labels or create a physiological training set. The historical proxy outputs remain frozen.
 
+## Respuesta al último comentario del docente — plan de corrección
+
+**Corrección del objetivo:** la ventana de 250/500 ms es la unidad de observación; no es la clase que aprende el modelo. Cada ventana solo recibe `fatiga` o `no fatiga` si una referencia mecánica independiente, calibrada, sincronizada y aprobada permite derivar ese estado. Las etiquetas temprana/tardía actuales quedan identificadas como proxy histórico. Del mismo modo, una etapa auxiliar solo se llamará extensión/flexión cuando la fase venga de cinemática o video revisado y sincronizado.
+
+**Ruta del modelo prevista:**
+
+```mermaid
+flowchart LR
+  E[EMG cruda] --> Q[QC por tramo continuo y canales]
+  Q --> F[Filtros documentados y máscaras de borde]
+  F --> W[Ventanas fijas: 500 ms, 50%]
+  W --> X[Features predefinidas]
+  K[Ángulo o video sincronizado] --> YP[Etiquetas verificadas de extensión/flexión]
+  YP --> P[Modelo de fase]
+  T[Fuerza/torque calibrado y sincronizado] --> YF[Etiquetas aprobadas de fatiga/no fatiga]
+  YF --> D[Modelo directo: X → fatiga]
+  P --> QP[Probabilidades de fase OOF en train]
+  QP --> C[Cascada: X + probabilidad de fase → fatiga]
+  P --> G[Probabilidades de fase predichas]
+  X --> C
+  X --> E1[Experto de extensión]
+  X --> E2[Experto de flexión]
+  E1 --> M[Mezcla ponderada por probabilidad]
+  E2 --> M
+  G --> M
+  YF --> C
+  YF --> E1
+  YF --> E2
+```
+
+Las ventanas que crucen un hueco, transición de fase o inicio de fatiga se excluyen o quedan explícitamente inciertas; nunca se convierten automáticamente en `no fatiga`. En la cascada, la segunda etapa se entrena con probabilidades de fase fuera de pliegue y en prueba recibe probabilidades predichas para participantes no vistos. Los expertos se enrutan suavemente con esas probabilidades; la fase verdadera del pliegue de prueba no se usa para predecir.
+
+| Fase | Acción y aceptación auditable | Estado con el ZIP disponible |
+|---|---|---|
+| 1. Corregir la interpretación | Conservar matrices y métricas históricas con el nombre de proxy temprano/tardío; señalar expresamente que no son métricas de fatiga fisiológica ni de extensión/flexión. | Implementado en protocolo y respuesta al docente; verificar consistencia en cada artefacto final. |
+| 2. Preparar una señal defendible | Auditar fs real, gaps, jitter, clipping, línea eléctrica y máscaras por tramo; documentar filtro SOS 20–400 Hz, notch solo si la prominencia medida lo justifica, borde de 100 ms, ventana y cada feature con fórmula/unidades. Mantener el estudio nuevo en 500 ms/50% y sensibilidad de 250 ms separado del proxy histórico de 250 ms. | Contratos y parte de las pruebas están implementados; completar casos de señal y revisar renderización/equaciones. |
+| 3. Cerrar las etiquetas | Fatiga desde fuerza/torque aprobado; fase desde ángulo/video sincronizado; confirmar calibración, alineación, repetibilidad, límites y claves de grupo antes de exportar etiquetas. | **Bloqueado por datos:** el ZIP no contiene estas referencias. No crear etiquetas reales ni entrenar con los proxies. |
+| 4. Comparar arquitecturas | En el mismo soporte y particiones por grupo: baseline directo, clasificador de fase, cascada OOF y expertos por fase con mezcla probabilística. Mantener logística interpretable y RMS+MDF como baselines; comparar SVM/RF como candidatos. | Evaluador fail-closed y pruebas sintéticas implementados; ejecución empírica bloqueada por Gate G0. |
+| 5. Medir rendimiento | Accuracy, macro-F1, balanced accuracy, sensibilidad/especificidad, precisión/recall/F1 por clase, ROC/PR-AUC y matrices de confusión con conteos y normalización; IC y diferencias pareadas por participante/grupo. Declarar mejora solo si Accuracy y macro-F1 mejoran en idéntico soporte y la incertidumbre pareada lo respalda. | No hay métricas de fatiga real calculables con este ZIP. No se garantiza subirlas manipulando ventanas, etiquetas o pliegues. |
+| 6. Presentar y entregar | Redibujar diagramas de señal y arquitecturas con etiquetas de estado (ejecutado/propuesto/bloqueado); integrar corpus, preanálisis cuantitativo, filtros, ventana, fórmulas, modelos, métricas proxy y límites; actualizar README, informe, guion, paquete ZIP y manifiestos. | Algunos documentos/figuras ya cubren esta estructura; cerrar contra una sola tabla de claims y hashes después de la revisión visual final. |
+
+**Elección metodológica:** no usar reinforcement learning para clasificación supervisada de ventanas: aquí no existen acciones ni recompensas secuenciales. No hacer fine-tuning de una red como atajo para subir métricas: solo reconsiderarlo si aparece una fuente externa etiquetada compatible, independiente y con un plan de transferencia fijado antes de abrir el holdout. Las cabezas especialistas sí se comparan como modelo supervisado y solo si cada fase contiene ambos estados de fatiga en suficientes grupos.
+
+**Límite de rendimiento:** el trabajo de señal y de software puede mejorar errores técnicos y hacer que una comparación futura sea válida; no puede demostrar mayor Accuracy/F1 de fatiga sin la etiqueta independiente. El umbral `G0` sigue siendo obligatorio para el entrenamiento fisiológico; datos sintéticos prueban contratos, no rendimiento experimental.
+
 ## Review Focus
 
 - **Label validity:** no independent force/torque reference or no calibration/repeatability data → refuse to create fatigue labels; test missing, invalid and unsynchronized references.
@@ -133,7 +178,7 @@
 - [x] Add equations for the analog Butterworth prototype relation, digital SOS band-pass and coefficients by verified `fs`, optional notch, window/overlap, Hann periodogram, each feature schema, candidate label rule and architecture score/fusion. State parameter rationale and sensitivity conditions.
 - [x] Remove the “Evidencia pendiente” placeholder; use a concise, evidence-backed limitation. Reorder the main talk to cover corpus and quantitative pre-analysis, signal, preprocessing, window choice and formulas, reference labels, methodology, direct models and performance, auxiliary phase architecture and its separate result, then conclusions.
 - [x] Keep the report template and list only the authors' names: Ethan Guevara, Mateo Gavilanes, and Kennedy Rodriguez; omit individual roles and student IDs.
-- [x] Rebuild and inspect the report/deck/script PDFs after the source commit. The final report has 27 pages, the deck has 29 slides, and the Spanish/English scripts have 7/6 pages; rendered pages and contact sheets were inspected.
+- [x] Rebuild and inspect the report/deck/script PDFs after the source commit. The current deck has 30 slides (16 principal and 14 appendices), and the Spanish/English scripts have 7/6 pages; rendered pages and contact sheets were inspected. The current report has 27 pages.
 - [x] Close the materials audit: scientific claims link to code, data receipts, result files or references, and Spanish/English materials use consistent target names and results. True-fatigue/verified-phase performance claims remain explicitly unavailable under G0.
 
 ### Task 6: Package, publish, and verify the revised delivery
@@ -158,7 +203,7 @@ The legacy proxy keeps its frozen 250 ms configuration so historical results rem
 
 **Deliverables:** reference-backed fatigue and phase label tables (private); three comparable model families and complete OOF evidence if G0 passes; explicit formulas and redesigned architecture diagrams; updated report, slide deck and bilingual scripts; README/first-read guide; versioned private ZIP; public GitHub evidence and exact-commit CI record.
 
-## Execution status (2026-11-09)
+## Previous execution status for delivery v2 (2026-11-09)
 
 - Archive recovery was repeated read-only. The source ZIP still has 403 members; the embedded EMG ZIP has 140 CSVs; the embedded RAR has 20 CSVs. Current SHA-256 values match the existing source manifests.
 - The two embedded workbooks are bibliography and filter/noise/QC materials. No time-series force/torque, synchronized angle/video, repetition markers, MVC/Borg measurements or independent participant/session mapping were found. Gate G0 is not passed; no reference-backed model has been trained.
@@ -167,7 +212,7 @@ The legacy proxy keeps its frozen 250 ms configuration so historical results rem
 - The full local suite passed 89 tests. `git diff --check` passed. These checks cover contracts, diagrams, presentation copy, feature schema and existing behavior; they do not constitute a fatigue model evaluation.
 - Delivery completed on the published source revision recorded in the package receipt. Independent review, exact-head CI, rendered report/deck/script PDFs, public-tree privacy audit, ZIP CRC and package hashes were checked. The previous package remains unchanged. No true-fatigue or verified phase model can be trained until Gate G0 passes.
 
-## Completion record (2026-11-09)
+## Completion record for delivery v2 (2026-11-09)
 
 | Deliverable or gate | State | Evidence / limit |
 |---|---|---|

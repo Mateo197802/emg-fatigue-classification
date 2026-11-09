@@ -20,6 +20,7 @@
     "metrics_summary.csv": "d79fc26a69b42618661ae36bb10f11854d92e2f3d139d15d586a4df4d314ea68",
     "model_registry.csv": "be772e9434a3e305d291ee2a6e36ddb43216136b94879b8447c801e05e4fe60f",
     "paired_differences.csv": "062afd791bbb19f7ac64d125d68334c4830a4fdf141c2c60153b3aa547ab8db3",
-    "results.csv": "d72de3858cacb3e11d979051dc5b83fa51afa297f26650ee5bd6cdab288c284c"
+    "results.csv": "d72de3858cacb3e11d979051dc5b83fa51afa297f26650ee5bd6cdab288c284c",
+    "accuracy_paired_differences.csv": "df74939f4ef257ce8ee1fa102cd4e2a6b0b09b5805b6fa675ebf74f7dfe9021b"
   }
 }

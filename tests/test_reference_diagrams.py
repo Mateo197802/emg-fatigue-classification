@@ -28,6 +28,21 @@ def test_bilingual_window_and_architecture_diagrams_are_generated(tmp_path):
                 assert all(line == line.rstrip() for line in svg.splitlines())
         assert "500" in windowing and "250" in windowing
         assert "N" in windowing and "fs" in windowing
+        assert ("7 ventanas completas" if language == "es" else "7 complete windows") in windowing
+        assert ("3 ventanas completas" if language == "es" else "3 complete windows") in windowing
+        assert "W1" in windowing and "W7" in windowing
         assert "direct" in models.lower() or "directa" in models.lower()
         assert "expert" in models.lower() or "experto" in models.lower()
         assert "OOF" in models
+        fatigue_target = "Y_fatiga" if language == "es" else "Y_fatigue"
+        assert models.count(fatigue_target) >= 4
+        assert ("cabezas" if language == "es" else "heads") in models.lower()
+        phase_target = "Objetivo: Y_fase" if language == "es" else "Target: Y_phase"
+        assert phase_target in models
+        footer = (
+            "Modelos de fatiga: X, Y_fatiga y grupos retenidos. Clasificador de fase: Y_fase."
+            if language == "es"
+            else "Fatigue models: X, Y_fatigue and held-out groups. Phase classifier target: Y_phase."
+        )
+        assert footer in models
+        assert ("Todos comparten X, Y_fatiga" if language == "es" else "All models share X, Y_fatigue") not in models

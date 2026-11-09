@@ -5,13 +5,18 @@ p=argparse.ArgumentParser();p.add_argument('--source-archive');a=p.parse_args()
 repo=Path(__file__).resolve().parents[1]
 tracked=subprocess.check_output(['git','ls-files','-z'],cwd=repo).decode().split('\0')
 forbidden={'.rar','.zip','.joblib','.pkl','.pickle','.parquet','.npz','.npy','.docx','.pdf'}
+allowed_public_pdfs={
+    'docs/defense-scripts/pdf/Guion_defensa_ES.pdf',
+    'docs/defense-scripts/pdf/Defense_Script_EN.pdf',
+}
 private_paths=[]
 if a.source_archive:
     with zipfile.ZipFile(a.source_archive) as z:private_paths=[n for n in z.namelist() if not n.endswith('/')]
 issues=[]
 for name in filter(None,tracked):
     f=repo/name
-    if f.suffix.lower() in forbidden:issues.append((name,'restricted artifact type'))
+    if f.suffix.lower() in forbidden and not (f.suffix.lower()=='.pdf' and name in allowed_public_pdfs):
+        issues.append((name,'restricted artifact type'))
     data=f.read_bytes()
     for private in private_paths:
         if private.encode('utf-8') in data:issues.append((name,'private source archive path'))

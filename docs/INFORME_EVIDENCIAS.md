@@ -14,7 +14,7 @@ La nueva búsqueda local quedó registrada en un recibo de auditoría privado. L
 
 ![Modelos prospectivos para fase y fatiga](figures/reference_models_es.png)
 
-El artículo revisado incluye fórmulas explícitas de filtros, ventanas, características, reglas candidatas de etiqueta y las tres arquitecturas propuestas. Incluye además un diagnóstico privado de una señal real, el periodograma antes/después y la respuesta del filtro al `fs` medido. La presentación revisada mantiene 16 diapositivas principales para 600 segundos y añade 13 anexos de evidencia. El número final de páginas, hashes y archivos se registra en el comprobante de la nueva entrega privada.
+El artículo revisado incluye fórmulas explícitas de filtros, ventanas, características, reglas candidatas de etiqueta y las tres arquitecturas propuestas. Incluye además un diagnóstico privado de una señal real, el periodograma antes/después y la respuesta del filtro al `fs` medido. La presentación revisada mantiene 16 diapositivas principales para 600 segundos y añade 14 anexos de evidencia. El número final de páginas, hashes y archivos se registra en el comprobante de la nueva entrega privada.
 
 ## Corpus y señal
 
@@ -45,7 +45,7 @@ El informe muestra el prototipo Butterworth análogo, el diseño digital SOS, la
 
 ## Metodología y rendimiento principal
 
-La validación externa retiene cada grupo completo una vez. Ambas piernas y todas las series permanecen juntas. Cuatro particiones agrupadas internas seleccionan parámetros usando macro-F1 medio por grupo. Escalador y modelo se ajustan sólo con entrenamiento. Las predicciones OOF y las búsquedas internas quedan guardadas. Los intervalos pareados usan bootstrap de los 15 grupos.
+El pliegue externo de la validación cruzada retiene cada grupo completo una vez. Ambas piernas y todas las series permanecen juntas. Cuatro particiones agrupadas internas seleccionan parámetros usando macro-F1 medio por grupo. Escalador y modelo se ajustan sólo con entrenamiento. Las predicciones OOF y las búsquedas internas quedan guardadas. Los intervalos pareados usan bootstrap de los 15 grupos.
 
 | Procedimiento | Macro-F1 media ± DE | AUC media |
 |---|---:|---:|
@@ -89,7 +89,7 @@ El RF final principal tiene 300 árboles y es otro ajuste. El selector anidado e
 | Sólo score | 0,6184 ± 0,0801 | 0,7786 |
 | Control aleatorio | 0,6356 ± 0,1139 | 0,8320 |
 
-La diferencia condicionada menos directa es −0,0062, IC 95% [−0,0232, +0,0082]. Mejoran 6 grupos, empeoran 8 y 1 empata. La cabeza auxiliar alcanza macro-F1 0,5420 ± 0,1028 y AUC 0,6212 ± 0,1288 frente a mitades EMG. Su matriz es `[[970,693],[769,905]]`. La segunda etapa condicionada produce `[[1538,791],[1039,2141]]` frente al objetivo temprano/tardío.
+La diferencia de macro-F1 condicionada menos directa es −0,0062, IC 95% [−0,0232, +0,0082]. Mejoran 6 grupos, empeoran 8 y 1 empata. La diferencia pareada de Accuracy es −0,0051, IC 95% [−0,0222, +0,0095]. La cabeza auxiliar alcanza Accuracy 0,5775 ± 0,0783, macro-F1 0,5420 ± 0,1028 y AUC 0,6212 ± 0,1288 frente a mitades EMG. Su matriz es `[[970,693],[769,905]]`. La segunda etapa condicionada produce `[[1538,791],[1039,2141]]` frente al objetivo temprano/tardío. Ambas tareas siguen siendo proxy.
 
 Se publican 12 filas de matrices por procedimiento/objetivo con conteos y proporciones. Una corresponde al directo que duplica la logística completa: no son doce modelos independientes. [Métricas](../results/phase_experiment/metrics_summary.csv), [contrastes](../results/phase_experiment/paired_differences.csv), [matrices](../results/phase_experiment/confusion_matrices.csv), [soporte auxiliar](../results/phase_experiment/auxiliary_phase_fold_metrics.csv).
 
@@ -102,7 +102,7 @@ Se publican 12 filas de matrices por procedimiento/objetivo con conteos y propor
 | Identidad del comparador directo | Clases idénticas a `logistic_all`; máxima diferencia de score 5,1×10⁻¹³ |
 | Reconstrucción auxiliar | 9.289 scores reconstruidos idénticos a los originales, diferencia máxima 0 |
 | Conservación del modelo y originales | Hashes del modelo, cuatro insumos originales y entrega anterior |
-| PDF/Word/PPTX y guiones | Recibo editorial, 29 diapositivas, 600 segundos principales y guiones español/inglés |
+| PDF/Word/PPTX y guiones | Recibo editorial, 30 diapositivas, 600 segundos principales y guiones español/inglés |
 | Integridad completa del ZIP y del código | SHA256SUMS, manifiesto del snapshot Git y verificador portátil |
 | Revisión publicada | Commit y CI exacta registrados en VERIFICACION_FINAL.json |
 

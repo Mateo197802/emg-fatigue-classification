@@ -186,7 +186,7 @@ def draw_reference_architecture(output_dir: Path, lang: str = "es") -> list[Path
 
 
 def draw_windowing_protocol(output_dir: Path, lang: str = "es") -> list[Path]:
-    """Show the executed window scheme and separate reference-study choice."""
+    """Show complete sliding windows, their true lengths and their hop sizes."""
     en = lang == "en"
     title = "Windowing protocol" if en else "Protocolo de ventanas"
     status = "HISTORICAL ≠ REFERENCE STUDY" if en else "HISTÓRICO ≠ ESTUDIO CON REFERENCIAS"
@@ -199,34 +199,53 @@ def draw_windowing_protocol(output_dir: Path, lang: str = "es") -> list[Path]:
 
     rows = [
         (0.70, "Executed historical proxy" if en else "Proxy histórico ejecutado",
-         "250 ms; 50% overlap" if en else "250 ms; 50% solape", 250, 125, COLORS["proxy"]),
+         250, 125, COLORS["proxy"]),
         (0.49, "Proposed primary reference study" if en else "Estudio con referencias: primario propuesto",
-         "500 ms; 50% overlap" if en else "500 ms; 50% solape", 500, 250, COLORS["reference"]),
+         500, 250, COLORS["reference"]),
         (0.28, "Proposed sensitivity analysis" if en else "Análisis de sensibilidad propuesto",
-         "250 ms; 50% overlap" if en else "250 ms; 50% solape", 250, 125, COLORS["neutral"]),
+         250, 125, COLORS["neutral"]),
     ]
-    for y, label, params, length, hop, color in rows:
-        ax.text(0, y + 0.065, label, fontsize=9.7, weight="bold", color=COLORS["ink"], va="bottom")
-        ax.text(1000, y + 0.065, params, fontsize=8.8, color=COLORS["gray"], ha="right", va="bottom")
-        for start in range(0, 1000 - length + 1, hop):
-            patch = FancyBboxPatch((start, y - 0.045), length, 0.065,
-                                   boxstyle="round,pad=0.01,rounding_size=0.02",
-                                   linewidth=1.0, edgecolor=COLORS["ink"], facecolor=color, alpha=0.88)
+    for y, label, length, hop, color in rows:
+        starts = list(range(0, 1000 - length + 1, hop))
+        summary = (
+            f"W={length} ms · H={hop} ms · {len(starts)} complete windows"
+            if en else
+            f"W={length} ms · H={hop} ms · {len(starts)} ventanas completas"
+        )
+        ax.text(0, y + 0.075, label, fontsize=9.5, weight="bold", color=COLORS["ink"], va="bottom")
+        ax.text(1000, y + 0.075, summary, fontsize=8.2, color=COLORS["gray"], ha="right", va="bottom")
+        for index, start in enumerate(starts):
+            # Alternating lanes expose each overlapping window boundary instead
+            # of making the overlaps look like adjoining time bins.
+            lane = (index % 2) * 0.027
+            rect_y = y - 0.045 + lane
+            patch = FancyBboxPatch(
+                (start, rect_y), length, 0.024,
+                boxstyle="round,pad=0.004,rounding_size=0.008",
+                linewidth=0.9, edgecolor=COLORS["ink"], facecolor=color, alpha=0.78,
+            )
             ax.add_patch(patch)
+            ax.text(start + length / 2, rect_y + 0.012, f"W{index + 1}",
+                    ha="center", va="center", fontsize=6.8, color=COLORS["ink"])
     ax.annotate("", xy=(1000, 0.205), xytext=(0, 0.205),
                 arrowprops={"arrowstyle": "->", "lw": 1.1, "color": COLORS["gray"]})
     ax.text(0, 0.198, "0", ha="center", va="top", fontsize=7.8, color=COLORS["gray"])
     ax.text(1000, 0.198, "1000", ha="center", va="top", fontsize=7.8, color=COLORS["gray"])
     ax.text(500, 0.173, "Time (ms)" if en else "Tiempo (ms)", ha="center", fontsize=8.2, color=COLORS["gray"])
-    ax.text(0, 0.105,
+    ax.text(0, 0.132,
             ("N = round(T × fs); H = round(N × (1 − overlap)); Δf = fs/N. At 1 kHz: 500 ms → N=500, H=250, Δf≈2 Hz; 250 ms → N=250, H=125, Δf≈4 Hz."
              if en else
              "N = round(T × fs); H = round(N × (1 − solape)); Δf = fs/N. A 1 kHz: 500 ms → N=500, H=250, Δf≈2 Hz; 250 ms → N=250, H=125, Δf≈4 Hz."),
             ha="left", va="top", fontsize=8.1, color=COLORS["ink"])
-    ax.text(0, 0.052,
-            ("Longer windows improve nominal frequency resolution; 50% overlap samples more densely but overlapping windows are correlated. Exclude gaps and reference transitions; compare on matched support."
+    ax.text(0, 0.075,
+            ("Window labels mark complete windows; vertical offset is only for legibility. Longer windows improve nominal frequency resolution; overlapping windows are correlated."
              if en else
-             "Ventanas más largas mejoran la resolución frecuencial nominal; 50% de solape da más muestras, pero las ventanas solapadas son dependientes. Excluir huecos y transiciones; comparar soporte equivalente."),
+             "Las marcas son ventanas completas; el desplazamiento vertical solo ayuda a leer el solape. La ventana larga mejora la resolución nominal; las ventanas solapadas son dependientes."),
+            ha="left", va="top", fontsize=7.8, color=COLORS["gray"])
+    ax.text(0, 0.035,
+            ("Exclude acquisition gaps and reference transitions; compare models on matched support."
+             if en else
+             "Excluir huecos y transiciones de referencia; comparar modelos sobre el mismo soporte."),
             ha="left", va="top", fontsize=7.8, color=COLORS["gray"])
     ax.axis("off")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -242,51 +261,59 @@ def draw_reference_models(output_dir: Path, lang: str = "es") -> list[Path]:
     title = "Reference model architecture" if en else "Arquitectura de modelos objetivo"
     status = "PROPOSED · NOT TRAINED" if en else "PROPUESTA · NO ENTRENADA"
     fig, ax = _canvas(title, status)
-    ax.text(0.035, 0.875, "Required independent labels" if en else "Etiquetas independientes requeridas",
+    ax.text(0.035, 0.875, "Independent training references" if en else "Referencias independientes de entrenamiento",
             fontsize=11.5, weight="bold", color=COLORS["green"])
-    angle = _box(ax, 0.035, 0.70, 0.20, 0.12,
-                 "Synchronized angle / video" if en else "Ángulo / video sincronizado", "reference", fontsize=9.2)
-    yphase = _box(ax, 0.30, 0.70, 0.20, 0.12,
-                  "Y_phase: extension / flexion" if en else "Y_fase: extensión / flexión", "reference", fontsize=9.0)
-    torque = _box(ax, 0.58, 0.70, 0.18, 0.12,
-                  "Calibrated force / torque" if en else "Fuerza / torque calibrado", "reference", fontsize=9.0)
-    yfatigue = _box(ax, 0.81, 0.70, 0.16, 0.12,
-                    "Y_fatigue" if en else "Y_fatiga", "reference", fontsize=9.4)
-    _arrow(ax, (angle[0] + angle[2], angle[1] + angle[3] / 2), (yphase[0], yphase[1] + yphase[3] / 2), dashed=True, color=COLORS["green"])
-    _arrow(ax, (torque[0] + torque[2], torque[1] + torque[3] / 2), (yfatigue[0], yfatigue[1] + yfatigue[3] / 2), dashed=True, color=COLORS["green"])
+    yphase = _box(ax, 0.035, 0.745, 0.43, 0.105,
+                  "Y_phase: extension / flexion" if en else "Y_fase: extensión / flexión",
+                  "reference", fontsize=9.0, title="Synchronized angle / reviewed video" if en else "Ángulo sincronizado / video revisado")
+    yfatigue = _box(ax, 0.535, 0.745, 0.43, 0.105,
+                    "Y_fatigue: no fatigue / fatigue" if en else "Y_fatiga: no fatiga / fatiga",
+                    "reference", fontsize=9.0, title="Calibrated force / torque" if en else "Fuerza / torque calibrados")
 
-    x = _box(ax, 0.035, 0.43, 0.18, 0.13,
-             "X: same window features" if en else "X: mismas features por ventana", "signal", fontsize=9.2)
-    phase = _box(ax, 0.285, 0.43, 0.19, 0.13,
-                 "Phase model\nX → q_ext, q_flex" if en else "Modelo de fase\nX → q_ext, q_flex", "model", fontsize=9.0)
-    oof = _box(ax, 0.535, 0.43, 0.19, 0.13,
-               "OOF phase probabilities\nfor training; predicted at test" if en else "Probabilidades de fase OOF\npara entrenar; predichas en test", "neutral", fontsize=8.6)
-    _arrow(ax, (x[0] + x[2], x[1] + x[3] / 2), (phase[0], phase[1] + phase[3] / 2))
-    _arrow(ax, (yphase[0] + yphase[2] / 2, yphase[1]), (phase[0] + phase[2] / 2, phase[1] + phase[3]), dashed=True, color=COLORS["green"])
-    _arrow(ax, (phase[0] + phase[2], phase[1] + phase[3] / 2), (oof[0], oof[1] + oof[3] / 2))
+    x = _box(ax, 0.035, 0.515, 0.22, 0.12,
+             "X: same processed window features" if en else "X: mismas features de ventana procesada",
+             "signal", fontsize=8.6)
+    phase = _box(ax, 0.355, 0.515, 0.27, 0.12,
+                 ("X → q_ext, q_flex\nTarget: Y_phase" if en else
+                  "X → q_ext, q_flex\nObjetivo: Y_fase"),
+                 "model", fontsize=9.0, title="Phase classifier" if en else "Clasificador de fase")
+    phase_scores = _box(ax, 0.705, 0.515, 0.26, 0.12,
+                        "OOF in training; predicted in test" if en else "OOF en entrenamiento; predichas en prueba",
+                        "neutral", fontsize=8.2, title="Phase probabilities" if en else "Probabilidades de fase")
+    _arrow(ax, (x[0] + x[2], x[1] + x[3] / 2),
+           (phase[0], phase[1] + phase[3] / 2))
+    _arrow(ax, (yphase[0] + yphase[2] / 2, yphase[1]),
+           (phase[0] + phase[2] / 2, phase[1] + phase[3]),
+           dashed=True, color=COLORS["green"])
+    _arrow(ax, (phase[0] + phase[2], phase[1] + phase[3] / 2),
+           (phase_scores[0], phase_scores[1] + phase_scores[3] / 2))
 
-    direct = _box(ax, 0.035, 0.17, 0.27, 0.13,
-                  "Direct fatigue baseline\nX → p(fatigue)" if en else "Fatiga directa\nX → p(fatiga)", "model", fontsize=9.0)
-    cascade = _box(ax, 0.365, 0.17, 0.27, 0.13,
-                   "Phase-then-fatigue cascade\nX + q_phase(OOF) → p(fatigue)" if en else "Cascada fase → fatiga\nX + q_fase(OOF) → p(fatiga)", "model", fontsize=8.7)
-    experts = _box(ax, 0.695, 0.17, 0.27, 0.13,
-                   "Soft-gated phase experts\nq_ext·f_ext(X) + q_flex·f_flex(X)" if en else "Expertos de fase con compuerta suave\nq_ext·f_ext(X) + q_flex·f_flex(X)", "model", fontsize=8.4)
-    _arrow(ax, (x[0] + x[2] / 2, x[1]), (direct[0] + direct[2] / 2, direct[1] + direct[3]))
-    _arrow(ax, (oof[0] + oof[2] / 2, oof[1]), (cascade[0] + cascade[2] / 2, cascade[1] + cascade[3]), color=COLORS["orange"])
-    _arrow(ax, (oof[0] + oof[2], oof[1] + oof[3] / 2), (experts[0] + experts[2] / 2, experts[1] + experts[3]), color=COLORS["orange"], bend=-0.12)
-    _arrow(ax, (yfatigue[0] + yfatigue[2] / 2, yfatigue[1]), (cascade[0] + cascade[2] / 2, cascade[1] + cascade[3]), dashed=True, color=COLORS["green"], bend=0.16)
-    _arrow(ax, (yfatigue[0] + yfatigue[2] / 2, yfatigue[1]), (direct[0] + direct[2] / 2, direct[1] + direct[3]), dashed=True, color=COLORS["green"], bend=-0.15)
-    _arrow(ax, (yfatigue[0] + yfatigue[2], yfatigue[1] + yfatigue[3] / 2), (experts[0] + experts[2] * 0.76, experts[1] + experts[3]), dashed=True, color=COLORS["green"], bend=0.22)
-    ax.text(0.5, 0.055,
-            ("All models share the same X, Y_fatigue, participant-disjoint nested folds and held-out support. Compare accuracy, macro-F1, balanced accuracy, class-wise metrics, calibration and group-bootstrap intervals."
+    direct = _box(ax, 0.035, 0.215, 0.29, 0.17,
+                  "X → p(fatigue)\nTraining target: Y_fatigue" if en else
+                  "X → p(fatiga)\nObjetivo de entrenamiento: Y_fatiga",
+                  "model", fontsize=8.9, title="Direct baseline" if en else "Modelo directo")
+    cascade = _box(ax, 0.355, 0.215, 0.29, 0.17,
+                   "X + q_phase(OOF) → p(fatigue)\nTraining target: Y_fatigue" if en else
+                   "X + q_fase(OOF) → p(fatiga)\nObjetivo de entrenamiento: Y_fatiga",
+                   "model", fontsize=8.4, title="Phase → fatigue cascade" if en else "Cascada fase → fatiga")
+    experts = _box(ax, 0.675, 0.215, 0.29, 0.17,
+                   "p = q_ext·f_ext(X) + q_flex·f_flex(X)\nTraining target: Y_fatigue" if en else
+                   "p = q_ext·f_ext(X) + q_flex·f_flex(X)\nObjetivo de entrenamiento: Y_fatiga",
+                   "model", fontsize=7.8, title="Phase expert heads" if en else "Cabezas expertas por fase")
+    _arrow(ax, (phase_scores[0] + phase_scores[2] * 0.38, phase_scores[1]),
+           (cascade[0] + cascade[2] / 2, cascade[1] + cascade[3]), color=COLORS["orange"])
+    _arrow(ax, (phase_scores[0] + phase_scores[2] * 0.80, phase_scores[1]),
+           (experts[0] + experts[2] / 2, experts[1] + experts[3]), color=COLORS["orange"])
+    ax.text(0.5, 0.13,
+            ("Fatigue models: X, Y_fatigue and held-out groups. Phase classifier target: Y_phase. Fit selection, thresholds and scaling in training folds; report accuracy, macro-F1, balanced accuracy and confusion matrices."
              if en else
-             "Todos comparten X, Y_fatiga, pliegues anidados por participante y soporte de prueba. Comparar accuracy, macro-F1, accuracy balanceada, métricas por clase, calibración e intervalos bootstrap por grupo."),
-            ha="center", va="center", fontsize=8.8, weight="bold", color=COLORS["ink"])
-    ax.text(0.5, 0.012,
-            ("No force/torque, synchronized kinematics or verified participant key in this ZIP: no reference-backed model or metrics can be reported."
+             "Modelos de fatiga: X, Y_fatiga y grupos retenidos. Clasificador de fase: Y_fase. Ajuste en pliegues de entrenamiento."),
+            ha="center", va="center", fontsize=7.8, color=COLORS["ink"])
+    ax.text(0.5, 0.075,
+            ("No calibrated force/torque, synchronized kinematics or verified participant IDs in the ZIP: the reference-backed models remain untrained."
              if en else
-             "El ZIP no contiene fuerza/torque, cinemática sincronizada ni clave verificada de participantes: no se pueden reportar modelos ni métricas con referencias."),
-            ha="center", va="center", fontsize=8.3, weight="bold", color=COLORS["red"])
+             "El ZIP no contiene fuerza/torque calibrados, cinemática sincronizada ni IDs verificados: los modelos con referencias siguen sin entrenar."),
+            ha="center", va="center", fontsize=8.1, weight="bold", color=COLORS["red"])
     output_dir.mkdir(parents=True, exist_ok=True)
     outputs = [output_dir / f"reference_models_{lang}.svg", output_dir / f"reference_models_{lang}.png"]
     _save_figure(fig, outputs[0], outputs[1])

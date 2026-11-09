@@ -1,6 +1,6 @@
 # Guion de la defensa
 
-16 diapositivas principales. Tiempo previsto: 600 segundos. Trece anexos para preguntas.
+16 diapositivas principales. Tiempo previsto: 600 segundos. Catorce anexos para preguntas.
 
 ## 1. Clasificación proxy temporal con sEMG
 
@@ -78,7 +78,7 @@ Fuente: evaluation.py, inner_search.csv y model.receipt.json.
 
 Tiempo previsto: 45 s.
 
-Todos usan las mismas 5.509 ventanas con objetivo temprano/tardío, no fatiga/no fatiga. Macro-F1 muestra media y desviación entre quince grupos. AUC es también media por grupo. El selector alcanza 0,6240 frente a 0,6272 del modelo simple. La diferencia es menos 0,0032, con intervalo de menos 0,0591 a más 0,0509. No aparece ventaja clara del procedimiento complejo. Estas métricas no estiman Accuracy o F1 de fatiga fisiológica.
+Todos usan las mismas 5.509 ventanas con objetivo temprano/tardío, no fatiga/no fatiga. Accuracy, macro-F1 y AUC son medias ± desviación entre quince grupos. Para el selector frente a RMS+MDF, Δ Accuracy=0.0093, IC 95% [-0.0373, 0.0546]; Δ macro-F1=-0.0032, IC 95% [-0.0591, 0.0509]. Ambos intervalos incluyen cero; no hay mejora clara ni métrica de fatiga fisiológica, porque la etiqueta sigue siendo posición temporal.
 
 Fuente: evaluation/metrics_summary.csv y paired_differences.csv.
 
@@ -110,7 +110,7 @@ Fuente: model_registry.csv y protocolo original del experimento.
 
 Tiempo previsto: 40 s.
 
-El directo obtuvo 0,6355 de macro-F1, agregar score 0,6326, condicionar 0,6293, sólo score 0,6184 y el aleatorio 0,6356. El contraste principal condicionado menos directo es menos 0,0062 y su intervalo de menos 0,0232 a más 0,0082 cruza cero. Seis grupos mejoran, ocho empeoran y uno empata. Esta prueba no usó extensión/flexión observadas ni etiqueta fisiológica de fatiga; solo indica que la fase candidata no mejoró la clasificación temporal en este experimento.
+Para el proxy temporal, el directo alcanza Accuracy 0,6752 y macro-F1 0,6355; el condicionado, Accuracy 0,6701 y macro-F1 0,6293. El contraste pareado condicionado−directo es Δ Accuracy=-0.0051 (IC 95% [-0.0222, 0.0095]) y Δ macro-F1=-0.0062 (IC 95% [-0.0232, 0.0082]). Ambos intervalos incluyen cero. Esta prueba no usó extensión/flexión observadas ni etiqueta fisiológica de fatiga.
 
 Fuente: phase_experiment/metrics_summary.csv y paired_differences.csv.
 
@@ -118,7 +118,7 @@ Fuente: phase_experiment/metrics_summary.csv y paired_differences.csv.
 
 Tiempo previsto: 35 s.
 
-Las matrices tienen objetivos y soportes distintos. La auxiliar usa 1.663 primeras mitades y 1.674 segundas, con macro-F1 0,5420 y AUC 0,6212. La logística condicionada usa las 5.509 ventanas tempranas y tardías. Acierta 1.538 tempranas y 2.141 tardías. No se comparan los totales ni se interpreta la primera matriz como extensión y flexión observadas. Tampoco es una matriz de fatiga/no fatiga.
+Las matrices tienen objetivos y soportes distintos. La auxiliar usa 1.663 primeras mitades y 1.674 segundas: Accuracy media por grupo 0,5775 ± 0,0783, macro-F1 0,5420 ± 0,1028 y AUC 0,6212 ± 0,1288. La logística condicionada usa las 5.509 ventanas tempranas y tardías: Accuracy 0,6701 ± 0,1022 y macro-F1 0,6293 ± 0,1330. No se comparan los totales ni se interpreta la primera matriz como extensión y flexión observadas. Ninguna es una matriz de fatiga/no fatiga.
 
 Fuente: confusion_matrices.csv y auxiliary_phase_fold_metrics.csv.
 
@@ -194,7 +194,15 @@ El protocolo histórico fijado usa ventanas deslizantes de 250 milisegundos con 
 
 Fuente: Configuración histórica congelada y configs/reference_study.yaml.
 
-## 25. Anexo: Filtros y ecuaciones de ventana
+## 25. Anexo: Características candidatas y auditoría
+
+Anexo para preguntas.
+
+Se calcularon cinco características candidatas en ventanas activas válidas sin consultar etiquetas ni ajustar un modelo. Las fórmulas se muestran para dejar trazable qué se evaluó. iEMG y varianza fueron redundantes con MAV y RMS bajo duración fija. Las correlaciones se describen como auditoría exploratoria: las ventanas se solapan, los 15 grupos vienen de carpetas y la identidad no está verificada. Ninguna característica se agregó a los clasificadores, y no se puede atribuir mejora de Accuracy o F1 sin referencias independientes de fatiga.
+
+Fuente: docs/CANDIDATE_FEATURE_AUDIT_2026-11-09.md; salida granular privada.
+
+## 26. Anexo: Filtros y ecuaciones de ventana
 
 Anexo para preguntas.
 
@@ -202,7 +210,7 @@ El pasa banda digital se diseña por separado para cada frecuencia de muestreo v
 
 Fuente: SciPy butter, sosfiltfilt, periodogram, ventanas Hann e iirnotch: https://docs.scipy.org/doc/scipy/reference/signal.html.
 
-## 26. Anexo: Características y fórmulas
+## 27. Anexo: Características y fórmulas
 
 Anexo para preguntas.
 
@@ -210,7 +218,7 @@ El vector X contiene diez variables calculadas por ventana. RMS y MAV resumen am
 
 Fuente: features.py, feature_schema.json y docs/reference_fatigue_protocol.md.
 
-## 27. Anexo: Arquitectura con referencias independientes
+## 28. Anexo: Arquitectura con referencias independientes
 
 Anexo para preguntas.
 
@@ -218,7 +226,7 @@ La cinemática sincronizada crea las etiquetas de extensión y flexión; torque 
 
 Fuente: docs/reference_fatigue_protocol.md; las referencias técnicas se citan en docs/PHASE_REFERENCES.md.
 
-## 28. Anexo: Ecuaciones de etiquetas y arquitecturas
+## 29. Anexo: Ecuaciones de etiquetas y arquitecturas
 
 Anexo para preguntas.
 
@@ -226,7 +234,7 @@ Las ecuaciones separan las dos tareas supervisadas. El modelo de fase aprende de
 
 Fuente: docs/reference_fatigue_protocol.md; protocolo histórico y model_registry.csv.
 
-## 29. Anexo: Señal real y respuesta del filtro
+## 30. Anexo: Señal real y respuesta del filtro
 
 Anexo para preguntas.
 
