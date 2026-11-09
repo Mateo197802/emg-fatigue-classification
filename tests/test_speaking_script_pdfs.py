@@ -1,5 +1,7 @@
 from pathlib import Path
 import re
+import subprocess
+import sys
 
 
 def test_read_script_keeps_metadata_out_of_appendix_narration(tmp_path: Path):
@@ -55,3 +57,14 @@ def test_defense_script_readme_links_versioned_bilingual_pdfs():
     readme = (root / "docs/defense-scripts/README.md").read_text(encoding="utf-8")
     assert "pdf/20261109_v5/Guion_defensa_ES.pdf" in readme
     assert "pdf/20261109_v5/Defense_Script_EN.pdf" in readme
+
+
+def test_public_tree_audit_accepts_versioned_read_aloud_pdfs():
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, str(root / "tools/audit_public_tree.py")],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

@@ -8,6 +8,8 @@ forbidden={'.rar','.zip','.joblib','.pkl','.pickle','.parquet','.npz','.npy','.d
 allowed_public_pdfs={
     'docs/defense-scripts/pdf/Guion_defensa_ES.pdf',
     'docs/defense-scripts/pdf/Defense_Script_EN.pdf',
+    'docs/defense-scripts/pdf/20261109_v5/Guion_defensa_ES.pdf',
+    'docs/defense-scripts/pdf/20261109_v5/Defense_Script_EN.pdf',
 }
 private_paths=[]
 if a.source_archive:
