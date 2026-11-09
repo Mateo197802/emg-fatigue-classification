@@ -7,16 +7,6 @@ import re
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_LEFT
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import mm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer
-
-
 def read_script(path: Path):
     title = path.stem.replace("_", " ").replace("-", " ")
     chunks = re.split(r"(?m)^##\s+", path.read_text(encoding="utf-8"))
@@ -27,10 +17,13 @@ def read_script(path: Path):
         body = "\n".join(lines[1:]).strip()
         time_match = re.search(r"^(?:Tiempo previsto|Scheduled time):\s*([^\n]+)", body, re.M)
         source_match = re.search(r"^(?:Fuente|Source):\s*(.+)$", body, re.M)
-        note_match = re.search(r"(?m)^(?:Tiempo previsto|Scheduled time):\s*[^\n]+\s*\n\s*\n(.*?)(?=\n\s*\n(?:Fuente|Source):|\Z)", body, re.S)
         time_text = time_match.group(1).strip() if time_match else ""
-        note = note_match.group(1).strip() if note_match else body
         source = source_match.group(1).strip() if source_match else ""
+        narration_lines = [
+            line for line in body.splitlines()
+            if not re.match(r"^(?:Tiempo previsto|Scheduled time|Fuente|Source):\s*", line.strip())
+        ]
+        note = re.sub(r"\n{3,}", "\n\n", "\n".join(narration_lines)).strip()
         entries.append((heading, time_text, note, source))
     if len(entries) != 29:
         raise ValueError(f"expected 29 slide entries in {path}, found {len(entries)}")
@@ -38,6 +31,15 @@ def read_script(path: Path):
 
 
 def render_one(source: Path, destination: Path, language: str) -> None:
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_LEFT
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer
+
     title, entries = read_script(source)
     base = Path(r"C:\Windows\Fonts")
     pdfmetrics.registerFont(TTFont("ArialUnicode", str(base / "arial.ttf")))
