@@ -35,6 +35,22 @@ ABLATION_LABELS_ES = {
     "without_wavelet": "Sin wavelets",
 }
 
+CONFUSION_LABELS_ES = {
+    "majority": "Mayoría",
+    "logistic_rms_mdf": "Logística RMS + MDF",
+    "logistic_all": "Logística (10 características)",
+    "svm_rbf": "SVM RBF",
+    "random_forest": "Bosque aleatorio",
+    "nested_selector": "Selector anidado",
+    "baseline_10": "Directo (10 características)",
+    "phase_score": "Directo + score auxiliar",
+    "phase_conditioned": "Condicionado por score auxiliar",
+    "phase_only": "Solo score auxiliar",
+    "random_conditioned": "Control con score aleatorio",
+}
+
+CONFUSION_COLUMNS = ["cm_0_0", "cm_0_1", "cm_1_0", "cm_1_1"]
+
 
 def _require_columns(frame: pd.DataFrame, required: set[str], name: str) -> None:
     missing = required - set(frame.columns)
@@ -141,6 +157,114 @@ def plot_signal_es(signal: dict):
     axes[2].legend(loc="lower center", frameon=False)
     axes[2].grid(color="#e0e6ea", linewidth=0.6)
     return fig
+
+
+def plot_confusion_grid_es(
+    frame: pd.DataFrame,
+    models: list[str],
+    *,
+    normalized: bool,
+):
+    """Plot pooled OOF matrices with Spanish model and axis labels."""
+    _require_columns(frame, {"model", *CONFUSION_COLUMNS}, "confusion data")
+    if not models:
+        raise ValueError("At least one confusion-matrix model is required")
+
+    columns = 3
+    rows = int(np.ceil(len(models) / columns))
+    fig, axes = plt.subplots(rows, columns, figsize=(12, 3.45 * rows), squeeze=False)
+    scale_max = 1.0 if normalized else max(
+        float(frame.loc[frame["model"].eq(model), CONFUSION_COLUMNS].to_numpy(dtype=float).sum())
+        for model in models
+        if frame["model"].eq(model).any()
+    )
+    if scale_max <= 0:
+        raise ValueError("Confusion matrices must contain positive support")
+
+    for index, model in enumerate(models):
+        axis = axes.flat[index]
+        subset = frame.loc[frame["model"].eq(model), CONFUSION_COLUMNS]
+        if subset.empty:
+            raise ValueError(f"Confusion data are missing model: {model}")
+        matrix = subset.astype(float).sum(axis=0).to_numpy().reshape(2, 2)
+        if not np.isfinite(matrix).all() or (matrix < 0).any() or matrix.sum() <= 0:
+            raise ValueError(f"Confusion matrix for {model} has invalid counts")
+        if normalized:
+            row_totals = matrix.sum(axis=1, keepdims=True)
+            matrix = np.divide(matrix, row_totals, out=np.zeros_like(matrix), where=row_totals > 0)
+        image = axis.imshow(matrix, cmap="Blues", vmin=0, vmax=(1.0 if normalized else scale_max))
+        axis.set_title(CONFUSION_LABELS_ES.get(model, model), fontsize=12, fontweight="bold", pad=8)
+        axis.set_xticks([0, 1], labels=["0", "1"])
+        axis.set_yticks([0, 1], labels=["0", "1"])
+        axis.set_xlabel("Predicción", fontsize=9)
+        axis.set_ylabel("Referencia", fontsize=9)
+        axis.tick_params(labelsize=9)
+        threshold = (float(matrix.max()) / 2.0) if matrix.size else 0.0
+        for row_index in range(2):
+            for column_index in range(2):
+                value = matrix[row_index, column_index]
+                label = f"{value:.2f}" if normalized else f"{int(value):,}"
+                color = "white" if value > threshold else "#182a36"
+                axis.text(column_index, row_index, label, ha="center", va="center", color=color, fontsize=11)
+        for spine in axis.spines.values():
+            spine.set_visible(False)
+
+    for index in range(len(models), rows * columns):
+        axes.flat[index].axis("off")
+    kind = "Proporción por fila" if normalized else "Conteos OOF agrupados"
+    fig.suptitle(f"{kind} · clase 0 temprana · clase 1 tardía", fontsize=15, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    return fig
+
+
+def write_spanish_confusion_figures(
+    root: Path,
+    primary_results_path: Path,
+    supplemental_confusions_path: Path,
+) -> dict[str, Path]:
+    """Render pooled primary and supplemental OOF matrices with a source receipt."""
+    root = Path(root)
+    primary_path = Path(primary_results_path)
+    supplemental_path = Path(supplemental_confusions_path)
+    primary = pd.read_csv(primary_path)
+    supplemental = pd.read_csv(supplemental_path)
+    primary_models = [
+        "majority", "logistic_rms_mdf", "logistic_all", "svm_rbf", "random_forest", "nested_selector",
+    ]
+    supplemental_models = [
+        "baseline_10", "phase_score", "phase_conditioned", "phase_only", "random_conditioned",
+    ]
+    output_dir = root / "report_assets" / "phase"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    specs = {
+        "primary_confusions_counts_es.png": (primary, primary_models, False),
+        "primary_confusions_normalized_es.png": (primary, primary_models, True),
+        "phase_confusions_counts_es.png": (supplemental, supplemental_models, False),
+        "phase_confusions_normalized_es.png": (supplemental, supplemental_models, True),
+    }
+    outputs: dict[str, Path] = {}
+    for name, (frame, models, normalized) in specs.items():
+        figure = plot_confusion_grid_es(frame, models, normalized=normalized)
+        target = output_dir / name
+        figure.savefig(target, dpi=180, bbox_inches="tight", facecolor="white")
+        plt.close(figure)
+        outputs[name] = target
+
+    receipt_path = output_dir / "confusion_figures_es.receipt.json"
+    receipt = {
+        "status": "generated",
+        "scope": "pooled out-of-fold temporal-proxy counts and row proportions",
+        "class_names": {"0": "temprana", "1": "tardía"},
+        "models": {"primary": primary_models, "supplemental": supplemental_models},
+        "inputs": {
+            "primary_results_sha256": hashlib.sha256(primary_path.read_bytes()).hexdigest(),
+            "supplemental_confusions_sha256": hashlib.sha256(supplemental_path.read_bytes()).hexdigest(),
+        },
+        "outputs": {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in outputs.items()},
+    }
+    receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    outputs[receipt_path.name] = receipt_path
+    return outputs
 
 
 def write_spanish_defense_figures(

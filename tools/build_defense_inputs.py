@@ -6,7 +6,7 @@ import pandas as pd
 from scipy.signal import butter, periodogram, sosfreqz
 from emg_fatigue.contracts import read_config
 from emg_fatigue.defense_provenance import verify_archive_matches_frozen_sources
-from emg_fatigue.defense_figures import write_spanish_defense_figures
+from emg_fatigue.defense_figures import write_spanish_confusion_figures, write_spanish_defense_figures
 from emg_fatigue.evaluation import paired_metric_contrast
 from emg_fatigue.io import load_recordings
 from emg_fatigue.preprocessing import preprocess
@@ -83,4 +83,7 @@ figure_outputs=write_spanish_defense_figures(
  {'archive_sha256':source_provenance['archive_sha256'],
   'source_member_manifest_sha256':source_provenance['source_member_manifest_sha256'],
   'slides_input_sha256':sha(out)})
+confusion_outputs=write_spanish_confusion_figures(
+ root,ev/'results.csv',phase/'confusion_matrices.csv')
+figure_outputs.update(confusion_outputs)
 print(json.dumps({'status':'verified','corpus':data['corpus'],'spanish_figures':{k:v.name for k,v in figure_outputs.items()}},indent=2))
