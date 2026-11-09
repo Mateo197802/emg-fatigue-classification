@@ -43,7 +43,6 @@ MODEL_CONFIGS = {
         "C": 1.0,
         "gamma": "scale",
         "class_weight": "balanced",
-        "probability": False,
         "training_sample_cap_per_subject_trial_class": 50,
     },
     "random_forest": {
@@ -181,7 +180,6 @@ def _make_estimator(name, seed):
                 C=1.0,
                 gamma="scale",
                 class_weight="balanced",
-                probability=False,
                 cache_size=1024,
                 random_state=seed,
             ),
