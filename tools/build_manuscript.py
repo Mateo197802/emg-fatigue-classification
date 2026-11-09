@@ -145,7 +145,7 @@ table(['Field','Value'],[
  ['Source commit used for this build',commit],['Revision date','9 November 2026']])
 h('Abstract')
 abstract=(f"Surface electromyography can capture changes associated with muscular fatigue, but a classifier must be evaluated against an explicitly defined reference. "
- f"This study implements a binary early-versus-late temporal approximation of acute quadriceps fatigue in the supplied knee-extension recordings. "
+ f"This study evaluates a binary early-versus-late recording-position proxy from sEMG windows in the supplied knee-extension recordings. The target is not physiological fatigue status. "
  f"The primary archive contains 140 CSV files and 4,256,257 samples grouped into 15 recording-derived subject codes; 138 R1–R5 recordings enter formal processing and two R0 controls remain separate. "
  f"A gap-preserving 20–400 Hz filter, candidate-activity mask, and 250 ms windows with 50% overlap produce {processing['windows_labeled']:,} labeled windows. "
  f"Complete first-third and last-third windows receive the two labels, while transition, invalid-quality and undetected-activity windows are excluded. "
@@ -158,7 +158,7 @@ abstract=(f"Surface electromyography can capture changes associated with muscula
 if args.include_phase:abstract+=' An exploratory cascade learning EMG burst halves before temporal classification showed no clear improvement over direct ten-feature logistic regression.'
 if not 200<=len(abstract.split())<=250:raise RuntimeError(f'abstract length {len(abstract.split())}')
 p(abstract)
-h('Keywords');p('surface electromyography; rectus femoris; muscular fatigue proxy; grouped validation; signal processing; reproducibility')
+h('Keywords');p('surface electromyography; rectus femoris; recording-position proxy; grouped validation; signal processing; reproducibility')
 h('1.  Fatigue: definition and state of the art')
 h('1.1  Which fatigue are you detecting?',2)
 p('The scientific question concerns acute fatigue during unilateral knee extension, but the model target available in this ZIP is not fatigue status. Each feature window is an observation; the learned class is whether that eligible window falls in the first or final third of its recording. Class 0 is the early recording-position proxy and class 1 is the late recording-position proxy. The model was not trained to distinguish fatigue from no fatigue. No central or peripheral fatigue, force-loss threshold or clinical fatigue diagnosis is independently identified. The prescribed exercise-to-failure context cannot be confirmed per file from the CSV alone. Scores therefore estimate agreement with the temporal proxy, conditional on valid candidate-active windows in the recording extremes.')
@@ -326,7 +326,7 @@ p(f"1. An executable binary pipeline produced {processing['windows_labeled']:,} 
 p(f"2. The nested selection procedure achieved macro-F1 {ms('nested_selector','f1_macro')}; its observed mean did not clearly improve on the {ms('logistic_rms_mdf','f1_macro')} RMS+MDF baseline.")
 p('3. Signal processing, grouped OOF evaluation, complete model reloading and fragment reassembly are auditable software capabilities; they do not substitute for a fatigue reference.')
 p('4. The available evidence supports early/late proxy classification. Independent physiological fatigue detection, calibrated force loss and verified unseen-person generalization remain unestablished.')
-if args.include_phase:p('5. Adding an EMG burst-half phase score did not clearly improve direct ten-feature logistic classification. The first-stage phase head, second-stage fatigue-proxy classifier and final primary RF artifact are distinct fits and roles; the exploratory cascade is not promoted to the primary model.')
+if args.include_phase:p('5. Adding an EMG burst-half score did not clearly improve direct ten-feature logistic classification. The first-stage burst-half head, second-stage temporal-proxy classifier and final primary RF artifact are distinct fits and roles; the exploratory cascade is not promoted to the primary model.')
 h('9.  Authors')
 p('Ethan Guevara; Mateo Gavilanes; Kennedy Rodriguez.')
 h('10.  References')

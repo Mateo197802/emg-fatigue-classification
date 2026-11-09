@@ -30,6 +30,14 @@ def test_readme_and_data_dictionary_do_not_define_proxy_classes_as_fatigue():
     assert "not trained to distinguish fatigue from no fatigue" in model_card
 
 
+def test_manuscript_builder_names_the_temporal_proxy_without_calling_it_fatigue():
+    root = Path(__file__).resolve().parents[1]
+    builder = (root / "tools" / "build_manuscript.py").read_text(encoding="utf-8").lower()
+    assert "early-versus-late temporal approximation of acute quadriceps fatigue" not in builder
+    assert "binary early-versus-late recording-position proxy" in builder
+    assert "second-stage fatigue-proxy classifier" not in builder
+
+
 def test_prediction_from_legacy_bundle_uses_corrected_proxy_display(monkeypatch):
     from dataclasses import asdict
 
