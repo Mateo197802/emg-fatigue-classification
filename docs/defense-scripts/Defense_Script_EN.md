@@ -26,13 +26,13 @@ The CSV files contain relative time and ADC counts at approximately one thousand
 
 Source: Original CSV, qc.py, preprocessing.py.
 
-## 4. Descriptive signal pre-analysis
+## 4. Quantitative signal-quality pre-analysis
 
 Scheduled time: 35 s.
 
-These curves summarize candidate-active windows by recording position and then by group. They show electrical amplitude and spectral changes in the available files. They do not establish fatigue, because there are no synchronized force or torque labels, and the curves are descriptive rather than training targets.
+The pre-analysis summarizes accepted and excluded continuous runs, constant segments, extreme repeats without calibrated ADC rails, and 50/60 Hz line prominence. Amplitude is reported in ADC counts, not calibrated voltage. Repetition- and phase-aligned trajectories are unavailable because the ZIP has no reviewed synchronized mechanical markers. We removed elapsed-time-decile curves because they overlap with the early/late proxy and do not demonstrate fatigue.
 
-Source: feature_trajectories_by_group.csv.
+Source: qc.csv, line_prominence.csv and src/emg_fatigue/preanalysis.py. Granular signal data remain in the private package.
 
 ## 5. Signal preprocessing
 

@@ -2,7 +2,7 @@
 
 Ethan Guevara; Mateo Gavilanes; Kennedy Rodriguez
 
-El proyecto procesa la señal sEMG, compara clasificadores y evalúa una arquitectura auxiliar de dos etapas. El resultado medido corresponde a ventanas del primer y último tercio de cada registro. La arquitectura auxiliar no mostró una mejora clara frente al modelo directo con diez características.
+El proyecto procesa la señal sEMG, compara clasificadores y evalúa una arquitectura auxiliar de dos etapas. La ventana es la observación; la clase histórica es la posición temprana o tardía de esa ventana en el registro. El modelo no fue entrenado para distinguir fatiga de no fatiga muscular. La arquitectura auxiliar no mostró una mejora clara frente al modelo directo con diez características sobre esa misma etiqueta proxy.
 
 ## Recorrido de lectura
 
@@ -23,7 +23,7 @@ El proyecto procesa la señal sEMG, compara clasificadores y evalúa una arquite
 | ZIP privado versionado | Informe PDF/Word con las ecuaciones completas, presentación PPTX/PDF con 16 diapositivas principales y 14 anexos, guiones español/inglés MD/PDF, evidencia privada de señal, originales, OOF, búsquedas, modelo y recibos |
 | `LEEME_PRIMERO.md` en la raíz del ZIP | Acceso directo a los archivos del paquete y comandos para comprobar su integridad |
 
-El ZIP conserva las fuentes originales y distingue los resultados principales del suplemento. El modelo principal de 300 árboles conserva sus pesos. El RF auxiliar de 100 árboles y la logística de la cascada cumplen funciones diferentes. `baseline_10` reproduce `logistic_all`; no constituye otro resultado independiente.
+El ZIP conserva las fuentes originales y distingue los resultados principales del suplemento. El modelo principal de 300 árboles conserva sus pesos. El RF auxiliar de 100 árboles y la logística de la cascada cumplen funciones diferentes. `baseline_10` reproduce `logistic_all`; no constituye otro resultado independiente. El preanálisis informa controles de señal; las trayectorias por repetición/fase no están disponibles sin marcadores sincronizados y revisados.
 
 ## Verificación del paquete privado
 

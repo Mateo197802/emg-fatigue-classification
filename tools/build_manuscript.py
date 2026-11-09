@@ -7,6 +7,7 @@ import argparse, csv, hashlib, json, platform, subprocess, sys
 from copy import deepcopy
 from pathlib import Path
 from statistics import mean, stdev
+import pandas as pd
 from docx import Document
 from docx.text.paragraph import Paragraph
 from docx.shared import Inches, Pt, RGBColor
@@ -23,12 +24,14 @@ root=Path(args.output_root).resolve();assets=root/'report_assets'
 repo=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(repo/'src'))
 from emg_fatigue.protocol_equations import report_equation_rows
+from emg_fatigue.preanalysis import summarize_preanalysis
 def rows(path):
     with Path(path).open(encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
 processing=json.loads((root/'processing_receipt.json').read_text())
 evaluation=json.loads((root/'evaluation/evaluation_receipt.json').read_text())
 summary=rows(root/'evaluation/metrics_summary.csv');results=rows(root/'evaluation/results.csv')
 coverage=rows(root/'coverage.csv');sens=rows(root/'sensitivity_summary.csv');abl=rows(root/'ablation_summary.csv')
+preanalysis=summarize_preanalysis(pd.DataFrame(rows(root/'qc.csv')),pd.DataFrame(rows(root/'line_prominence.csv')))
 refs=json.loads((repo/'references/verified_references.json').read_text(encoding='utf-8'))
 phase_public=repo/'results/phase_experiment'
 if args.include_phase:
@@ -119,7 +122,7 @@ def figure(name,caption,width=6.0):
     p0=doc.add_paragraph();p0.paragraph_format.keep_with_next=True;p0.add_run().add_picture(str(path),width=Inches(width))
     p(caption);content.append(f'Figure file: {name}')
 
-title='Binary sEMG classification using a temporal proxy of quadriceps fatigue'
+title='Early-versus-late recording-position classification from sEMG windows'
 p0=p(title,'Title')
 for run in p0.runs:run.font.color.rgb=RGBColor(0,0,0)
 for element in [p0._p.get_or_add_pPr(),doc.styles['Title'].element.get_or_add_pPr()]:
@@ -158,7 +161,7 @@ p(abstract)
 h('Keywords');p('surface electromyography; rectus femoris; muscular fatigue proxy; grouped validation; signal processing; reproducibility')
 h('1.  Fatigue: definition and state of the art')
 h('1.1  Which fatigue are you detecting?',2)
-p('The intended construct is acute fatigue during unilateral knee extension, but the available target is a binary elapsed-time approximation. Class 0 denotes eligible early windows; class 1 denotes eligible late windows. Neither central nor peripheral fatigue is identified independently, and no force-loss threshold or clinical fatigue diagnosis is claimed. The assumed exercise-to-failure context belongs to the prescribed protocol and cannot be confirmed per file from the CSV alone. The classification estimates agreement with this weak operational label. It is conditional on valid candidate-active windows in the extremes of a complete recording, not on every window during exercise.')
+p('The scientific question concerns acute fatigue during unilateral knee extension, but the model target available in this ZIP is not fatigue status. Each feature window is an observation; the learned class is whether that eligible window falls in the first or final third of its recording. Class 0 is the early recording-position proxy and class 1 is the late recording-position proxy. The model was not trained to distinguish fatigue from no fatigue. No central or peripheral fatigue, force-loss threshold or clinical fatigue diagnosis is independently identified. The prescribed exercise-to-failure context cannot be confirmed per file from the CSV alone. Scores therefore estimate agreement with the temporal proxy, conditional on valid candidate-active windows in the recording extremes.')
 h('1.2  Physiological basis',2)
 p('Under comparable contraction conditions, changes in motor-unit behavior and membrane propagation can shift the sEMG spectrum. Dynamic knee-extension work with synchronized torque, joint angle and MVC offers a materially stronger basis for interpreting spectral fatigue indices than elapsed file position alone [1]. Time-frequency estimation was developed to address the changing signal properties of cyclic contractions [2]. These observations motivate spectral and wavelet feature families without proving that an observed change in the supplied signal is caused by fatigue.')
 p('RMS and MAV describe amplitude, which also depends on effort, recruitment, electrode geometry and movement. A decline in MDF or MNF is not specific to fatigue when contraction phase, force, sensor mode and acquisition transfer functions are unknown. Filtering can remove or attenuate components of biological and contaminating signals together; controlled filter studies [3] support explicit processing choices rather than a claim that the filter which maximizes model accuracy is physiologically best. Frequency-analysis recommendations [10] further motivate stated windows, tapering and bandwidth.')
@@ -188,13 +191,22 @@ totals={k:sum(int(r[k]) for r in coverage) for k in ['raw_samples','qc_valid_sam
 table(['Denominator','Count'],[[k.replace('_',' '),f'{v:,}'] for k,v in totals.items()])
 h('2.4  Signal quality assessment',2)
 p('Quality diagnostics preserve the original bytes and flag clock gaps, jitter, constant segments, extreme-value repetition and spectral line prominence. Signed exported counts do not establish calibrated ADC rails. SNR against seated resting noise is not estimable because no identified resting-baseline segment is provided; filter residual is not substituted for true noise. A record can contribute usable segments while windows crossing a timestamp gap remain excluded.')
+table(['Diagnostic','Observed result','Interpretation'],[
+ ['Contiguous runs',f"{preanalysis['run_count']:,} total; {preanalysis['valid_run_count']:,} pass; {preanalysis['excluded_run_count']:,} excluded",'Run-level time/QC gate'],
+ ['Constant runs',f"{preanalysis['constant_run_count']:,}",'Rejected as unusable signal'],
+ ['Extreme-repeat flags',f"{preanalysis['uncalibrated_extreme_repeat_flag_count']:,}",'ADC rail calibration unavailable; not verified clipping'],
+ ['50 Hz line prominence',f"{preanalysis['line_50hz_above_threshold_count']:,}/{preanalysis['line_50hz_measured_count']:,} above {preanalysis['line_prominence_threshold_db']:.0f} dB",'Notch trigger diagnostic'],
+ ['60 Hz line prominence',f"{preanalysis['line_60hz_above_threshold_count']:,}/{preanalysis['line_60hz_measured_count']:,} above {preanalysis['line_prominence_threshold_db']:.0f} dB",'Notch trigger diagnostic'],
+ ['Median p99–p01 span',f"{preanalysis['median_p99_minus_p01_count']:.2f} ADC counts",'Across accepted runs; uncalibrated'],
+ ['Median RMS',f"{preanalysis['median_rms_count']:.2f} ADC counts",'Across accepted runs; uncalibrated'],
+],pattern=7,font_size=8.2)
 figure('qc_examples.png','Figure 1. A continuous accepted example and a gap-crossing interval excluded by the timestamp rule. This is a QC illustration selected without model-outcome information.')
 h('3.  Labelling strategy')
 h('3.1  Chosen strategy and justification',2)
 p('For each original file, the elapsed recording fraction is u=(t-t0)/(t1-t0), using original recording bounds before quality exclusions. A complete eligible window receives 0 when its end is before t0+(t1-t0)/3, and receives 1 when its start is at or after t0+2(t1-t0)/3. The central third and boundary-crossing windows are excluded. This implements weak_elapsed_thirds_binary_v1. Repetition-based thirds would be closer to the guide’s example but cannot be reconstructed as verified mechanical events from these files. Borg and MVC approaches were considered and are unavailable locally. The assumption of increasing fatigue with elapsed file time is explicitly weaker than either independent approach.')
 h('3.2  Class definition and distribution',2)
 counts=processing['label_counts'];n=sum(counts.values())
-table(['Class','Exact eligible support','Windows','Percent'],[['0 early proxy','Complete first elapsed-time third',counts['0'],f"{100*counts['0']/n:.1f}%"],['1 late proxy','Complete last elapsed-time third',counts['1'],f"{100*counts['1']/n:.1f}%"]],pattern=5)
+table(['Class','Exact eligible support','Windows','Percent'],[['0 early recording-position proxy','Complete first elapsed-time third',counts['0'],f"{100*counts['0']/n:.1f}%"],['1 late recording-position proxy','Complete last elapsed-time third',counts['1'],f"{100*counts['1']/n:.1f}%"]],pattern=5)
 h('3.3  Circularity check',2)
 p('No EMG feature defines label 0 versus 1: labels depend on elapsed recording bounds. RMS enters the candidate-activity eligibility mask, which creates a selection condition, not a fatigue class. This can still bias the analyzed population of windows and is addressed by activity-occupancy sensitivity. Time, file name, recording/group identity, side and series are not model inputs. MDF/MNF threshold-screen outputs from the original project are not labels or predictors in this task. The time oracle diagnostic is tautological by construction and is excluded from deployable models.')
 h('3.4  Label reliability',2)
@@ -221,8 +233,8 @@ table(['Candidate feature','Formula used','Units / decision'],[
  ['Normalized spectral entropy','pₖ=Pxx[k]/Σ_{j∈B}Pxx[j]; −Σ_{k∈B}pₖ ln(pₖ)/ln(K), K=|B|','unitless; descriptive candidate only'],
 ],pattern=7,font_size=7.7)
 p('The audit covered 9,289 QC-valid candidate-active windows and used no label or model fit. Spearman correlations were MAV–iEMG 1.000 and RMS–variance 1.000 at both window and group-median levels; adding those pairs would duplicate fixed-duration amplitude information. MNF–entropy was 0.862 across overlapping windows and 0.957 across 15 folder-derived group medians; MDF–zero crossings was 0.740/0.887; wavelet D1–slope changes was 0.840/0.975; and zero crossings–slope changes was 0.736/0.904. These are descriptive correlations, not independent-sample inference or evidence of predictive gain. No candidate was added to the classifier; testing their predictive value requires independent reference labels and nested, training-only feature selection.')
-h('4.3  Feature behaviour across the set',2)
-figure('trajectories.png','Figure 3. Candidate-active feature trajectories by recording fraction. First reduce to recording-bin medians, then group-bin medians; bands show across-group SD. They do not establish force loss.')
+h('4.3  Repetition- and phase-aligned feature trajectories',2)
+p(preanalysis['repetition_phase_trajectories_note']+' RMS/MDF/MNF curves by elapsed-time decile were removed: those deciles overlap with the historical proxy definition and cannot serve as fatigue evidence. This analysis is unavailable until synchronized, reviewed repetition and phase markers are supplied.')
 h('4.4  Bilateral analysis',2)
 p('Left and right recordings remain in one group for every split. Feature summaries pair side within group and series where both are available. There is no evidence that rows from separately exported sides are synchronous, and no paired-sample concatenation is used. Side differences are electrical summaries, not proof of dominant leg or unequal fatigue rates.')
 h('4.5  Feature selection or reduction',2)

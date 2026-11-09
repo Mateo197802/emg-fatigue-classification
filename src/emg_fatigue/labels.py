@@ -1,6 +1,21 @@
 import numpy as np
 
-LABELS={'early_proxy_nonfatigue':0,'late_proxy_fatigue':1}
+EARLY_PROXY_LABEL='early_recording_position_proxy'
+LATE_PROXY_LABEL='late_recording_position_proxy'
+LABELS={EARLY_PROXY_LABEL:0,LATE_PROXY_LABEL:1}
+LEGACY_PROXY_LABELS={
+    'early_proxy_nonfatigue':EARLY_PROXY_LABEL,
+    'late_proxy_fatigue':LATE_PROXY_LABEL,
+}
+
+
+def display_proxy_label(label):
+    """Return an honest recording-position name, including for legacy bundles."""
+    if label in LABELS:
+        return label
+    if label in LEGACY_PROXY_LABELS:
+        return LEGACY_PROXY_LABELS[label]
+    raise ValueError(f'unknown historical proxy label: {label!r}')
 
 
 def label_interval(start,end,recording_start,recording_end,eligible=True,shift=0.):
@@ -10,8 +25,8 @@ def label_interval(start,end,recording_start,recording_end,eligible=True,shift=0
         raise ValueError('invalid window or recording bounds')
     early=recording_start+duration*(1/3+shift)
     late=recording_start+duration*(2/3+shift)
-    if end<early:return 'early_proxy_nonfatigue'
-    if start>=late:return 'late_proxy_fatigue'
+    if end<early:return EARLY_PROXY_LABEL
+    if start>=late:return LATE_PROXY_LABEL
     return None
 
 

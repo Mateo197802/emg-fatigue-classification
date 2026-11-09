@@ -26,13 +26,13 @@ Los CSV aportan tiempo relativo y cuentas ADC con aproximadamente mil muestras p
 
 Fuente: Archivo original, qc.py y preprocessing.py.
 
-## 4. Preanálisis descriptivo de la señal
+## 4. Preanálisis cuantitativo de calidad de la señal
 
 Tiempo previsto: 35 s.
 
-Estas curvas usan las 9.289 ventanas activas con características válidas, incluido el centro sin etiqueta. Primero calculamos medianas por registro y decil temporal, después medianas por grupo y finalmente media entre grupos. Los valores describen el corpus y no prueban fatiga. Amplitud y frecuencia también dependen de esfuerzo, movimiento y adquisición. Las curvas no participan en la creación de etiquetas.
+El preanálisis resume los tramos continuos aceptados y excluidos, los tramos constantes, las repeticiones extremas sin calibración de rieles y la prominencia de línea a 50 y 60 Hz. La amplitud se expresa en cuentas ADC, no en voltaje calibrado. Las trayectorias por repetición y fase no están disponibles: el ZIP no incluye marcas mecánicas sincronizadas y revisadas. Retiramos las curvas por deciles temporales porque se superponen con el proxy temprano/tardío y no demuestran fatiga.
 
-Fuente: feature_trajectories_by_group.csv y features.parquet.
+Fuente: qc.csv, line_prominence.csv y src/emg_fatigue/preanalysis.py. Los datos detallados de señal se conservan en el paquete privado.
 
 ## 5. Preprocesamiento de la señal
 

@@ -16,7 +16,7 @@ La auditoría local encontró EMG en CSV, además de hojas de bibliografía y de
 |---|---|---|
 | Archivo principal | 140 CSV; 138 registros R1–R5 y dos controles R0 separados | 15 grupos derivados de carpetas; identidad de persona no verificada independientemente |
 | Señal | 4.256.257 muestras y tasa efectiva cercana a 1 kHz | El canal se conserva en cuentas ADC; `Voltage_mV` no demuestra calibración física |
-| Preanálisis | Reloj, huecos, jitter, valores extremos, tramos constantes, ocupación candidata y RMS/MDF/MNF por fracción temporal | No se interpreta un cambio eléctrico como pérdida de fuerza sin referencia mecánica |
+| Preanálisis | Reloj, huecos, jitter, valores extremos, tramos constantes, ocupación candidata, amplitud ADC y prominencia de línea 50/60 Hz | No están disponibles trayectorias por repetición/fase; se retiraron las curvas por deciles temporales porque se superponen con el proxy y no evidencian fatiga |
 | Filtro principal | Centrado por tramo continuo; Butterworth pasa banda 20–400 Hz en SOS, diseño recalculado con `fs`, `sosfiltfilt` fuera de línea y máscara de 100 ms por borde | No filtra a través de huecos; notch 50/60 Hz queda como sensibilidad condicionada por prominencia medida |
 | Ventana histórica | Deslizante, 250 ms, 50% solapamiento: `N=round(0,25 fs)`, `H=round(N(1−ρ))`; a 1 kHz, `N=250`, `H=125`, `Δf=4 Hz` | Es el protocolo de los resultados congelados |
 | Ventana propuesta con referencias | 500 ms principal y 250 ms sensibilidad; 50% de solapamiento | A 1 kHz, `N=500/H=250/Δf=2 Hz` y `N=250/H=125/Δf=4 Hz`; no se evaluó porque faltan etiquetas independientes |

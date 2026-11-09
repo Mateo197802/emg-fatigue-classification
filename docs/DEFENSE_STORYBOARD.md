@@ -7,7 +7,7 @@ La narración principal dura 600 segundos en 16 diapositivas. Catorce diapositiv
 1. Objetivo, señal y autores: Ethan Guevara; Mateo Gavilanes; Kennedy Rodriguez.
 2. Corpus y denominadores cuantitativos.
 3. Señal almacenada, señal filtrada y control de reloj/adquisición.
-4. Preanálisis descriptivo de RMS, MDF y MNF.
+4. Preanálisis cuantitativo de calidad de señal; trayectorias por repetición/fase no disponibles.
 5. Preprocesamiento y criterios de calidad.
 6. Construcción de ventanas y etiquetas temporales proxy.
 7. Diez características por ventana.

@@ -4,7 +4,7 @@ The [supplemental phase experiment](PHASE_EXPERIMENT.md) uses a separate auxilia
 
 The final private artifact is a complete preprocessing/feature-contract bundle and fitted scikit-learn pipeline. Full-cohort grouped inner selection chose a random forest with 300 trees, maximum depth 3, minimum leaf size 2 and balanced class weights. This is the choice from the frozen selection procedure, not evidence that random forest is universally superior.
 
-**Target:** `weak_elapsed_thirds_binary_v1`. Class 0 denotes eligible first-third windows and class 1 eligible last-third windows. The central third is outside training support. Neither class is independently confirmed physiological fatigue/nonfatigue.
+**Target:** `weak_elapsed_thirds_binary_v1`. Each feature window is an observation; its class is early or late recording position. Class 0 denotes eligible first-third windows and class 1 eligible last-third windows. The central third is outside training support. The model was not trained to distinguish fatigue from no fatigue, and neither class is independently confirmed physiological fatigue.
 
 **Inputs:** a complete offline CSV with original increasing seconds and signed stored count values. Compatible fragments are reassembled before filtering. The same frozen 20–400 Hz filter, candidate activity rule, windowing, ten-feature schema and fitted model are used on recarga. No test-record normalization is fitted against other subjects.
 

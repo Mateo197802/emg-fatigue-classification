@@ -24,6 +24,22 @@ def qc_recording(recording,config):
     rows=contiguous_runs(recording.t,config)
     for row in rows:
         x=recording.x[row['start']:row['end']]
+        t=recording.t[row['start']:row['end']]
+        centered_t=t-t.mean()
+        centered_x=x-x.mean()
+        time_energy=float(np.dot(centered_t,centered_t))
+        trend=float(np.dot(centered_t,centered_x)/time_energy) if time_energy>0 else 0.0
+        # These are descriptive diagnostics in stored ADC counts. They do not
+        # imply calibrated voltage, resting baseline, or a clipping rail.
+        row.update({
+            'mean_count':float(np.mean(x)),
+            'std_count':float(np.std(x)),
+            'rms_count':float(np.sqrt(np.mean(x*x))),
+            'peak_to_peak_count':float(np.ptp(x)),
+            'p01_count':float(np.quantile(x,.01)),
+            'p99_count':float(np.quantile(x,.99)),
+            'linear_trend_count_per_s':trend,
+        })
         row['constant_signal']=bool(np.ptp(x)==0)
         row['extreme_repeat_fraction']=float(max(np.mean(x==x.min()),np.mean(x==x.max())))
         row['clipping_status']='uncalibrated_extreme_repeat_flag' if row['extreme_repeat_fraction']>.05 else 'no_extreme_repeat_flag'

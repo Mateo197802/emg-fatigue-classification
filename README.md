@@ -6,7 +6,7 @@ La [respuesta técnica a los comentarios del docente](docs/PROFESSOR_FEEDBACK_RE
 
 ## Defense presentation
 
-The revised private defense follows the signal-analysis workflow in **16 principal slides (600 seconds) and 14 evidence appendices**: corpus, signal, descriptive preanalysis, preprocessing, windowing, labels, features, grouped validation, model families and proxy performance, auxiliary architecture and results, candidate-feature audit, equations, and the proposed reference-backed direct/cascade/expert comparison. It removes the former administrative closing block. See the [slide-by-slide storyboard](docs/DEFENSE_STORYBOARD.md).
+The revised private defense follows the signal-analysis workflow in **16 principal slides (600 seconds) and 14 evidence appendices**: corpus, signal, quantitative signal-quality preanalysis, preprocessing, windowing, labels, features, grouped validation, model families and proxy performance, auxiliary architecture and results, candidate-feature audit, equations, and the proposed reference-backed direct/cascade/expert comparison. Repetition- and phase-aligned feature trajectories are reported as unavailable without synchronized verified markers. It removes the former administrative closing block. See the [slide-by-slide storyboard](docs/DEFENSE_STORYBOARD.md).
 
 The [input builder](tools/build_defense_inputs.py) verifies the frozen evaluation receipts and prepares private signal snippets and numerical summaries. The [presentation builder](tools/build_defense_v2.mjs) creates editable tables, charts, confusion matrices, window and reference-architecture diagrams, and Spanish/English speaking scripts. The [signal-evidence builder](tools/build_signal_evidence.py) creates a private anonymized figure with a real waveform, Hann periodograms and the sampling-rate-specific filter response. Its image and receipt belong in the private package and must not be committed. The only PDFs in this public repository are the read-aloud scripts; participant-level signals, private input JSON, manuscript PDF and presentation PDF/PPTX remain private.
 
@@ -45,7 +45,7 @@ The **[executed proxy architecture](docs/figures/executed_proxy_architecture_es.
 
 The supplemental `baseline_10` reproduces primary `logistic_all`; it is different from the primary nested selector (macro-F1 0.6240). The auxiliary RF, primary RF family and final serialized RF are different fits and roles, explicitly related in the model map. This experiment does not establish verified extension recognition, physiological fatigue or robustness to unseen acquisition domains.
 
-This project implements offline binary classification of early and late candidate-active windows from the intended rectus femoris knee-extension study. Labels are a **weak elapsed-time approximation** of nonfatigue/fatigue. The supplied recordings do not include an independent synchronized fatigue reference. Consequently, the reported scores establish agreement with this operational label, not validated physiological fatigue, force loss, or fatigue onset.
+This project implements offline classification of candidate-active EMG windows by **early versus late recording position**. The window is the observation; its historical class is a temporal-position proxy, not a physiological fatigue or non-fatigue label. The supplied recordings do not include an independent synchronized fatigue reference. Consequently, the reported scores measure agreement with this temporal proxy, not fatigue detection, force loss, or fatigue onset.
 
 ## Reference-backed fatigue task
 

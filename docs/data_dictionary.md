@@ -11,8 +11,8 @@
 | side | Filename-derived left/right; metadata, never a primary predictor |
 | qc_valid | Complete window passes run quality and filter-edge masks |
 | activity_occupancy | Fraction of window covered by candidate activity, not verified contraction |
-| label 0 | early_proxy_nonfatigue, weak elapsed-time label |
-| label 1 | late_proxy_fatigue, weak elapsed-time label |
+| label 0 | `early_recording_position_proxy`; eligible window fully before the first elapsed-time third |
+| label 1 | `late_recording_position_proxy`; eligible window starts at or after the final elapsed-time third |
 | missing label | QC/activity/feature failure or excluded transition/boundary; never recoded as 0 |
 | rms, mav | Centered stored-signal amplitude in counts |
 | waveform_length_per_s | Sum absolute adjacent changes divided by window duration, counts/s |
@@ -22,7 +22,7 @@
 | feature_schema_version | `emg_window_features_v1` for historical results; `emg_window_features_v2_sample_span` for corrected waveform-length calculations |
 | waveform_length_per_s | Historical v1 convention: `Σ|x[n]−x[n−1]| / (N/fs)`, counts/s |
 | waveform_length_per_s_sample_span | Corrected v2 convention: `Σ|x[n]−x[n−1]| / ((N−1)/fs)`, counts/s; never silently substituted for v1 |
-| label_evidence | `weak_elapsed_time` for historical labels; reference-backed rows require an approved torque/reference contract |
+| label_evidence | `weak_elapsed_time` for historical recording-position proxies; reference-backed rows require an approved torque/reference contract |
 | reference_level | `session`, `repetition`, `time_series`, or `window`; do not expand a coarse level to windows without a validated mapping |
 | evidence_status | `synthetic_only` for synthetic fixtures; `reference_approved` only after calibrated, synchronized and approved reference validation |
 | abstention_reason | Explicit invalid/QC/phase-transition/onset-boundary reason; unknown or missing references are never encoded as class 0 |

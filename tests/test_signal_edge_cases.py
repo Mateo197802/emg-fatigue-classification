@@ -29,7 +29,8 @@ def test_filter_run_rejects_malformed_signal_or_unusable_sample_rate(signal, sam
         filter_run(signal, sample_rate, StudyConfig())
 
 
-def test_notch_is_applied_only_when_measured_mains_prominence_exceeds_threshold():
+@pytest.mark.parametrize("mains_hz", [50.0, 60.0])
+def test_notch_is_applied_only_when_measured_mains_prominence_exceeds_threshold(mains_hz):
     from dataclasses import replace
 
     from emg_fatigue.contracts import StudyConfig
@@ -38,8 +39,8 @@ def test_notch_is_applied_only_when_measured_mains_prominence_exceeds_threshold(
     fs = 1000.0
     t = np.arange(8000) / fs
     clean = 2.0 * np.sin(2 * np.pi * 100 * t)
-    contaminated = clean + 5.0 * np.sin(2 * np.pi * 50 * t)
-    assert line_prominence(contaminated, fs)["50"] > 10.0
+    contaminated = clean + 5.0 * np.sin(2 * np.pi * mains_hz * t)
+    assert line_prominence(contaminated, fs)[str(int(mains_hz))] > 10.0
 
     base = StudyConfig(notch=False)
     notch = replace(base, notch=True)
@@ -57,7 +58,49 @@ def test_notch_is_applied_only_when_measured_mains_prominence_exceeds_threshold(
         coefficients, *_ = np.linalg.lstsq(design, values[mask], rcond=None)
         return float(np.hypot(*coefficients))
 
-    assert amplitude(contaminated_notch, 50) < 0.1 * amplitude(contaminated_base, 50)
+    assert amplitude(contaminated_notch, mains_hz) < 0.1 * amplitude(contaminated_base, mains_hz)
     assert amplitude(contaminated_notch, 100) == pytest.approx(
         amplitude(contaminated_base, 100), rel=0.03
     )
+
+
+def test_bandpass_removes_baseline_drift_while_preserving_emg_band_tone():
+    from emg_fatigue.contracts import StudyConfig
+    from emg_fatigue.preprocessing import filter_run
+
+    fs = 1000.0
+    t = np.arange(8000) / fs
+    signal = 60.0 + 20.0 * np.sin(2 * np.pi * 0.5 * t) + 2.0 * np.sin(2 * np.pi * 100 * t)
+    filtered, mask = filter_run(signal, fs, StudyConfig())
+
+    def amplitude(values, frequency):
+        valid_t = t[mask]
+        design = np.column_stack((np.sin(2 * np.pi * frequency * valid_t),
+                                  np.cos(2 * np.pi * frequency * valid_t)))
+        coefficients, *_ = np.linalg.lstsq(design, values[mask], rcond=None)
+        return float(np.hypot(*coefficients))
+
+    assert amplitude(filtered, 0.5) < 0.02 * amplitude(signal, 0.5)
+    assert amplitude(filtered, 100.0) == pytest.approx(amplitude(signal, 100.0), rel=0.03)
+
+
+def test_qc_reports_uncalibrated_amplitude_and_linear_trend_as_descriptive_counts():
+    from emg_fatigue.contracts import Recording, StudyConfig
+    from emg_fatigue.qc import qc_recording
+
+    fs = 1000.0
+    t = np.arange(4000) / fs
+    x = 150.0 + 3.0 * t + 2.0 * np.sin(2 * np.pi * 100.0 * t)
+    recording = Recording("R", "G", "test", "left", "R1", t, x, "hash")
+
+    result = qc_recording(recording, StudyConfig())
+
+    assert len(result) == 1
+    row = result[0]
+    assert row["mean_count"] == pytest.approx(float(x.mean()), abs=1e-10)
+    assert row["rms_count"] == pytest.approx(float(np.sqrt(np.mean(x * x))), abs=1e-10)
+    assert row["peak_to_peak_count"] == pytest.approx(float(np.ptp(x)), abs=1e-10)
+    assert row["p01_count"] == pytest.approx(float(np.quantile(x, 0.01)), abs=1e-10)
+    assert row["p99_count"] == pytest.approx(float(np.quantile(x, 0.99)), abs=1e-10)
+    assert row["linear_trend_count_per_s"] == pytest.approx(3.0, abs=0.01)
+    assert row["clipping_status"] == "no_extreme_repeat_flag"

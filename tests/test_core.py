@@ -49,10 +49,10 @@ def test_filter_removes_dc_and_low_frequency_without_crossing_gaps():
 
 def test_binary_boundaries_and_quality_are_not_negatives():
     from emg_fatigue.labels import label_interval
-    assert label_interval(0,2.9,0,9)=='early_proxy_nonfatigue'
+    assert label_interval(0,2.9,0,9)=='early_recording_position_proxy'
     assert label_interval(3,4,0,9) is None
     assert label_interval(2.9,3.1,0,9) is None
-    assert label_interval(6,9,0,9)=='late_proxy_fatigue'
+    assert label_interval(6,9,0,9)=='late_recording_position_proxy'
     assert label_interval(0,1,0,9,eligible=False) is None
 
 

@@ -14,7 +14,8 @@
 
 ## Resolved design discrepancies
 
-- **What the present classifier learns:** it predicts early-versus-late recording-position labels assigned to feature windows. It is not trained against independent muscle-fatigue labels, and its scores do not establish fatigue detection. The auxiliary experiment predicts first-versus-second halves of EMG bursts, not extension versus flexion. Preserve both only as historical proxy results.
+- **What the present classifier learns:** it assigns early-versus-late recording-position proxy labels to feature windows. The window is the observation; it is not the class. It is not trained against independent muscle-fatigue labels, and its scores do not establish fatigue detection. The auxiliary experiment predicts first-versus-second halves of EMG bursts, not extension versus flexion. Preserve both only as historical proxy results.
+- **Proxy class vocabulary:** use `early_recording_position_proxy` and `late_recording_position_proxy` in active outputs and user-facing documentation. Older bundles may contain `early_proxy_nonfatigue` and `late_proxy_fatigue`; inference must translate those legacy tokens to the neutral names without changing the numeric class or historical score.
 - **Window protocol:** retain the frozen 250 ms, 50% overlap configuration for exact reproduction of the existing proxy. The new reference-backed fatigue/phase study uses a separate configuration: 500 ms, 50% overlap as primary and 250 ms as a pre-specified sensitivity analysis. At a verified 1 kHz, these correspond to 2 Hz and 4 Hz nominal spectral-bin spacing. Do not compare their scores as if they were the same experiment.
 - **Fatigue threshold:** `T_ref`, `MDC95 = 1.96 × sqrt(2) × SEM`, and the rolling three-repetition/two-confirmation rule are a candidate operational rule only. A biomechanics reviewer must confirm the torque definition, matched-angle region, repeatability source, exclusions, and onset timing before labels are frozen. No labels or fatigue training are permitted before that sign-off and Gate G0.
 - **Metric goal:** higher Accuracy and macro-F1 are evaluation goals, not promised outcomes. Compare the direct and auxiliary architectures on the same participant-held-out folds and labels; report no demonstrated gain when paired participant-level uncertainty does not support it.
@@ -119,6 +120,15 @@ Las ventanas que crucen un hueco, transición de fase o inicio de fatiga se excl
 - [x] Implement and test an auditable private `label_audit.csv/json` exporter with counts by reference source, class, participant, phase, uncertainty and exclusion reason. No ZIP-only physiological label audit is claimed because no eligible reference exists.
 - [ ] Close when label regeneration is deterministic, no proxy label enters the reference-backed target, and all rejection cases abstain rather than become “non-fatigue.”
 
+### Task 1a: Correct the historical proxy vocabulary without retargeting its scores
+
+**Files:** `src/emg_fatigue/labels.py`, `src/emg_fatigue/inference.py`, `README.md`, `docs/data_dictionary.md`, `tests/test_core.py`, `tests/test_proxy_target_vocabulary.py`.
+
+- [x] Rename the active proxy categories to `early_recording_position_proxy` and `late_recording_position_proxy`; preserve numeric values 0/1 and the existing elapsed-thirds rule. Evidence: `src/emg_fatigue/labels.py`.
+- [x] Keep compatibility for previously serialized bundles by translating legacy category tokens at inference. Evidence: `src/emg_fatigue/inference.py` and the legacy-bundle regression test.
+- [x] Correct the README and data dictionary so the historical classes are not described as “no fatigue/fatigue.” Evidence: those files and `tests/test_proxy_target_vocabulary.py`.
+- [ ] Rebuild the private processed label table, model result annotations, report, presentation, scripts, evidence map and ZIP from the corrected vocabulary; retain the v4 delivery unchanged.
+
 ### Task 2: Verify and improve sEMG preprocessing, windowing, and feature definitions
 
 **Files:** `src/emg_fatigue/preprocessing.py`, `src/emg_fatigue/qc.py`, `src/emg_fatigue/activity.py`, `src/emg_fatigue/labels.py`, `src/emg_fatigue/features.py`, `configs/study.yaml`, `tests/test_core.py` or focused new signal/window test modules, `src/emg_fatigue/reporting.py`.
@@ -129,7 +139,7 @@ Las ventanas que crucen un hueco, transición de fase o inicio de fatiga se excl
 - [ ] Verify the reference-backed offline pipeline on calibrated raw sensors: DC removal; fourth-order Butterworth 20–400 Hz band-pass in SOS form (`sosfiltfilt`, digital band-pass order 8); 100 ms edge mask; notch at 50/60 Hz only when measured line-noise diagnostics justify it; no filtering across gaps. Check sensor bandwidth, Nyquist condition and actual `fs` per run. Normalize amplitudes to MVC only where MVC is valid, calibrated and comparable. The equations are documented, but a reference-backed run is blocked by G0.
 - [x] Implement the separate fixed-window contract: 500 ms at 50% overlap primary and 250 ms sensitivity; at 1 kHz, nominal bin spacings are 2 and 4 Hz. The contract rejects mixed-phase and onset windows. Same-angle torque comparison and full empirical sensitivity remain blocked by absent mechanical/kinematic references.
 - [x] Preserve and document the historical one-sided Hann periodogram and exact density scaling; it is not Welch. Any future Welch analysis must be a separately predeclared method.
-- [ ] Before fitting models, plot and tabulate feature trajectories by repetition and movement phase using only verified repetition/phase references. If those markers are absent, report that descriptive analysis as unavailable rather than substituting elapsed-time thirds.
+- [x] Before fitting models, plot and tabulate feature trajectories by repetition and movement phase only when verified markers exist. The ZIP has no such markers, so the analysis is explicitly unavailable; elapsed-time thirds are not used as a substitute.
 - [x] Keep the historical feature schema and results frozen. Add a versioned corrected schema with waveform length divided by `(N−1)/fs`; give the feature a distinct name and receipt so historical models cannot silently load corrected-schema inputs.
 - [x] Document each implemented feature in equations and units: RMS, MAV, historical and corrected waveform-length conventions, MDF, MNF, band-power ratio and relative db4 level-3 wavelet energies. Record denominator-zero behavior and frequency-band boundaries.
 - [ ] Evaluate additional features for signal validity and redundancy. Do not add predictors or claim predictive value without independent fatigue labels; document the decision and any proposed features.
@@ -225,6 +235,21 @@ The legacy proxy keeps its frozen 250 ms configuration so historical results rem
 | Report/deck/script PDFs | Passed | 27-page report; 29-slide deck; Spanish/English scripts 7/6 pages; rendered and visually inspected |
 | True-fatigue/extension-flexion training | Not performed | Required synchronized references absent from supplied ZIP |
 | Final package and GitHub publication | Passed for the gated scope | Branch published, exact-head CI passed, new ZIP verified; previous package unchanged; G0 remains failed |
+
+## Incremental correction after delivery v4 (2026-11-09)
+
+- The active proxy class strings now describe early/late recording position, not non-fatigue/fatigue. Numeric class encoding and the weak elapsed-time target rule are unchanged. Legacy model bundles remain display-compatible through inference-time name translation.
+- The README and data dictionary now state explicitly that the window is an observation and the historical target is a temporal proxy.
+- Focused verification passed: 8 tests covering historical boundary behavior, corrected display vocabulary, legacy-bundle prediction naming, documentation, and rejected-run schema.
+- The new full report/deck/package regeneration remains open. No reference-backed fatigue or verified movement-phase scores are available because G0 is still not passed.
+
+## Corrección adicional solicitada por el docente (2026-11-09)
+
+- **Unidad observada y objetivo:** cada fila de entrada es una ventana de sEMG; la clase actual es posición temporal temprana/tardía. El modelo previo no fue entrenado con fatiga/no fatiga verificada. No se presentará como tal.
+- **Preanálisis:** se retirarán del informe, la presentación y los guiones las curvas RMS/MDF/MNF por deciles de tiempo. Esa dimensión se solapa con la etiqueta proxy. En su lugar se mostrarán estadísticas de QC del ZIP; las trayectorias por repetición/fase quedarán como no disponibles sin marcadores sincronizados.
+- **Accuracy/F1:** no se perseguirá una puntuación mayor cambiando el proxy, límites, ventanas o pliegues. El incremento solo se evaluará sobre etiquetas independientes y participantes retenidos. Con el ZIP actual, la mejora de Accuracy/F1 de fatiga está bloqueada por G0.
+- **Arquitecturas:** la comparación planeada es directa vs cascada con probabilidades de fase OOF vs expertos por fase con compuerta probabilística, siempre que existan referencias mecánicas y cinemáticas. Fine-tuning requiere una fuente externa compatible; RL no corresponde a clasificación estática sin acciones ni recompensas.
+- **Estado incremental:** vocabulario proxy, preanálisis de QC, cambios a README/diccionario, fuentes del informe/deck/guiones y pruebas están en la rama. Falta regenerar todos los archivos privados, renderizarlos, revisar diagramas/lectura y construir/verificar un ZIP nuevo; el ZIP previo permanece intacto.
 
 ## Evidence basis for the design
 

@@ -10,6 +10,7 @@ from emg_fatigue.defense_figures import write_spanish_defense_figures
 from emg_fatigue.evaluation import paired_metric_contrast
 from emg_fatigue.io import load_recordings
 from emg_fatigue.preprocessing import preprocess
+from emg_fatigue.preanalysis import summarize_preanalysis
 
 p=argparse.ArgumentParser()
 p.add_argument('--root',required=True)
@@ -25,7 +26,7 @@ for folder,receipt,key in [(ev,'evaluation_receipt.json','output_hashes'),(phase
     for name,expected in receipt[key].items():assert sha(folder/name)==expected,name
 inv=pd.read_csv(root/'inventory.csv');formal=inv[inv.formal.astype(str).str.lower().eq('true')]
 coverage=pd.read_csv(root/'coverage.csv');results=pd.read_csv(ev/'results.csv')
-trajectory=pd.read_csv(root/'report_assets/feature_trajectories_by_group.csv')
+qc=pd.read_csv(root/'qc.csv');line_prominence=pd.read_csv(root/'line_prominence.csv')
 aux=pd.read_csv(phase/'auxiliary_phase_fold_metrics.csv')
 assert len(results)==90 and coverage.labeled_windows.sum()==5509 and len(aux)==15
 records=[r for r in load_recordings(a.archive) if r.series!='R0'];config=read_config(repo/'configs/study.yaml')
@@ -57,7 +58,7 @@ data={'repository':'https://github.com/Mateo197802/emg-fatigue-classification','
   'psd_frequency_hz':freq.tolist(),'psd_stored':psd_stored.tolist(),'psd_filtered':psd_filtered.tolist(),
   'filter_frequency_hz':response_hz.tolist(),'filter_response_db':response_db.tolist(),
   'selection':'first non-R0 record with a QC-valid run; no use of outcomes'},
- 'trajectories':{f:[float(trajectory[trajectory.time_bin==i][f].mean()) for i in range(10)] for f in ['rms','mdf_hz','mnf_hz']},
+ 'preanalysis':summarize_preanalysis(qc,line_prominence),
  'primary':measures(pd.read_csv(ev/'metrics_summary.csv')),
  'phase':measures(pd.read_csv(phase/'metrics_summary.csv')),
  'selector_groups':results[results.model.eq('nested_selector')].f1_macro.tolist(),
@@ -73,7 +74,8 @@ data={'repository':'https://github.com/Mateo197802/emg-fatigue-classification','
   'source_member_manifest_sha256':source_provenance['source_member_manifest_sha256'],
   'source_recordings_verified':source_provenance['recordings_verified'],
   'primary_receipt_sha256':sha(ev/'evaluation_receipt.json'),
-  'phase_receipt_sha256':sha(phase/'evidence_receipt.json'),'trajectory_sha256':sha(root/'report_assets/feature_trajectories_by_group.csv')}}
+  'phase_receipt_sha256':sha(phase/'evidence_receipt.json'),
+  'qc_sha256':sha(root/'qc.csv'),'line_prominence_sha256':sha(root/'line_prominence.csv')}}
 assert data['corpus']['recordings']==140 and data['corpus']['samples']==4256257
 out.write_text(json.dumps(data,ensure_ascii=False,indent=2,allow_nan=False)+'\n',encoding='utf-8')
 figure_outputs=write_spanish_defense_figures(

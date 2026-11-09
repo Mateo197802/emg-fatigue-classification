@@ -1,6 +1,6 @@
 # Informe de evidencias del proyecto EMG
 
-La entrega reconstruye una ruta reproducible desde los registros sEMG hasta las predicciones, compara seis procedimientos principales y prueba cinco variantes de una cascada auxiliar. La comparación por grupos no mostró una mejora clara al incorporar el score de fase. Este documento permite localizar la evidencia de cada conclusión sin confundir ventanas, grupos, modelos o referencias de clase.
+La entrega reconstruye una ruta reproducible desde los registros sEMG hasta las predicciones, compara seis procedimientos principales y prueba cinco variantes de una cascada auxiliar. La comparación por grupos no mostró una mejora clara al incorporar el score de fase. La ventana es la observación y la clase actual es un proxy de posición temprana/tardía del registro; el modelo no fue entrenado para distinguir fatiga de no fatiga. Este documento permite localizar la evidencia de cada conclusión sin confundir ventanas, grupos, modelos o referencias de clase.
 
 **Actualización de objetivo, 2026-11-09:** una nueva inspección de los archivos disponibles encontró sEMG, bibliografía y tablas de filtros/QC, pero no referencias sincronizadas de torque/fuerza o cinemática. Por ello, las métricas descritas en este informe siguen siendo de la etiqueta temporal temprana/tardía; no son accuracy/F1 de fatiga fisiológica. La especificación del nuevo objetivo está en [referencias de datos necesarias](REFERENCE_DATA_REQUIREMENTS.md) y [protocolo de fatiga con referencias](reference_fatigue_protocol.md). La ventana de 500 ms pertenece al experimento nuevo propuesto; no modifica retrospectivamente el pipeline proxy de 250 ms ni sus resultados congelados.
 
@@ -33,7 +33,7 @@ La referencia final contiene 2.329 ventanas tempranas y 3.180 tardías. Las vent
 
 ## Preanálisis, procesamiento y etiquetas
 
-El control previo revisa reloj, huecos, jitter, señal constante y repetición de extremos. Las curvas descriptivas de RMS/MDF/MNF usan medianas por registro y decil, después por grupo, y finalmente medias entre grupos. No crean la etiqueta ni establecen por sí solas un mecanismo de fatiga.
+El preanálisis cuantitativo revisa reloj, huecos, jitter, tramos constantes, repetición de extremos, prominencia de línea a 50/60 Hz y amplitud en cuentas ADC por tramo. Los resúmenes de amplitud no están calibrados a voltaje ni a fuerza muscular. Las trayectorias por repetición y fase no están disponibles porque el ZIP no aporta marcadores sincronizados y revisados. Se retiraron las curvas por deciles del tiempo: coinciden con la dimensión de la etiqueta proxy y no constituyen evidencia independiente de fatiga.
 
 Los huecos mayores que el máximo de 1,5 ms y 1,5 veces el intervalo mediano separan tramos. El jitter relativo mayor a 5% invalida el tramo. Cada tramo válido se centra y filtra con Butterworth 20–400 Hz, prototipo de orden 4, aplicación bidireccional y exclusión de 100 ms por borde. La rama espectral conserva señal sin rectificar. El notch está desactivado en el principal.
 
