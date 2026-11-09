@@ -32,10 +32,14 @@ def process_dataset(recordings,config,output_dir):
     reject_duplicate_recordings(recordings)
     provenance=implementation_provenance()
     out=Path(output_dir);out.mkdir(parents=True,exist_ok=True);started=time.perf_counter()
-    inv=inventory(recordings,out);frames=[];qc=[];coverage=[];line=[]
+    inv=inventory(recordings,out);frames=[];qc=[];coverage=[];line=[];designs={};design_bindings=[]
     for rec in recordings:
         if rec.series=='R0':continue
         processed=detect_activity(preprocess(rec,config),config)
+        for run in processed['runs']:
+            design=run['filter_design'];design_id=design['design_sha256']
+            designs.setdefault(design_id,design)
+            design_bindings.append({'recording_id':rec.recording_id,'run_id':int(run['run_id']),'design_sha256':design_id})
         windows=make_windows(processed,config)
         frame=extract_features(processed,windows,config)
         if not frame.empty:frames.append(frame)
@@ -58,6 +62,11 @@ def process_dataset(recordings,config,output_dir):
     pd.DataFrame(qc).to_csv(out/'qc.csv',index=False)
     pd.DataFrame(coverage).to_csv(out/'coverage.csv',index=False)
     pd.DataFrame(line).to_csv(out/'line_prominence.csv',index=False)
+    filter_design_path=out/'filter_designs.json'
+    write_json(filter_design_path,{'schema':'emg_filter_design_manifest_v1',
+      'coefficient_convention':'Each SOS row is [b0,b1,b2,a0,a1,a2]; notch b/a are in descending powers of z^-1.',
+      'designs':[{'design_sha256':key,**design} for key,design in sorted(designs.items())],
+      'run_bindings':design_bindings})
     write_json(out/'feature_schema.json',{'ordered_features':FEATURE_COLUMNS,'amplitude_units':'ADC counts, not calibrated muscle mV','spectral_band_hz':[20,400],'wavelet':'db4 level 3 symmetric; relative coefficient energies','metadata_excluded_from_predictors':['subject_id','side','series','time_fraction','label','recording_id']})
     receipt={'config':asdict(config),'config_sha256':config.digest(),'environment':environment(),
       'source_recordings':len(recordings),'formal_recordings':int(inv.formal.sum()),'source_samples':int(inv.n_samples.sum()),
@@ -69,6 +78,7 @@ def process_dataset(recordings,config,output_dir):
       'physiological_reference_available':False,'seconds':time.perf_counter()-started}
     receipt['features_sha256']=sha256_file(out/'features.parquet') if not df.empty else None
     receipt['input_hashes_sha256']=sha256_file(out/'input_hashes.json')
+    receipt['filter_designs_sha256']=sha256_file(filter_design_path)
     receipt['implementation']=provenance
     write_json(out/'processing_receipt.json',receipt)
     write_json(out/'label_audit.json',{'version':config.label_version,'evidence':'weak elapsed recording time','original_bounds_before_qc':True,'transition_excluded':True,'qc_and_activity_are_not_negative_class':True,'label_counts':receipt['label_counts'],'status_counts':{str(k):int(v) for k,v in df.status.value_counts().items()} if not df.empty else {}})

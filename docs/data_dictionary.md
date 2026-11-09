@@ -4,7 +4,7 @@
 |---|---|
 | Relative_Time_s | Original seconds; strictly increasing inside a supplied recording |
 | ADC_Value | Stored signed count value, without verified physical calibration |
-| Voltage_mV | Optional exporter conversion; ignored as a physiological voltage |
+| Voltage_mV | Exporter conversion `round(ADC_Value × 3300 / 4095, 2)`; arithmetic matches stored values but does not verify physical calibration, sensor mode, offset or gain; ignored as a physiological voltage |
 | subject_id | Private source-folder pseudonym; identity not independently verified |
 | recording_id | Private deterministic recording key |
 | series | R1–R5 formal; R0 control only; not a verified repetition number |
@@ -31,7 +31,8 @@
 | fatigue label | Future reference-backed state from approved mechanical reference; elapsed-time early/late labels remain proxy labels |
 | inventory.csv, input_hashes.json | Private source membership and original byte hashes |
 | features.parquet, labels.csv | Private window products and eligibility reasons |
-| processing_receipt.json | Frozen config, feature bytes, source hashes and environment |
+| processing_receipt.json | Frozen config, feature bytes, source hashes, filter-design manifest hash and environment |
+| filter_designs.json | Private per-run map of sampling-rate-specific Butterworth SOS and any conditionally applied 50/60 Hz notch coefficients, thresholds and source run bindings |
 | evaluation/results.csv | Model × outer fold metrics, private link to recording group |
 | evaluation/oof_predictions.parquet | Private per-window held-out predictions, exactly once per model |
 | search_results.csv, splits.json | Inner selection audit and group membership |

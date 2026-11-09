@@ -6,6 +6,8 @@ La entrega reconstruye una ruta reproducible desde los registros sEMG hasta las 
 
 La nueva búsqueda local quedó registrada en un recibo de auditoría privado. Los hashes del ZIP principal, del ZIP anidado y del RAR coinciden con los manifiestos originales; la inspección recuperó cero archivos con las referencias requeridas.
 
+La matriz pública de auditoría en [REFERENCE_DATA_REQUIREMENTS.md](REFERENCE_DATA_REQUIREMENTS.md) detalla por referencia su presencia y ruta, unidades, resolución temporal, calibración, sincronización, nivel de etiqueta posible y límites. La columna `Voltage_mV` coincide con la conversión del exportador `round(ADC_Value × 3300 / 4095, 2)`; no demuestra calibración física. La matriz de [cumplimiento por requisito docente](PROFESSOR_REQUIREMENTS_COMPLIANCE_2026-11-09.csv) distingue trabajo verificado, implementaciones aún sin validación empírica y requisitos bloqueados por referencias ausentes.
+
 ![Experimento proxy ejecutado](figures/executed_proxy_architecture_es.png)
 
 ![Arquitectura propuesta con referencias independientes](figures/reference_fatigue_architecture_es.png)
@@ -41,7 +43,7 @@ La actividad candidata usa RMS de 50 ms, avance de 25 ms y umbral Otsu por regis
 
 Las diez características son RMS, MAV, longitud de forma de onda por segundo, MDF, MNF, razón de potencia 20–60/60–400 Hz y cuatro energías relativas wavelet db4 A3/D3/D2/D1. Tiempo, identidad, pierna y serie no entran como predictores. [Contrato](protocol.md), [configuración](../configs/study.yaml), [preprocesamiento](../src/emg_fatigue/preprocessing.py), [características](../src/emg_fatigue/features.py).
 
-El informe muestra el prototipo Butterworth análogo, el diseño digital SOS, la ecuación recursiva, la condición del notch, la ventana Hann y la escala de densidad del periodograma unilateral. La longitud de forma de onda corregida v2 usa `(N−1)/fs` y queda versionada aparte; no modifica el resultado histórico. El protocolo prospectivo describe además las ecuaciones de etiquetas cinemáticas y por torque.
+El informe muestra el prototipo Butterworth análogo, el diseño digital SOS, la ecuación recursiva, la condición del notch según SciPy/Orfanidis, la ventana Hann y la escala de densidad del periodograma unilateral. El recibo privado incluye los SOS exactos por tramo y la huella de `filter_designs.json`; si la sensibilidad notch se activa, conserva sus coeficientes reales `b,a`, Q, ancho y diagnóstico. La longitud de forma de onda corregida v2 usa `(N−1)/fs` y queda versionada aparte; no modifica el resultado histórico. El protocolo prospectivo describe además las ecuaciones de etiquetas cinemáticas y por torque.
 
 ## Metodología y rendimiento principal
 

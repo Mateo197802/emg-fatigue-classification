@@ -11,9 +11,9 @@ def report_equation_rows():
          'y[n] = b0 x[n] + b1 x[n-1] + b2 x[n-2] - a1 y[n-1] - a2 y[n-2]',
          '20–400 Hz; prototype order 4, digital band-pass order 8; coefficients are designed per run from fs; SOS forward/backward with sosfiltfilt; 100 ms masked at each edge'),
         ('Notch sensitivity',
-         'w0 = 2 pi f0/fs; alpha = sin(w0)/(2Q); b = [1,-2cos(w0),1]/(1+alpha); '
-         'a = [1,-2cos(w0)/(1+alpha),(1-alpha)/(1+alpha)]',
-         'Not applied in primary processing; apply at 50 or 60 Hz only when prominence >10 dB; Q=30'),
+         'w0 = 2 pi f0/fs; B = 2 pi f0/(Q fs); beta = tan(B/2); g = 1/(1+beta); '
+         'b = g[1,-2cos(w0),1]; a = [1,-2g cos(w0),2g-1]',
+         'SciPy iirnotch (Orfanidis form); B is the normalized -3 dB bandwidth in rad/sample, Q=f0/BW_Hz=30. Not applied in primary processing; apply at 50 or 60 Hz only when measured prominence >10 dB. Actual b,a coefficients are recorded by run.'),
         ('Otsu activity',
          't* = argmax[t] w0(t) w1(t) (mu0(t)-mu1(t))^2',
          'RMS envelope frames of 50 ms with 25 ms hop; 128-bin histogram; candidate activity only, not a fatigue label'),

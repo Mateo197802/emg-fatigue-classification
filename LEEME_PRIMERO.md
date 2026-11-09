@@ -8,12 +8,13 @@ El proyecto procesa la señal sEMG, compara clasificadores y evalúa una arquite
 
 1. [Informe de evidencias](docs/INFORME_EVIDENCIAS.md): metodología, denominadores, resultados, arquitectura y alcance de las conclusiones.
 2. [Plan auditable de corrección](docs/superpowers/plans/2026-11-09-professor-feedback-fatigue-correction.md): fases, criterios de aceptación y Gate G0 para las referencias necesarias.
-3. [Mapa de evidencia](docs/MAPA_EVIDENCIA.csv): conecta cada afirmación con la sección del informe, las diapositivas y los archivos que la respaldan.
-4. [Protocolo](docs/protocol.md) y [resultados principales](docs/RESULTS.md).
-5. [Experimento de fase](docs/PHASE_EXPERIMENT.md), [relación de modelos](results/phase_experiment/model_registry.csv), [matrices](results/phase_experiment/confusion_matrices.csv) y [bibliografía](docs/PHASE_REFERENCES.md).
-6. [Presentación](docs/DEFENSE_STORYBOARD.md): 16 diapositivas principales para 600 segundos y 14 anexos. Incluye señal, preprocesamiento, fórmulas, Accuracy y macro-F1 del proxy, y la arquitectura de referencia propuesta.
-7. [Guiones de defensa en español e inglés](docs/defense-scripts/README.md): archivos editables en Markdown y versiones PDF para las 30 diapositivas.
-8. [Instalación y reproducción](README.md#installation), [pruebas](tests), [alcance de la verificación](docs/VERIFICATION.md) y [CI de GitHub](https://github.com/Mateo197802/emg-fatigue-classification/actions).
+3. [Auditoría completa de referencias](docs/REFERENCE_DATA_REQUIREMENTS.md) y [matriz de cumplimiento docente](docs/PROFESSOR_REQUIREMENTS_COMPLIANCE_2026-11-09.csv): especifican qué fuentes están presentes, qué prueban y qué datos faltan.
+4. [Mapa de evidencia](docs/MAPA_EVIDENCIA.csv): conecta cada afirmación con la sección del informe, las diapositivas y los archivos que la respaldan.
+5. [Protocolo](docs/protocol.md) y [resultados principales](docs/RESULTS.md).
+6. [Experimento de fase](docs/PHASE_EXPERIMENT.md), [relación de modelos](results/phase_experiment/model_registry.csv), [matrices](results/phase_experiment/confusion_matrices.csv) y [bibliografía](docs/PHASE_REFERENCES.md).
+7. [Presentación](docs/DEFENSE_STORYBOARD.md): 16 diapositivas principales para 600 segundos y 14 anexos. Incluye señal, preprocesamiento, fórmulas, Accuracy y macro-F1 del proxy, y la arquitectura de referencia propuesta.
+8. [Guiones de defensa en español e inglés](docs/defense-scripts/README.md): archivos editables en Markdown y versiones PDF para las 30 diapositivas.
+9. [Instalación y reproducción](README.md#installation), [pruebas](tests), [alcance de la verificación](docs/VERIFICATION.md) y [CI de GitHub](https://github.com/Mateo197802/emg-fatigue-classification/actions).
 
 ## Qué contiene cada entrega
 
@@ -21,6 +22,7 @@ El proyecto procesa la señal sEMG, compara clasificadores y evalúa una arquite
 |---|---|
 | Este GitHub | Código, protocolo, resultados agregados, matrices, arquitectura, referencias, pruebas, guiones de defensa MD/PDF y manifiesto SHA256 |
 | ZIP privado versionado | Informe PDF/Word con las ecuaciones completas, presentación PPTX/PDF con 16 diapositivas principales y 14 anexos, guiones español/inglés MD/PDF, evidencia privada de señal, originales, OOF, búsquedas, modelo y recibos |
+| `filter_designs.json` dentro del reanálisis privado | Coeficientes SOS reales por tramo y fs, decisión condicional del notch, b/a aplicados si hubo notch, y vínculos a corrida; el recibo de procesamiento guarda su SHA-256 |
 | `LEEME_PRIMERO.md` en la raíz del ZIP | Acceso directo a los archivos del paquete y comandos para comprobar su integridad |
 
 El ZIP conserva las fuentes originales y distingue los resultados principales del suplemento. El modelo principal de 300 árboles conserva sus pesos. El RF auxiliar de 100 árboles y la logística de la cascada cumplen funciones diferentes. `baseline_10` reproduce `logistic_all`; no constituye otro resultado independiente. El preanálisis informa controles de señal; las trayectorias por repetición/fase no están disponibles sin marcadores sincronizados y revisados.

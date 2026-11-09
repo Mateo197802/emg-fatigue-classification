@@ -83,7 +83,7 @@ function image(s,n,x,y,w,h){s.images.add({blob:images.get(n),contentType:'image/
 }
 {
  const s=slide('Señal registrada y diagnóstico temporal',35,
- 'Los CSV aportan tiempo relativo y cuentas ADC con aproximadamente mil muestras por segundo. Comparamos el mismo intervalo almacenado y filtrado. Elegimos el primer registro con un tramo válido sin consultar etiquetas ni rendimiento. Dibujamos una de cada cuatro muestras, pero el análisis conserva todas. Revisamos huecos, jitter, segmentos constantes y repetición de extremos. Las cuentas no acreditan una amplitud muscular calibrada en milivoltios.',
+ 'Los CSV aportan tiempo relativo, cuentas ADC y una columna de voltaje exportado calculada como round(ADC_Value × 3300/4095, 2). Esa igualdad aritmética no demuestra calibración física del canal. Comparamos el mismo intervalo almacenado y filtrado. Elegimos el primer registro con un tramo válido sin consultar etiquetas ni rendimiento. Dibujamos una de cada cuatro muestras, pero el análisis conserva todas. Revisamos huecos, jitter, segmentos constantes y repetición de extremos.',
  'Archivo original, qc.py y preprocessing.py');
  const cat=d.signal.time.map(v=>v.toFixed(2));
  t(s,'Registro almacenado',56,149,800,44,26,C.blue,true);
@@ -92,7 +92,8 @@ function image(s,n,x,y,w,h){s.images.add({blob:images.get(n),contentType:'image/
  chart(s,'line',cat,[{name:'Cuentas filtradas',values:d.signal.filtered,line:{fill:C.blue,width:1.1},marker:{symbol:'none'}}],56,434,790,176,{xAxis:{visible:false}});
  t(s,'≈1.000 Hz',902,176,320,60,39,C.blue,true);t(s,'Tiempo relativo\nCuentas ADC\nAmbas piernas',902,260,320,150,28);
  t(s,'Control previo',902,442,320,45,28,C.blue,true);t(s,'Huecos y jitter\nSeñal constante\nValores extremos',902,500,320,125,25);
- t(s,`Tiempo relativo ${d.signal.time[0].toFixed(2)}–${d.signal.time.at(-1).toFixed(2)} s. Amplitud en cuentas.`,56,625,790,29,20,C.muted);
+ t(s,`Tiempo relativo ${d.signal.time[0].toFixed(2)}–${d.signal.time.at(-1).toFixed(2)} s. Amplitud en cuentas.`,56,621,790,25,18,C.muted);
+ t(s,'Voltage_mV=round(ADC_Value×3300/4095,2); exportación aritmética, no calibración física.',56,648,1168,24,17,C.muted);
 }
 {
  const p=d.preanalysis;
@@ -320,7 +321,7 @@ for(const [title,name,caption] of [
   ['Butterworth análogo','|Hₐ(jΩ)|² = 1 / [1 + (Ω/Ωc)^(2n)]','Prototipo pasa bajos; n=4 antes de transformar a pasa banda digital.'],
   ['Pasa banda digital SOS','H(z)=∏ᵣ(b₀,ᵣ+b₁,ᵣz⁻¹+b₂,ᵣz⁻²)/(a₀,ᵣ+a₁,ᵣz⁻¹+a₂,ᵣz⁻²)','20–400 Hz; orden digital 8; coeficientes dependientes de fs; SOS por estabilidad numérica.'],
   ['Sección recursiva','y[n]=(b₀x[n]+b₁x[n−1]+b₂x[n−2]−a₁y[n−1]−a₂y[n−2])/a₀','sosfiltfilt hacia adelante/atrás, offline; enmascarar 100 ms por extremo.'],
-  ['Notch opcional','ω₀=2πf₀/fs; α=sin(ω₀)/(2Q); b=[1,−2cosω₀,1]/(1+α); a=[1,−2cosω₀/(1+α),(1−α)/(1+α)]','f₀=50/60 Hz, Q=30; solo si prominencia de red >10 dB. No aplicado en principal.'],
+  ['Notch opcional','B=2πf₀/(Qfs); β=tan(B/2); g=1/(1+β); b=g[1,−2cosω₀,1]; a=[1,−2gcosω₀,2g−1]','ω₀=2πf₀/fs; Q=30; BW= f₀/Q; solo si prominencia >10 dB. Coeficientes del recibo por tramo.'],
   ['Ventana deslizante','N=round(T·fs); H=round[N(1−ρ)]; xₖ[n]=x[kH+n]','ρ=50%; histórico T=250 ms; referencia propuesta T=500 ms y 250 ms de sensibilidad.'],
   ['Hann y periodograma','w[n]=0.5(1−cos(2πn/(N−1))); Pxx[k]=cₖ|Σₙx[n]w[n]e^(−j2πkn/N)|²/(fs·Σₙw[n]²)','cₖ=2 en bins interiores positivos; cₖ=1 en DC/Nyquist. Unilateral de densidad, detrend=False.'],
  ],56,128,1168,445,[205,555,408],16);
@@ -388,7 +389,7 @@ for(const [title,name,caption] of [
 const englishScript=[
  ['Temporal-proxy classification with sEMG','This study classifies an early-versus-late proxy created from each recording’s position in time. The ZIP does not contain independent measurements to claim true muscle-fatigue detection. I will describe the corpus, signal, pre-analysis, preprocessing, models, and the auxiliary experiment, separating completed results from the proposed design.','Integrative biomechanics project'],
  ['Corpus and quantitative overview','The main ZIP contains 140 CSV files and 4,256,257 samples. The 138 R1 to R5 recordings enter formal processing; two R0 files remain controls. Fifteen groups come from folder organization. Both legs and every series stay together during grouped evaluation. The RAR remains separate because participant identity and cross-archive links are not verified.','inventory.csv and coverage.csv'],
- ['Recorded signal and time diagnostics','The CSV files contain relative time and ADC counts at approximately one thousand samples per second. The plotted trace uses one selected QC-valid run, while processing preserves every sample. We inspected clock gaps, jitter, constant segments and repeated extremes. ADC counts do not establish calibrated muscle amplitude in millivolts.','Original CSV, qc.py, preprocessing.py'],
+ ['Recorded signal and time diagnostics','The CSV files contain relative time, ADC counts and an exporter column computed as round(ADC_Value × 3300/4095, 2). That arithmetic conversion does not verify physical calibration, channel mode, offset or gain. The plotted trace uses one selected QC-valid run, while processing preserves every sample. We inspected clock gaps, jitter, constant segments and repeated extremes.','Original CSV, private source audit and preprocessing.py'],
  ['Quantitative signal-quality pre-analysis','The summary reports contiguous-run QC, uncalibrated ADC amplitude summaries and the number of recordings whose 50 or 60 Hz line prominence exceeds the 10 dB notch trigger. No synchronized repetition or movement-phase references are present, so those feature trajectories are unavailable.','qc.csv, line_prominence.csv and preanalysis.py'],
  ['Signal preprocessing','The historical pipeline separates signal at acquisition gaps and rejects excessive clock jitter and constant segments. It uses a fourth-order Butterworth low-pass prototype transformed into a digital 20 to 400 hertz band-pass, applied bidirectionally in second-order sections. One hundred milliseconds at each edge are masked. The optional notch is not in the primary pipeline. Processing is offline.','configs/study.yaml, qc.py and preprocessing.py'],
  ['Windows and temporal proxy labels','Complete windows in the first elapsed-time third receive proxy class zero; windows in the final third receive class one. The central third and boundary-crossing windows are excluded. A candidate-activity criterion selects usable windows. The observation is a window; the learned target is temporal position, not measured muscle fatigue.','label_audit.json and coverage.csv'],

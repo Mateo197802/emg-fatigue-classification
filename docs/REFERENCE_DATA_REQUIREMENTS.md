@@ -8,6 +8,29 @@ El ZIP del proyecto tiene 403 miembros. La fuente principal contiene 140 CSV EMG
 
 Por tanto, los resultados publicados en este repositorio siguen midiendo acuerdo con una etiqueta temporal temprana/tardía. La clasificación de mitades de ráfagas EMG tampoco es una etiqueta de extensión/flexión.
 
+## Auditoría de presencia y aptitud de referencias
+
+La tabla separa lo indicado por la guía universitaria de los archivos que realmente contiene el ZIP. La guía describe el protocolo previsto; por sí sola no demuestra qué mediciones se realizaron ni cómo se sincronizaron.
+
+| Referencia o metadato | Presencia y fuente/ruta | Unidad | Resolución temporal | Calibración | Sincronización | Granularidad que permite | Limitación observada |
+|---|---|---|---|---|---|---|---|
+| sEMG almacenada | Sí: ZIP principal → archivo EMG anidado → 140 CSV | `ADC_Value` en cuentas; `Voltage_mV` exportado | Timestamps relativos por muestra; medianas por archivo cercanas a 1.000 Hz; existen huecos | No se aporta certificado, modo del canal, rieles ni ganancia verificada | Solo reloj relativo por CSV; no hay reloj compartido con biomecánica | Muestra y archivo | Es señal para reanálisis; no proporciona por sí sola la etiqueta fisiológica independiente |
+| Fuerza o torque | No encontrado en el ZIP, CSV EMG ni dos libros incluidos | No disponible | No disponible | No disponible | No disponible | Ninguna; no admite etiqueta por ventana, repetición o sesión | Es la referencia mecánica requerida para el resultado primario |
+| MVC pre/post | No encontrado; la guía solo indica la medición prevista | No disponible en registros del corpus | No disponible | No disponible | No disponible | Ninguna en los datos; incluso MVC pre/post sería resumen de sesión | No ubicaría por sí sola el inicio en cada repetición o ventana |
+| Borg CR-10 | No encontrado; la guía indica el momento previsto de consulta | No disponible en registros del corpus | No disponible | No aplica como medida mecánica | No sincronizada en los archivos | Ninguna; no expande a etiquetas por ventana | Es esfuerzo percibido; no reemplaza una etiqueta mecánica objetiva |
+| Ángulo de rodilla o cinemática | No encontrado en los miembros locales | No disponible | No disponible | No disponible | No disponible | Ninguna; no admite extensión/flexión por ventana | Sin convención angular ni resolución/ruido no puede fijarse el sentido ni la banda muerta |
+| Video | No encontrado en los miembros locales | No disponible | No disponible | No aplica; faltan video y marcas | No hay evento común con sEMG | Ninguna | No puede revisión humana de fases o repeticiones |
+| Eventos/marcadores de repetición | No encontrados; `R1–R5` son códigos de serie del nombre, no eventos verificados | No disponible | No disponible | No aplica | Sincronización no disponible | Ninguna repetición identificable | No se puede reconstruir cadencia, inversión, fallo o repetición válida |
+| Identificadores de participante y sesión | Parcial: grupos derivados de carpetas y códigos de lado/serie en nombres | Identificadores locales, no unidades físicas | Una agrupación de archivos; sesión no establecida | No aplica | Enlaces entre archivos no verificados | Grupos de registro condicionales; no participante verificado | No afirmar validación independiente por persona; el RAR queda separado |
+| Metadatos de adquisición del equipo | Parciales: nombres, tiempos y cuentas en CSV; instrucciones del equipo en guía | Cuentas ADC y tiempo en segundos | Cerca de 1 kHz según timestamps observados | Modo RAW, configuración, ganancia y calibración no confirmados en metadatos | Sin protocolo/registro de reloj compartido | Archivo | Las instrucciones describen condiciones previstas, no prueban carga, cadencia, montaje ni fallo ejecutados |
+| Conversión `Voltage_mV` | Sí en los 140 CSV primarios; contraste en auditoría local de muestras | mV calculados por exportador | Cada muestra | Fórmula aritmética verificada; calibración física no | Hereda el timestamp relativo del CSV | Muestra, como conversión de ADC | `Voltage_mV = round(ADC_Value × 3300 / 4095, 2)`. Error máximo frente a esa fórmula: 0.00 mV en la auditoría. Esto no prueba referencia, offset, ganancia, linealidad, modo del sensor ni límites físicos; el pipeline conserva `ADC_Value` |
+| Frecuencia de muestreo | Sí, estimable desde `Relative_Time_s` en los 140 CSV primarios | Hz | Mediana por archivo próxima a 1.000 Hz; auditoría totalizó 246 intervalos mayores a 1,5 ms | Reloj no certificado | Solo dentro de cada archivo | Muestra/archivo | El valor local mediano no elimina huecos ni demuestra frecuencia del ADC; QC divide los tramos y no interpola huecos largos |
+| Anotaciones de fatiga independientes | No encontradas | No disponible | No disponible | No disponible | No disponible | Ninguna | Las clases temprano/tardío se derivan del tiempo de grabación y permanecen proxy exploratorio |
+
+### Verificación de calibración ADC y conversión
+
+La conversión del exportador y la frecuencia se verificaron en la auditoría local del ZIP suministrado. La ecuación del exportador no acredita calibración física. Los identificadores o hashes de los CSV no se publican en este documento. Los archivos originales permanecen en el paquete privado.
+
 ## Archivos mínimos para la tarea de fatiga
 
 | Archivo o campo | Requisito | Uso |

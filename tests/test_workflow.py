@@ -4,8 +4,9 @@ import pytest
 
 
 def test_synthetic_workflow_has_real_features_and_private_receipt(tmp_path):
+    import json
     from emg_fatigue.workflow import synthetic_recordings, process_dataset
-    from emg_fatigue.contracts import StudyConfig
+    from emg_fatigue.contracts import StudyConfig, sha256_file
     c=StudyConfig(bootstrap_replicates=20)
     r=synthetic_recordings(groups=4,seconds=12)
     bundle=process_dataset(r,c,tmp_path)
@@ -14,6 +15,14 @@ def test_synthetic_workflow_has_real_features_and_private_receipt(tmp_path):
     assert labeled.subject_id.nunique()==4
     assert (tmp_path/'processing_receipt.json').exists()
     assert set(df.status).issuperset({'labeled','activity_not_detected'})
+    filter_path=tmp_path/'filter_designs.json'
+    receipt=json.loads((tmp_path/'processing_receipt.json').read_text(encoding='utf-8'))
+    designs=json.loads(filter_path.read_text(encoding='utf-8'))
+    assert receipt['filter_designs_sha256']==sha256_file(filter_path)
+    assert designs['schema']=='emg_filter_design_manifest_v1'
+    assert len(designs['run_bindings'])>=len(r)
+    assert designs['designs']
+    assert designs['designs'][0]['bandpass']['sos_coefficients']
 
 
 def test_model_roundtrip_and_reassembled_fragments(tmp_path):

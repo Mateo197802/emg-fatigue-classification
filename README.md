@@ -4,6 +4,8 @@
 
 La [respuesta técnica a los comentarios del docente](docs/PROFESSOR_FEEDBACK_RESPONSE_2026-11-09.md) explica qué tarea aprendió cada modelo, cómo se procesó la señal, las fórmulas y ventanas, las métricas proxy y la arquitectura de referencia propuesta. El [plan auditable de corrección](docs/superpowers/plans/2026-11-09-professor-feedback-fatigue-correction.md) fija los pasos, las comparaciones y los gates. El ZIP solo contiene EMG: por eso no acredita fatiga fisiológica ni extensión/flexión observadas.
 
+La [auditoría de datos de referencia](docs/REFERENCE_DATA_REQUIREMENTS.md) enumera presencia, ruta, unidades, resolución temporal, calibración, sincronización, granularidad y límites para cada fuente. La [matriz de cumplimiento del docente](docs/PROFESSOR_REQUIREMENTS_COMPLIANCE_2026-11-09.csv) vincula cada requisito con evidencia y su alcance.
+
 ## Defense presentation
 
 The revised private defense follows the signal-analysis workflow in **16 principal slides (600 seconds) and 14 evidence appendices**: corpus, signal, quantitative signal-quality preanalysis, preprocessing, windowing, labels, features, grouped validation, model families and proxy performance, auxiliary architecture and results, candidate-feature audit, equations, and the proposed reference-backed direct/cascade/expert comparison. Repetition- and phase-aligned feature trajectories are reported as unavailable without synchronized verified markers. It removes the former administrative closing block. See the [slide-by-slide storyboard](docs/DEFENSE_STORYBOARD.md).

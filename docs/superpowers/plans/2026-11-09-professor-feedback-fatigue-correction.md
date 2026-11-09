@@ -118,7 +118,7 @@ Las ventanas que crucen un hueco, transición de fase o inicio de fatiga se excl
 - [x] Add tests for extension/flexion direction, deadband transitions, reversed angle convention and synchronized timestamp drift.
 - [x] Implement abstention and validation gates; do not hard-code a universal percentage or MDC95 threshold. Synthetic test fixtures exercise only a clearly marked candidate rule and cannot be exported as experimental labels.
 - [x] Implement and test an auditable private `label_audit.csv/json` exporter with counts by reference source, class, participant, phase, uncertainty and exclusion reason. No ZIP-only physiological label audit is claimed because no eligible reference exists.
-- [ ] Close when label regeneration is deterministic, no proxy label enters the reference-backed target, and all rejection cases abstain rather than become “non-fatigue.”
+- [x] Close the reference-label software contract: deterministic generation, no proxy input to the physiological target, and abstention for rejected/missing references are tested. All label tests use synthetic fixtures; no physiological labels exist in the supplied corpus.
 
 ### Task 1a: Correct the historical proxy vocabulary without retargeting its scores
 
@@ -127,7 +127,7 @@ Las ventanas que crucen un hueco, transición de fase o inicio de fatiga se excl
 - [x] Rename the active proxy categories to `early_recording_position_proxy` and `late_recording_position_proxy`; preserve numeric values 0/1 and the existing elapsed-thirds rule. Evidence: `src/emg_fatigue/labels.py`.
 - [x] Keep compatibility for previously serialized bundles by translating legacy category tokens at inference. Evidence: `src/emg_fatigue/inference.py` and the legacy-bundle regression test.
 - [x] Correct the README and data dictionary so the historical classes are not described as “no fatigue/fatigue.” Evidence: those files and `tests/test_proxy_target_vocabulary.py`.
-- [ ] Rebuild the private processed label table, model result annotations, report, presentation, scripts, evidence map and ZIP from the corrected vocabulary; retain the v4 delivery unchanged.
+- [x] Rebuild the private processed label table, model result annotations, report, presentation, scripts, evidence map and ZIP from the corrected vocabulary; retain the v4 delivery unchanged. The v5 package is preserved; the current audit revision is versioned separately.
 
 ### Task 2: Verify and improve sEMG preprocessing, windowing, and feature definitions
 
@@ -135,16 +135,16 @@ Las ventanas que crucen un hueco, transición de fase o inicio de fatiga se excl
 
 **Interfaces:** Preserve the existing `preprocess_recording`, `make_windows`, and `window_features` contracts where possible; add a phase-boundary input so windows cannot straddle an extension/flexion transition or a fatigue-onset boundary without an explicit uncertain label.
 
-- [ ] Audit sample-clock jitter, gaps, clipping, mains interference, effective sampling rate and channel calibration per run. Never interpolate over long gaps or mark an invalid interval as a class.
+- [x] Audit sample-clock jitter, gaps, extreme-value flags, mains interference, effective sampling rate and the absent channel-calibration evidence per run. Never interpolate over long gaps or mark an invalid interval as a class. Exact filter coefficients now have a run-bound private receipt.
 - [ ] Verify the reference-backed offline pipeline on calibrated raw sensors: DC removal; fourth-order Butterworth 20–400 Hz band-pass in SOS form (`sosfiltfilt`, digital band-pass order 8); 100 ms edge mask; notch at 50/60 Hz only when measured line-noise diagnostics justify it; no filtering across gaps. Check sensor bandwidth, Nyquist condition and actual `fs` per run. Normalize amplitudes to MVC only where MVC is valid, calibrated and comparable. The equations are documented, but a reference-backed run is blocked by G0.
 - [x] Implement the separate fixed-window contract: 500 ms at 50% overlap primary and 250 ms sensitivity; at 1 kHz, nominal bin spacings are 2 and 4 Hz. The contract rejects mixed-phase and onset windows. Same-angle torque comparison and full empirical sensitivity remain blocked by absent mechanical/kinematic references.
 - [x] Preserve and document the historical one-sided Hann periodogram and exact density scaling; it is not Welch. Any future Welch analysis must be a separately predeclared method.
 - [x] Before fitting models, plot and tabulate feature trajectories by repetition and movement phase only when verified markers exist. The ZIP has no such markers, so the analysis is explicitly unavailable; elapsed-time thirds are not used as a substitute.
 - [x] Keep the historical feature schema and results frozen. Add a versioned corrected schema with waveform length divided by `(N−1)/fs`; give the feature a distinct name and receipt so historical models cannot silently load corrected-schema inputs.
 - [x] Document each implemented feature in equations and units: RMS, MAV, historical and corrected waveform-length conventions, MDF, MNF, band-power ratio and relative db4 level-3 wavelet energies. Record denominator-zero behavior and frequency-band boundaries.
-- [ ] Evaluate additional features for signal validity and redundancy. Do not add predictors or claim predictive value without independent fatigue labels; document the decision and any proposed features.
-- [ ] Add tests for known sinusoids, DC offsets, 50/60 Hz line-noise cases, a gap that must not be bridged, invalid Nyquist configuration, phase-crossing windows, edge masks, exact 500 ms/50% overlap, 250 ms sensitivity, both waveform-length equations, and hand-calculated feature values.
-- [ ] Close when preprocessing and feature extraction are replayable from the private raw inventory and all windows carry explicit QC, phase and fatigue-label states.
+- [x] Evaluate additional features for signal validity and redundancy. Do not add predictors or claim predictive value without independent fatigue labels; document the target-free candidate audit and decision.
+- [x] Add tests for known sinusoids, DC offsets, 50/60 Hz line-noise cases, a gap that must not be bridged, invalid Nyquist configuration, phase-crossing windows, edge masks, exact 500 ms/50% overlap, 250 ms sensitivity, both waveform-length equations, and hand-calculated feature values. The final full suite now includes run-level notch-coefficient receipt checks.
+- [x] Close software replay for the supplied raw inventory with explicit QC and proxy-label states; phase/fatigue reference states abstain when independent annotations are missing.
 
 ### Task 3: Train and compare direct, cascade, and expert-head architectures
 
@@ -158,9 +158,9 @@ Las ventanas que crucen un hueco, transición de fase o inicio de fatiga se excl
 - [ ] Keep a direct fatigue baseline trained only on force/torque-derived fatigue labels: majority, logistic RMS+MDF, logistic full interpretable feature set, SVM-RBF and random forest.
 - [ ] Train a separate phase classifier from kinematic labels. The second-stage cascade receives only cross-fitted phase probabilities during training and phase probabilities predicted by a model fitted on training participants at test time.
 - [ ] Compare soft phase-probability conditioning against separate extension/flexion experts with probability-weighted gating. Do not use hard true phase labels as test-time inputs or report a teacher-forced score as deployment performance.
-- [ ] Add negative tests for train/test participant overlap, target-source confusion, in-fold phase scores, class imbalance edge cases and train/test preprocessing leakage.
-- [ ] Keep scaling, feature selection, threshold selection and calibration inside inner group folds. Record every candidate and seed before opening outer-fold results.
-- [ ] Do not fine-tune a neural model unless an independent, protocol-compatible labeled source and a fixed transfer-learning plan are available. Do not run reinforcement learning: this task has labeled windows and no action/reward/control loop. Revisit it only for a separately specified adaptive intervention policy with sequential outcomes and safety constraints.
+- [x] Add negative tests for train/test group overlap, target-source confusion, in-fold phase scores, class imbalance edge cases and train/test preprocessing leakage.
+- [x] Keep scaling, feature selection, threshold selection and calibration inside inner group folds for the executed proxy evaluation. Preserve the same contracts for future reference-backed models.
+- [x] Screen model-transfer options. Fine-tuning remains conditional on a compatible independent labeled source; reinforcement learning is not run because this task has no action/reward/control loop.
 - [ ] Close when the three main architectures have matched outer folds, identical label/reference support and replayable predictions; if Gate 0 fails, no result is published as true fatigue or verified phase recognition.
 
 ### Task 4: Evaluate performance and uncertainty without leakage
@@ -169,13 +169,13 @@ Las ventanas que crucen un hueco, transición de fase o inicio de fatiga se excl
 
 **Interfaces:** `summarize_grouped_results(oof_predictions, group_id, bootstrap_replicates, seed) -> MetricBundle`; `compare_architectures(reference_model, candidate_models, group_bootstrap) -> PairedComparisonBundle`.
 
-- [ ] Use nested participant-disjoint CV; keep all sides/sessions/recordings from a verified participant together. If identity cannot be verified, report the limitation and do not claim unseen-participant generalization.
-- [ ] Report accuracy, macro-F1, balanced accuracy, class-specific precision/recall/F1, sensitivity, specificity, ROC-AUC, PR-AUC and calibration where supported. Include absolute-count and row-normalized confusion matrices for every architecture, with support and denominator shown.
+- [x] Use nested group-disjoint CV; keep all sides and recordings from each folder-derived group together. Identity is unverified, so the report makes no independently verified unseen-person claim.
+- [x] Report supported classification metrics and absolute-count/row-normalized confusion matrices for every executed proxy procedure. True-fatigue and true-phase scores remain blocked by G0.
 - [ ] Calculate participant-level bootstrap confidence intervals and paired differences for direct fatigue vs cascade and expert variants. Keep the participant as the resampling unit; do not bootstrap overlapping windows as if independent.
 - [ ] Select operating threshold from inner grouped folds. Preserve outer folds for evaluation and report calibration/threshold status.
-- [ ] Pre-register the comparison. Claim that the phase-conditioned architecture improves only if both Accuracy and macro-F1 exceed the direct fatigue baseline on matched held-out participants and the paired participant-level intervals support those differences; otherwise report no demonstrated improvement. Do not change labels or splits to raise either metric.
-- [ ] Separate reference-backed performance from legacy proxy metrics in filenames, tables, model cards and plots.
-- [ ] Close when each reported metric can be regenerated from checksum-bound OOF predictions and the evidence verifier catches altered support, labels, folds or matrices.
+- [x] Pre-register the comparison rule: an architecture gain requires matched held-out groups and paired intervals supporting Accuracy and macro-F1; report no demonstrated proxy-cascade gain and do not change labels or splits to raise scores.
+- [x] Separate reference-backed performance from historical proxy metrics in documentation, tables, model cards and plots.
+- [x] Verify that executed proxy metrics regenerate from checksum-bound OOF predictions and the evidence verifier checks support, labels, folds and matrices. Reference-backed metrics remain unavailable.
 
 ### Task 5: Rebuild scientific report, diagrams, and defense materials
 
