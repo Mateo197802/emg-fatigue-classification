@@ -48,3 +48,10 @@ def test_checked_in_defense_scripts_match_all_30_storyboard_slides():
             for phrase in ("14 appendix", "fourteen appendix", "14 anex", "catorce anex")
         )
         assert "thirteen appendix" not in source_text and "trece anex" not in source_text
+
+
+def test_defense_script_readme_links_versioned_bilingual_pdfs():
+    root = Path(__file__).resolve().parents[1]
+    readme = (root / "docs/defense-scripts/README.md").read_text(encoding="utf-8")
+    assert "pdf/20261109_v5/Guion_defensa_ES.pdf" in readme
+    assert "pdf/20261109_v5/Defense_Script_EN.pdf" in readme
