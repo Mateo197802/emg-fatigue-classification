@@ -24,7 +24,7 @@ from .audit import audit_all, choose_sampling_plan
 from .augmentation import ALL_FAMILIES, augmentation_recipe
 from .contracts import ProcessedSegment, SignalWindow
 from .features import extract_features, feature_schema
-from .io import read_training_zip, sha256_file, write_json
+from .io import raw_first_source_fingerprint, read_training_zip, sha256_file, write_json
 from .labels import audit_references
 from .plots import make_before_after_plots, make_global_signal_summary, make_sampling_histogram
 from .preprocessing import preprocess_recording
@@ -665,6 +665,9 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
         "label_audit": label_audit,
     }
     write_json(private / "frozen_configuration.json", config_snapshot)
+    source_fingerprint = raw_first_source_fingerprint()
+    signal_standardization_hash = sha256_file(private / "signal_standardization.json")
+    source_commit = _git_metadata().get("commit")
     write_json(
         private / "freeze.json",
         {
@@ -673,6 +676,10 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
             "input_archive_sha256": input_digest,
             "configuration_sha256": hashlib.sha256(json.dumps(config_snapshot, sort_keys=True).encode()).hexdigest(),
             "encoder_checkpoint_sha256": {name: metadata["checkpoint_sha256"] for name, metadata in ssl_metadata.items()},
+            "signal_standardization_sha256": signal_standardization_hash,
+            "external_stage_code_sha256": source_fingerprint["sha256"],
+            "external_stage_code_files": source_fingerprint["files"],
+            "external_stage_code_commit": source_commit,
             "external_rar_opened": False,
             "supervised_fatigue_model": False,
         },
@@ -692,6 +699,10 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
             "output_sha256": output_hashes,
             "software_versions": _software_versions(),
             "git": _git_metadata(),
+            "signal_standardization_sha256": signal_standardization_hash,
+            "external_stage_code_sha256": source_fingerprint["sha256"],
+            "external_stage_code_files": source_fingerprint["files"],
+            "external_stage_code_commit": source_commit,
             "seed": run_seed,
             "completed_at_utc": datetime.now(timezone.utc).isoformat(),
             "external_rar_opened": False,

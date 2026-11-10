@@ -24,6 +24,21 @@ def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
     return digest.hexdigest()
 
 
+def raw_first_source_fingerprint() -> dict[str, object]:
+    """Hash the raw-first package and its CLI entry point for freeze receipts."""
+    package_dir = Path(__file__).resolve().parent
+    repo_root = Path(__file__).resolve().parents[3]
+    source_files = sorted(package_dir.glob("*.py")) + [repo_root / "tools" / "run_raw_first_experiment.py"]
+    file_hashes: dict[str, str] = {}
+    for path in source_files:
+        if not path.is_file():
+            raise FileNotFoundError("A source file required by the raw-first workflow is missing.")
+        relative = path.relative_to(repo_root).as_posix()
+        file_hashes[relative] = sha256_file(path)
+    fingerprint = hashlib.sha256(json.dumps(file_hashes, sort_keys=True).encode()).hexdigest()
+    return {"sha256": fingerprint, "files": sorted(file_hashes)}
+
+
 def write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")

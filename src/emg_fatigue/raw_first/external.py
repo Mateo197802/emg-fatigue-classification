@@ -20,7 +20,7 @@ import torch
 
 from .audit import audit_recording
 from .contracts import RawRecording
-from .io import sha256_file, write_json
+from .io import raw_first_source_fingerprint, sha256_file, write_json
 from .preprocessing import preprocess_recording
 from .ssl import MaskedConvAutoencoder, apply_signal_scale, model_embedding, model_reconstruct
 from .windows import segment_windows
@@ -160,6 +160,40 @@ def _verify_frozen_run(private: Path, freeze: dict[str, object]) -> None:
         raise ValueError("Training input hash does not match the private run manifest and freeze receipt.")
     if manifest.get("external_rar_opened") is not False:
         raise ValueError("The private run manifest records that the external archive was already opened.")
+
+    scaler_path = private / "signal_standardization.json"
+    scaler_hash = sha256_file(scaler_path) if scaler_path.is_file() else None
+    if (
+        scaler_hash is None
+        or scaler_hash != freeze.get("signal_standardization_sha256")
+        or scaler_hash != manifest.get("signal_standardization_sha256")
+        or scaler_hash != manifest.get("output_sha256", {}).get("private/signal_standardization.json")
+    ):
+        raise ValueError("The learned signal scaler does not match the freeze receipt and private run manifest.")
+
+    source_fingerprint = raw_first_source_fingerprint()
+    if (
+        source_fingerprint["sha256"] != freeze.get("external_stage_code_sha256")
+        or source_fingerprint["sha256"] != manifest.get("external_stage_code_sha256")
+        or source_fingerprint["files"] != freeze.get("external_stage_code_files")
+        or source_fingerprint["files"] != manifest.get("external_stage_code_files")
+    ):
+        raise ValueError("Raw-first source fingerprint does not match the freeze receipt and run manifest.")
+    recorded_commit = freeze.get("external_stage_code_commit")
+    if not isinstance(recorded_commit, str) or manifest.get("external_stage_code_commit") != recorded_commit:
+        raise ValueError("External-stage source commit does not match the freeze receipt and run manifest.")
+    try:
+        current_commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parents[3],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError("The current source-control revision could not be verified before external inspection.") from exc
+    if current_commit != recorded_commit:
+        raise ValueError("The current source-control revision differs from the frozen external-stage revision.")
 
     recorded = freeze.get("encoder_checkpoint_sha256")
     if not isinstance(recorded, dict) or set(recorded) != {"clean", "augmented"}:
