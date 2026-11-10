@@ -520,6 +520,7 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
     manifest["output_sha256"]["public/external_summary.json"] = sha256_file(public_summary)
     manifest["output_sha256"]["public/EXECUTION_SUMMARY.md"] = sha256_file(_repo_results_dir() / "EXECUTION_SUMMARY.md")
     manifest["external_rar_opened"] = True
+    manifest["external_stage_status"] = str(result["status"])
     manifest["external_checked_at_utc"] = result["checked_at_utc"]
     freeze["external_rar_opened"] = True
     freeze["external_archive_sha256"] = archive_hash
