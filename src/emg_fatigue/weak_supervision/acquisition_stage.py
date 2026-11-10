@@ -222,7 +222,14 @@ def _save_plots(
     rates = [float(row["effective_sampling_rate_hz"]) for row in acquisition_rows if row["effective_sampling_rate_hz"] is not None]
     fig, axis = plt.subplots(figsize=(8, 4.5))
     if rates:
-        axis.hist(rates, bins=min(24, max(5, int(np.sqrt(len(rates))))), color="#2c7fb8", edgecolor="white")
+        median_rate = float(np.median(rates))
+        bins = min(24, max(5, int(np.sqrt(len(rates)))))
+        if float(np.ptp(rates)) < max(0.5, median_rate * 1e-3):
+            axis.hist(rates, bins=bins, range=(median_rate - 0.5, median_rate + 0.5), color="#2c7fb8", edgecolor="white")
+            axis.set_xlim(median_rate - 0.5, median_rate + 0.5)
+        else:
+            axis.hist(rates, bins=bins, color="#2c7fb8", edgecolor="white")
+        axis.ticklabel_format(axis="x", style="plain", useOffset=False)
     axis.set(title="Development recording sampling rates", xlabel="Effective sampling rate (Hz)", ylabel="Recordings")
     fig.tight_layout()
     fig.savefig(plot_dir / "sampling_rate_distribution.png", dpi=160)
@@ -247,12 +254,12 @@ def _save_plots(
     outputs.append("plots/raw_psd_power_fractions.png")
 
     durations = sorted(window_counts, key=float)
-    total_counts = [window_counts[key]["total"] for key in durations]
     eligible_counts = [window_counts[key]["eligible"] for key in durations]
+    rejected_counts = [window_counts[key]["rejected"] for key in durations]
     fig, axis = plt.subplots(figsize=(8, 4.5))
     positions = np.arange(len(durations))
-    axis.bar(positions, total_counts, color="#9ecae1", label="All windows")
     axis.bar(positions, eligible_counts, color="#31a354", label="Eligible for future reference alignment")
+    axis.bar(positions, rejected_counts, bottom=eligible_counts, color="#fd8d3c", label="Rejected by QC/activity gates")
     axis.set_xticks(positions, [f"{int(round(float(item) * 1000))} ms" for item in durations])
     axis.set(title="Development window counts", ylabel="Windows")
     axis.legend(loc="best")
