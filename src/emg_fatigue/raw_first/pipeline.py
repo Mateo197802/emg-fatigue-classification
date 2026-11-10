@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import csv
 import hashlib
-import importlib.metadata
 import json
 import os
-import platform
 import subprocess
 import tomllib
 from datetime import datetime, timezone
@@ -28,6 +26,7 @@ from .io import raw_first_source_fingerprint, read_training_zip, sha256_file, wr
 from .labels import audit_references
 from .plots import make_before_after_plots, make_global_signal_summary, make_sampling_histogram
 from .preprocessing import preprocess_recording
+from .runtime import software_versions
 from .robustness import evaluate_robustness
 from .sensitivity import filter_sensitivity, window_sensitivity
 from .splits import source_group_split
@@ -73,18 +72,6 @@ def _git_metadata() -> dict[str, object]:
         "commit": run_git(["rev-parse", "HEAD"]),
         "working_tree_status": run_git(["status", "--short"]),
     }
-
-
-def _software_versions() -> dict[str, str]:
-    names = ("numpy", "pandas", "scipy", "scikit-learn", "matplotlib", "torch")
-    versions: dict[str, str] = {"python": platform.python_version(), "platform": platform.platform()}
-    for name in names:
-        try:
-            versions[name] = importlib.metadata.version(name)
-        except importlib.metadata.PackageNotFoundError:
-            versions[name] = "not-found"
-    versions["torch_cuda"] = str(torch.version.cuda)
-    return versions
 
 
 def _write_csv(path: Path, rows: list[dict[str, object]] | pd.DataFrame) -> None:
@@ -665,6 +652,7 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
         "label_audit": label_audit,
     }
     write_json(private / "frozen_configuration.json", config_snapshot)
+    runtime_versions = software_versions()
     source_fingerprint = raw_first_source_fingerprint()
     signal_standardization_hash = sha256_file(private / "signal_standardization.json")
     source_commit = _git_metadata().get("commit")
@@ -680,6 +668,7 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
             "external_stage_code_sha256": source_fingerprint["sha256"],
             "external_stage_code_files": source_fingerprint["files"],
             "external_stage_code_commit": source_commit,
+            "software_versions": runtime_versions,
             "external_rar_opened": False,
             "supervised_fatigue_model": False,
         },
@@ -697,7 +686,7 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
             "input_archive_sha256": input_digest,
             "input_original_file_hashes": inventory["file_hashes"],
             "output_sha256": output_hashes,
-            "software_versions": _software_versions(),
+            "software_versions": runtime_versions,
             "git": _git_metadata(),
             "signal_standardization_sha256": signal_standardization_hash,
             "external_stage_code_sha256": source_fingerprint["sha256"],

@@ -22,6 +22,7 @@ from .audit import audit_recording
 from .contracts import RawRecording
 from .io import raw_first_source_fingerprint, sha256_file, write_json
 from .preprocessing import preprocess_recording
+from .runtime import software_versions
 from .ssl import MaskedConvAutoencoder, apply_signal_scale, model_embedding, model_reconstruct
 from .windows import segment_windows
 
@@ -160,6 +161,22 @@ def _verify_frozen_run(private: Path, freeze: dict[str, object]) -> None:
         raise ValueError("Training input hash does not match the private run manifest and freeze receipt.")
     if manifest.get("external_rar_opened") is not False:
         raise ValueError("The private run manifest records that the external archive was already opened.")
+
+    frozen_versions = freeze.get("software_versions")
+    recorded_versions = manifest.get("software_versions")
+    current_versions = software_versions()
+    if not isinstance(frozen_versions, dict) or not isinstance(recorded_versions, dict):
+        raise ValueError("Runtime version provenance is missing from the freeze receipt or run manifest.")
+    if frozen_versions != recorded_versions or current_versions != frozen_versions:
+        expected = frozen_versions
+        mismatches = sorted(
+            key
+            for key in set(expected) | set(recorded_versions) | set(current_versions)
+            if expected.get(key) != recorded_versions.get(key) or expected.get(key) != current_versions.get(key)
+        )
+        raise ValueError(
+            "Runtime versions changed since the frozen training run: " + ", ".join(mismatches)
+        )
 
     scaler_path = private / "signal_standardization.json"
     scaler_hash = sha256_file(scaler_path) if scaler_path.is_file() else None
@@ -315,7 +332,8 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
             "archive_sha256": archive_hash,
             "rar_test_passed": False,
             "csv_count": None,
-            "independent_labels_found": False,
+            "independent_labels_found": None,
+            "reference_search_complete": False,
             "fatigue_metrics_produced": False,
             "identity_independence_verified": False,
             "limitations": ["No 7-Zip/UnRAR extractor is available; the RAR contents were not inspected."],
@@ -336,7 +354,8 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
             "archive_sha256": archive_hash,
             "rar_test_passed": False,
             "csv_count": None,
-            "independent_labels_found": False,
+            "independent_labels_found": None,
+            "reference_search_complete": False,
             "fatigue_metrics_produced": False,
             "identity_independence_verified": False,
             "limitations": ["The RAR integrity test failed; no member data were used."],
