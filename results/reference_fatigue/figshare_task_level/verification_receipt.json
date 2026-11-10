@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "trial_count": 28,
+  "participant_count": 14,
+  "model_count": 10,
+  "replayed_metric_tables": 10,
+  "checkpoint_count_checked": 140,
+  "artifact_hashes_checked": 10,
+  "errors": []
+}

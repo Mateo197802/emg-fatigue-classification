@@ -7,10 +7,10 @@ import sys
 def test_read_script_keeps_metadata_out_of_appendix_narration(tmp_path: Path):
     from tools.build_speaking_script_pdfs import read_script
 
-    lines = ["# Defense script", "", "16 principal slides. 14 appendices.", ""]
-    for slide_number in range(1, 31):
+    lines = ["# Defense script", "", "19 principal slides. 14 appendices.", ""]
+    for slide_number in range(1, 34):
         lines.extend([f"## {slide_number}. Slide {slide_number}", ""])
-        if slide_number <= 16:
+        if slide_number <= 19:
             lines.extend(["Scheduled time: 20 s.", ""])
         else:
             lines.extend(["Appendix for questions.", ""])
@@ -21,15 +21,15 @@ def test_read_script_keeps_metadata_out_of_appendix_narration(tmp_path: Path):
 
     _, entries = read_script(script_path)
 
-    assert len(entries) == 30
+    assert len(entries) == 33
     for heading, time_text, narration, source in entries:
         assert source == "docs/evidence.csv"
         assert "Source:" not in narration
         assert "Scheduled time:" not in narration
-    assert entries[-1][2] == "Appendix for questions.\n\nNarration for slide 30."
+    assert entries[-1][2] == "Appendix for questions.\n\nNarration for slide 33."
 
 
-def test_checked_in_defense_scripts_match_all_30_storyboard_slides():
+def test_checked_in_defense_scripts_match_all_33_storyboard_slides():
     from tools.build_speaking_script_pdfs import read_script
 
     root = Path(__file__).resolve().parents[1]
@@ -40,10 +40,10 @@ def test_checked_in_defense_scripts_match_all_30_storyboard_slides():
     for script_path in script_paths:
         _, entries = read_script(script_path)
         slide_numbers = [int(re.match(r"(\d+)\.", heading).group(1)) for heading, *_ in entries]
-        assert slide_numbers == list(range(1, 31))
-        candidate_heading = entries[24][0].lower()
+        assert slide_numbers == list(range(1, 34))
+        candidate_heading = entries[27][0].lower()
         assert ("candidate" in candidate_heading and "feature" in candidate_heading) or "características candidatas" in candidate_heading
-        assert "signal" in entries[29][0].lower() or "señal" in entries[29][0].lower()
+        assert "signal" in entries[32][0].lower() or "señal" in entries[32][0].lower()
         source_text = script_path.read_text(encoding="utf-8").lower()
         assert any(
             phrase in source_text
@@ -52,11 +52,11 @@ def test_checked_in_defense_scripts_match_all_30_storyboard_slides():
         assert "thirteen appendix" not in source_text and "trece anex" not in source_text
 
 
-def test_defense_script_readme_links_versioned_bilingual_pdfs():
+def test_defense_script_readme_links_current_bilingual_pdfs():
     root = Path(__file__).resolve().parents[1]
     readme = (root / "docs/defense-scripts/README.md").read_text(encoding="utf-8")
-    assert "pdf/20261109_v5/Guion_defensa_ES.pdf" in readme
-    assert "pdf/20261109_v5/Defense_Script_EN.pdf" in readme
+    assert "pdf/20261109_v7/Guion_defensa_ES.pdf" in readme
+    assert "pdf/20261109_v7/Defense_Script_EN.pdf" in readme
 
 
 def test_public_tree_audit_accepts_versioned_read_aloud_pdfs():

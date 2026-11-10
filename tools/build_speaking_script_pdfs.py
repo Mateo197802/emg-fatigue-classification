@@ -25,8 +25,8 @@ def read_script(path: Path):
         ]
         note = re.sub(r"\n{3,}", "\n\n", "\n".join(narration_lines)).strip()
         entries.append((heading, time_text, note, source))
-    if len(entries) != 30:
-        raise ValueError(f"expected 30 slide entries in {path}, found {len(entries)}")
+    if len(entries) != 33:
+        raise ValueError(f"expected 33 slide entries in {path}, found {len(entries)}")
     return title, entries
 
 
@@ -68,11 +68,11 @@ def render_one(source: Path, destination: Path, language: str) -> None:
         leading=11, textColor=colors.HexColor("#687984"), wordWrap="CJK",
     )
     story = [Paragraph(escape(title), page_title)]
-    principal_count = 16
+    principal_count = 19
     if language == "es":
-        intro = "16 diapositivas principales · 600 segundos · 14 anexos"
+        intro = "19 diapositivas principales · 600 segundos · 14 anexos"
     else:
-        intro = "16 principal slides · 600 seconds · 14 appendices"
+        intro = "19 principal slides · 600 seconds · 14 appendices"
     story.extend([Paragraph(escape(intro), source_style), Spacer(1, 5*mm)])
     for index, (heading, time_text, note, source_text) in enumerate(entries, 1):
         if index == principal_count + 1:

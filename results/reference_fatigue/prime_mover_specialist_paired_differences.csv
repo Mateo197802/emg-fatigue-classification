@@ -1,0 +1,3 @@
+metric,comparison,participants,mean_paired_difference,ci95_low,ci95_high,participants_candidate_higher,bootstrap_replicates,bootstrap_seed
+accuracy,specialist_by_prime_mover_minus_global_hist_gradient_boosting,13,-0.01741452053,-0.02665881643,-0.00700258698,3,50000,20261109
+f1_macro,specialist_by_prime_mover_minus_global_hist_gradient_boosting,13,-0.01767431734,-0.02669235562,-0.007508040898,2,50000,20261110

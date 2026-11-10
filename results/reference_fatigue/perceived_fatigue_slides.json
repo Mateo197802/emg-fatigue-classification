@@ -1,0 +1,222 @@
+{
+  "dataset": {
+    "doi": "10.5281/zenodo.14182446",
+    "version": "v2",
+    "participants": 13,
+    "trials": 156,
+    "channels": 4,
+    "window_count": 125165,
+    "labels": {
+      "0": 64283,
+      "1": 60882
+    },
+    "label_semantics": "stable self-report 0=no perceived fatigue; stable self-report 2=perceived fatigue; transition level 1 excluded",
+    "sampling_rate_hz": 1259.26,
+    "window_s": 0.5,
+    "overlap": 0.5,
+    "features": 60
+  },
+  "models": [
+    {
+      "architecture": "time_only_control",
+      "display": "Time only control",
+      "accuracy": 0.9400551272,
+      "macro_f1": 0.9400160177,
+      "accuracy_participant_macro": 0.9409888686,
+      "macro_f1_participant_macro": 0.9372084617,
+      "accuracy_ci95": [
+        0.9109808051,
+        0.9664531082
+      ],
+      "macro_f1_ci95": [
+        0.9037387177,
+        0.964706548
+      ]
+    },
+    {
+      "architecture": "hist_gradient_boosting",
+      "display": "Global HistGradientBoosting",
+      "accuracy": 0.6545759597,
+      "macro_f1": 0.6545272646,
+      "accuracy_participant_macro": 0.6563362459,
+      "macro_f1_participant_macro": 0.6295551288,
+      "accuracy_ci95": [
+        0.6109802206,
+        0.6981409644
+      ],
+      "macro_f1_ci95": [
+        0.585274672,
+        0.6701042443
+      ]
+    },
+    {
+      "architecture": "nested_hist_gradient_boosting",
+      "display": "Nested tuned HGB",
+      "accuracy": 0.6528502377,
+      "macro_f1": 0.652783136,
+      "accuracy_participant_macro": 0.6544073693,
+      "macro_f1_participant_macro": 0.6266479845,
+      "accuracy_ci95": [
+        0.6090243761,
+        0.6967538729
+      ],
+      "macro_f1_ci95": [
+        0.5810431418,
+        0.6679939463
+      ]
+    },
+    {
+      "architecture": "specialist_by_prime_mover",
+      "display": "HGB experts by prime mover",
+      "accuracy": 0.6382135581,
+      "macro_f1": 0.6381980295,
+      "accuracy_participant_macro": 0.6389217253,
+      "macro_f1_participant_macro": 0.6118808114,
+      "accuracy_ci95": [
+        0.5960888688,
+        0.678168485
+      ],
+      "macro_f1_ci95": [
+        0.5688749196,
+        0.6513104103
+      ]
+    },
+    {
+      "architecture": "random_forest",
+      "display": "Random forest",
+      "accuracy": 0.6344505253,
+      "macro_f1": 0.6342172298,
+      "accuracy_participant_macro": 0.6374789331,
+      "macro_f1_participant_macro": 0.6034293835,
+      "accuracy_ci95": [
+        0.5861286931,
+        0.6882125703
+      ],
+      "macro_f1_ci95": [
+        0.5513499619,
+        0.6503493179
+      ]
+    },
+    {
+      "architecture": "logistic_regression",
+      "display": "Logistic regression",
+      "accuracy": 0.6211480845,
+      "macro_f1": 0.6209137418,
+      "accuracy_participant_macro": 0.6224330003,
+      "macro_f1_participant_macro": 0.5820159855,
+      "accuracy_ci95": [
+        0.5756819433,
+        0.6677178065
+      ],
+      "macro_f1_ci95": [
+        0.5265976296,
+        0.6322491598
+      ]
+    },
+    {
+      "architecture": "mlp_compact",
+      "display": "Compact MLP",
+      "accuracy": 0.6128150841,
+      "macro_f1": 0.6127000618,
+      "accuracy_participant_macro": 0.6193060586,
+      "macro_f1_participant_macro": 0.5981008535,
+      "accuracy_ci95": [
+        0.5851927791,
+        0.6539855612
+      ],
+      "macro_f1_ci95": [
+        0.5651826121,
+        0.629767262
+      ]
+    },
+    {
+      "architecture": "svm_rbf",
+      "display": "SVM RBF",
+      "accuracy": 0.5974593537,
+      "macro_f1": 0.5973615255,
+      "accuracy_participant_macro": 0.6084478605,
+      "macro_f1_participant_macro": 0.5828305003,
+      "accuracy_ci95": [
+        0.5538765323,
+        0.6587707977
+      ],
+      "macro_f1_ci95": [
+        0.5308946258,
+        0.632592911
+      ]
+    },
+    {
+      "architecture": "majority",
+      "display": "Majority baseline",
+      "accuracy": 0.5135860664,
+      "macro_f1": 0.3393173852,
+      "accuracy_participant_macro": 0.5058965048,
+      "macro_f1_participant_macro": 0.3307274618,
+      "accuracy_ci95": [
+        0.4314251222,
+        0.5722509376
+      ],
+      "macro_f1_ci95": [
+        0.2950709058,
+        0.361590512
+      ]
+    }
+  ],
+  "confusion_matrices": {
+    "hist_gradient_boosting": [
+      [
+        41708,
+        22575
+      ],
+      [
+        20660,
+        40222
+      ]
+    ],
+    "time_only_control": [
+      [
+        60429,
+        3854
+      ],
+      [
+        3649,
+        57233
+      ]
+    ],
+    "specialist_by_prime_mover": [
+      [
+        40351,
+        23932
+      ],
+      [
+        21351,
+        39531
+      ]
+    ],
+    "nested_hist_gradient_boosting": [
+      [
+        41727,
+        22556
+      ],
+      [
+        20895,
+        39987
+      ]
+    ]
+  },
+  "specialist_comparison": {
+    "accuracy": {
+      "mean_paired_difference": -0.01741452053,
+      "ci95_low": -0.02665881643,
+      "ci95_high": -0.00700258698
+    },
+    "f1_macro": {
+      "mean_paired_difference": -0.01767431734,
+      "ci95_low": -0.02669235562,
+      "ci95_high": -0.007508040898
+    }
+  },
+  "nested_tuning_status": "completed",
+  "phase_cascade_status": "not evaluated: no synchronized extension/flexion annotations in this dataset",
+  "scope_note": "Reference-aligned self-reported fatigue classification; not objective mechanical muscle fatigue"
+}

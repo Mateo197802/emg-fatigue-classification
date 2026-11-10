@@ -1,0 +1,124 @@
+{
+  "status": "completed",
+  "dataset_id": "10.5281/zenodo.14182446",
+  "task_id": "PERCEIVED_FATIGUE_CLASSIFICATION",
+  "target": "stable 0=no self-reported fatigue, stable 2=self-reported fatigue; 1 transition excluded",
+  "prediction_unit": "reference-aligned 500 ms sEMG windows; one OOF prediction per eligible window",
+  "participants": 13,
+  "outer_validation": "13-fold leave-one-participant-out",
+  "inner_validation": "3-fold GroupKFold by participant; maximize mean participant-macro F1",
+  "candidate_count_per_outer_fold": 16,
+  "candidate_grid": [
+    {
+      "max_iter": 75,
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 7,
+      "l2_regularization": 1.0
+    },
+    {
+      "max_iter": 75,
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 7,
+      "l2_regularization": 10.0
+    },
+    {
+      "max_iter": 75,
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 15,
+      "l2_regularization": 1.0
+    },
+    {
+      "max_iter": 75,
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 15,
+      "l2_regularization": 10.0
+    },
+    {
+      "max_iter": 75,
+      "learning_rate": 0.08,
+      "max_leaf_nodes": 7,
+      "l2_regularization": 1.0
+    },
+    {
+      "max_iter": 75,
+      "learning_rate": 0.08,
+      "max_leaf_nodes": 7,
+      "l2_regularization": 10.0
+    },
+    {
+      "max_iter": 75,
+      "learning_rate": 0.08,
+      "max_leaf_nodes": 15,
+      "l2_regularization": 1.0
+    },
+    {
+      "max_iter": 75,
+      "learning_rate": 0.08,
+      "max_leaf_nodes": 15,
+      "l2_regularization": 10.0
+    },
+    {
+      "max_iter": 150,
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 7,
+      "l2_regularization": 1.0
+    },
+    {
+      "max_iter": 150,
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 7,
+      "l2_regularization": 10.0
+    },
+    {
+      "max_iter": 150,
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 15,
+      "l2_regularization": 1.0
+    },
+    {
+      "max_iter": 150,
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 15,
+      "l2_regularization": 10.0
+    },
+    {
+      "max_iter": 150,
+      "learning_rate": 0.08,
+      "max_leaf_nodes": 7,
+      "l2_regularization": 1.0
+    },
+    {
+      "max_iter": 150,
+      "learning_rate": 0.08,
+      "max_leaf_nodes": 7,
+      "l2_regularization": 10.0
+    },
+    {
+      "max_iter": 150,
+      "learning_rate": 0.08,
+      "max_leaf_nodes": 15,
+      "l2_regularization": 1.0
+    },
+    {
+      "max_iter": 150,
+      "learning_rate": 0.08,
+      "max_leaf_nodes": 15,
+      "l2_regularization": 10.0
+    }
+  ],
+  "train_sampling": "even temporal bins; max 50 windows per training participant x trial x class; test windows kept in full",
+  "features_sha256": "7a2085a3f037584024a63e24b25dc73d2e3cda04058c005e8afbbdf01733b85c",
+  "fixed_oof_sha256": "28baba70091b5edfcbbfbf97cb4007d50c5189f0c0fe65818afe1dae8ce4f824",
+  "private_oof_sha256": "9d69cd2b32e44dd5d951c28dd4144ebb236218ce3e7d36691ac3e1cedd819984",
+  "private_search_history_sha256": "1f7416dea6bf3f5383117b10e71524f996bc11233fe51258af17f83641291791",
+  "private_participant_metrics_sha256": "8e1a5c6f3ad9b339fe66a4ccff34c7b1fed1ea9cc059b9b45d59db6b1f1a242e",
+  "participant_bootstrap_replicates": 5000,
+  "paired_bootstrap_replicates": 50000,
+  "public_aggregate_sha256": {
+    "nested_hgb_metrics.csv": "7c1805645d3d556cd22b13e1d1134594164564bfc0549260789cc5afaa1be703",
+    "nested_hgb_confusion.csv": "6cac64c1e3250f4b80045330dda5799be5c1ea99131d2206e82a2696d515a632",
+    "nested_hgb_paired_differences.csv": "d13d7cd7515c8dacabd4a816dbeabd8c9b17f1b38afe88f81ac1a1949e3cc264",
+    "nested_hgb_selected_params.csv": "428de892af21cd584634174035281c37d47d95e1d52151d6d6583d3c22beea84"
+  },
+  "scope_limit": "self-reported fatigue only; no synchronized objective force/torque labels or extension/flexion phase labels"
+}

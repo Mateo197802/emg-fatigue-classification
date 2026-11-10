@@ -1,0 +1,3 @@
+metric,comparison,participants,mean_paired_difference,ci95_low,ci95_high,participants_nested_higher,bootstrap_replicates,bootstrap_seed
+accuracy,nested_hgb_minus_fixed_hgb_run_001,13,-0.001928876593,-0.007590407682,0.003267945028,5,50000,20261109
+f1_macro,nested_hgb_minus_fixed_hgb_run_001,13,-0.0029071443,-0.009860765434,0.003226887566,6,50000,20261110

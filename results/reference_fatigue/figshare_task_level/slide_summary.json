@@ -1,0 +1,224 @@
+{
+  "title_es": "Ensayo externo por resultado de tarea al fallo",
+  "dataset": {
+    "doi": "10.6084/m9.figshare.15273906.v1",
+    "participants": 14,
+    "trials": 28,
+    "trials_per_class": {
+      "0": 14,
+      "1": 14
+    },
+    "sampling_rate_hz": [
+      2048
+    ],
+    "window_s": 0.5,
+    "overlap_fraction": 0.5,
+    "window_count_median_by_condition": {
+      "30": 442.0,
+      "TLim": 493.0
+    },
+    "active_bout_count_by_condition": {
+      "30": [
+        4
+      ],
+      "TLim": [
+        1
+      ]
+    }
+  },
+  "results": {
+    "time_only_control": {
+      "n_trials": 28,
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "balanced_accuracy": 1.0,
+      "sensitivity_task_failure": 1.0,
+      "specificity_reference": 1.0,
+      "accuracy_ci95": [
+        1.0,
+        1.0
+      ],
+      "macro_f1_ci95": [
+        1.0,
+        1.0
+      ]
+    },
+    "lr_rms_mdf": {
+      "n_trials": 28,
+      "accuracy": 0.9642857142857143,
+      "macro_f1": 0.9642401021711366,
+      "balanced_accuracy": 0.9642857142857143,
+      "sensitivity_task_failure": 0.9285714285714286,
+      "specificity_reference": 1.0,
+      "accuracy_ci95": [
+        0.8928571428571429,
+        1.0
+      ],
+      "macro_f1_ci95": [
+        0.8916129032258064,
+        1.0
+      ]
+    },
+    "lr_all_features": {
+      "n_trials": 28,
+      "accuracy": 0.9642857142857143,
+      "macro_f1": 0.9642401021711366,
+      "balanced_accuracy": 0.9642857142857143,
+      "sensitivity_task_failure": 0.9285714285714286,
+      "specificity_reference": 1.0,
+      "accuracy_ci95": [
+        0.8928571428571429,
+        1.0
+      ],
+      "macro_f1_ci95": [
+        0.8916129032258064,
+        1.0
+      ]
+    },
+    "svm_rbf": {
+      "n_trials": 28,
+      "accuracy": 0.9642857142857143,
+      "macro_f1": 0.9642401021711366,
+      "balanced_accuracy": 0.9642857142857143,
+      "sensitivity_task_failure": 1.0,
+      "specificity_reference": 0.9285714285714286,
+      "accuracy_ci95": [
+        0.8928571428571429,
+        1.0
+      ],
+      "macro_f1_ci95": [
+        0.8916129032258064,
+        1.0
+      ]
+    },
+    "random_forest": {
+      "n_trials": 28,
+      "accuracy": 0.9642857142857143,
+      "macro_f1": 0.9642401021711366,
+      "balanced_accuracy": 0.9642857142857143,
+      "sensitivity_task_failure": 0.9285714285714286,
+      "specificity_reference": 1.0,
+      "accuracy_ci95": [
+        0.8928571428571429,
+        1.0
+      ],
+      "macro_f1_ci95": [
+        0.8916129032258064,
+        1.0
+      ]
+    },
+    "mlp_compact": {
+      "n_trials": 28,
+      "accuracy": 0.9642857142857143,
+      "macro_f1": 0.9642401021711366,
+      "balanced_accuracy": 0.9642857142857143,
+      "sensitivity_task_failure": 0.9285714285714286,
+      "specificity_reference": 1.0,
+      "accuracy_ci95": [
+        0.8928571428571429,
+        1.0
+      ],
+      "macro_f1_ci95": [
+        0.8916129032258064,
+        1.0
+      ]
+    },
+    "cnn1d_trial_mil": {
+      "n_trials": 28,
+      "accuracy": 0.6785714285714286,
+      "macro_f1": 0.6781609195402298,
+      "balanced_accuracy": 0.6785714285714286,
+      "sensitivity_task_failure": 0.7142857142857143,
+      "specificity_reference": 0.6428571428571429,
+      "accuracy_ci95": [
+        0.5714285714285714,
+        0.8214285714285714
+      ],
+      "macro_f1_ci95": [
+        0.5508021390374331,
+        0.8193548387096774
+      ]
+    },
+    "dummy_prior": {
+      "n_trials": 28,
+      "accuracy": 0.5,
+      "macro_f1": 0.3333333333333333,
+      "balanced_accuracy": 0.5,
+      "sensitivity_task_failure": 0.0,
+      "specificity_reference": 1.0,
+      "accuracy_ci95": [
+        0.5,
+        0.5
+      ],
+      "macro_f1_ci95": [
+        0.3333333333333333,
+        0.3333333333333333
+      ]
+    },
+    "hist_gradient_boosting": {
+      "n_trials": 28,
+      "accuracy": 0.5,
+      "macro_f1": 0.3333333333333333,
+      "balanced_accuracy": 0.5,
+      "sensitivity_task_failure": 0.0,
+      "specificity_reference": 1.0,
+      "accuracy_ci95": [
+        0.5,
+        0.5
+      ],
+      "macro_f1_ci95": [
+        0.3333333333333333,
+        0.3333333333333333
+      ]
+    }
+  },
+  "confusion_matrices": {
+    "lr_all_features": [
+      [
+        14,
+        0
+      ],
+      [
+        1,
+        13
+      ]
+    ],
+    "time_only_control": [
+      [
+        14,
+        0
+      ],
+      [
+        0,
+        14
+      ]
+    ],
+    "cnn1d_trial_mil": [
+      [
+        9,
+        5
+      ],
+      [
+        4,
+        10
+      ]
+    ]
+  },
+  "target_semantics": "one trial-level label: 30 reference contraction versus TLim task carried to task failure; not per-window fatigue state",
+  "phase_cascade_status": "not evaluated: this isometric dataset does not supply extension/flexion phase labels",
+  "source_controls": "uncalibrated ref_signal only segments active bouts; time-only control is diagnostic, not the EMG model",
+  "literature": [
+    {
+      "citation": "Rossato et al., Journal of Neurophysiology (2022), DOI 10.1152/jn.00453.2021",
+      "url": "https://journals.physiology.org/doi/10.1152/jn.00453.2021"
+    },
+    {
+      "citation": "Zhu et al., Applied Sciences 11(9), 3821 (2021), DOI 10.3390/app11093821",
+      "url": "https://www.mdpi.com/2076-3417/11/9/3821"
+    },
+    {
+      "citation": "Hargrove et al., A Strategy for Identifying Locomotion Modes Using Surface EMG",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3025288/"
+    }
+  ]
+}

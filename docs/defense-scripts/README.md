@@ -1,12 +1,12 @@
 # Bilingual defense scripts
 
-These read-aloud scripts follow the current 30-slide defense deck in order. The 16 principal slides are scheduled for 600 seconds total; slides 17–30 are 14 evidence appendices for questions, including the target-free candidate-feature audit.
+These read-aloud scripts follow the revised 33-slide defense deck in order. The 19 principal slides are scheduled for 600 seconds total; slides 20–33 are 14 evidence appendices for questions, including the target-free candidate-feature audit.
 
 - [Spanish Markdown script](Guion_defensa_ES.md)
-- [Spanish PDF script](pdf/20261109_v5/Guion_defensa_ES.pdf)
+- [Spanish PDF script](pdf/20261109_v7/Guion_defensa_ES.pdf)
 - [English Markdown script](Defense_Script_EN.md)
-- [English PDF script](pdf/20261109_v5/Defense_Script_EN.pdf)
+- [English PDF script](pdf/20261109_v7/Defense_Script_EN.pdf)
 
-The scripts describe the executed early/late temporal-proxy experiments and the auxiliary burst-half cascade. They do not claim that either target is physiological fatigue or observed extension/flexion. The proposed reference-backed architectures are clearly described as not trained on the supplied ZIP.
+The scripts distinguish the original early/late proxy, the executed external self-reported perceived-fatigue window experiment, and a separate trial-level task-outcome benchmark. They do not present self-report as force loss, and they do not claim observed extension/flexion. The phase-to-fatigue cascade remains unevaluated because synchronized movement-phase labels are absent.
 
-The current PDFs are versioned under `pdf/20261109_v5/` and were generated from the Markdown with `tools/build_speaking_script_pdfs.py`. Metadata lines for timing and sources are removed from narration before rendering, so each source appears once. A parser regression test is in `tests/test_speaking_script_pdfs.py`. Only these two read-aloud PDFs are public; the report, slide deck and signal evidence stay in the private delivery.
+The public script PDFs are regenerated from these Markdown files with `tools/build_speaking_script_pdfs.py`. Metadata lines for timing and sources are removed from narration before rendering, so each source appears once. A parser regression test is in `tests/test_speaking_script_pdfs.py`. The private package contains the full slide deck and private signal evidence.

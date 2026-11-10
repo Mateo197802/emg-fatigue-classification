@@ -1,0 +1,5 @@
+model,actual_label,predicted_label,count,row_normalized,n_windows
+nested_hist_gradient_boosting,0,0,41727,0.6491140737,125165
+nested_hist_gradient_boosting,0,1,22556,0.3508859263,125165
+nested_hist_gradient_boosting,1,0,20895,0.3432048881,125165
+nested_hist_gradient_boosting,1,1,39987,0.6567951119,125165

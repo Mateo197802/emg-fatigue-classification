@@ -8,13 +8,13 @@ La [auditoría de datos de referencia](docs/REFERENCE_DATA_REQUIREMENTS.md) enum
 
 ## Defense presentation
 
-The revised private defense follows the signal-analysis workflow in **16 principal slides (600 seconds) and 14 evidence appendices**: corpus, signal, quantitative signal-quality preanalysis, preprocessing, windowing, labels, features, grouped validation, model families and proxy performance, auxiliary architecture and results, candidate-feature audit, equations, and the proposed reference-backed direct/cascade/expert comparison. Repetition- and phase-aligned feature trajectories are reported as unavailable without synchronized verified markers. It removes the former administrative closing block. See the [slide-by-slide storyboard](docs/DEFENSE_STORYBOARD.md).
+The revised defense follows the signal-analysis workflow in **19 principal slides (600 seconds) and 14 evidence appendices**: the course corpus and temporal-proxy audit; an external, label-aligned perceived-fatigue window model and its results; the distinct external trial-outcome benchmark; signal processing, formulas, grouped evaluation and limitations. It separates observed models from phase architectures that cannot be trained without synchronized kinematics. See the [slide-by-slide storyboard](docs/DEFENSE_STORYBOARD.md).
 
 The [input builder](tools/build_defense_inputs.py) verifies the frozen evaluation receipts and prepares private signal snippets and numerical summaries. The [presentation builder](tools/build_defense_v2.mjs) creates editable tables, charts, confusion matrices, window and reference-architecture diagrams, and Spanish/English speaking scripts. The [signal-evidence builder](tools/build_signal_evidence.py) creates a private anonymized figure with a real waveform, Hann periodograms and the sampling-rate-specific filter response. Its image and receipt belong in the private package and must not be committed. The only PDFs in this public repository are the read-aloud scripts; participant-level signals, private input JSON, manuscript PDF and presentation PDF/PPTX remain private.
 
 ### Slide-by-slide defense scripts
 
-Read or edit the [Spanish Markdown](docs/defense-scripts/Guion_defensa_ES.md) and [English Markdown](docs/defense-scripts/Defense_Script_EN.md), or open the [Spanish PDF](docs/defense-scripts/pdf/Guion_defensa_ES.pdf) and [English PDF](docs/defense-scripts/pdf/Defense_Script_EN.pdf). Each version covers all 30 slides in presentation order: 16 principal slides scheduled for 600 seconds and 14 question appendices. The scripts retain the central scientific qualification: the executed models predict an early/late temporal proxy, not independently measured muscle fatigue or observed knee extension/flexion.
+Read or edit the [Spanish Markdown](docs/defense-scripts/Guion_defensa_ES.md) and [English Markdown](docs/defense-scripts/Defense_Script_EN.md), or open the [Spanish PDF](docs/defense-scripts/pdf/20261109_v7/Guion_defensa_ES.pdf) and [English PDF](docs/defense-scripts/pdf/20261109_v7/Defense_Script_EN.pdf). Each version follows the 33-slide presentation: 19 principal slides scheduled for 600 seconds and 14 question appendices. The scripts distinguish the original early/late proxy, external perceived-fatigue windows, and trial-level task outcome; they do not claim objective force-loss or observed extension/flexion labels.
 
 ```powershell
 python tools/build_defense_inputs.py --root '<private-frozen-output>' --archive '<authorized-primary-ZIP>' --output '<private-frozen-output>/slides_input_v2.json'
@@ -71,6 +71,25 @@ HistGradientBoosting, the strongest descriptive EMG-only result, had participant
 
 The [aggregate benchmark metrics](results/reference_fatigue/benchmark_metrics.csv), [paired differences](results/reference_fatigue/paired_delta_vs_time_only.csv), [pooled confusion counts and row-normalized rates](results/reference_fatigue/confusion_matrices.csv), and [public run receipt](results/reference_fatigue/run_manifest.json) provide auditable aggregate evidence. Individual OOF predictions, per-participant metrics and signals stay local and are ignored by Git. The source pipeline is [`prepare_dataset.py`](experiments/reference_fatigue/prepare_dataset.py), [`run_benchmark.py`](experiments/reference_fatigue/run_benchmark.py), and [`export_public_evidence.py`](experiments/reference_fatigue/export_public_evidence.py). Reproduction requires both dataset ZIPs from the cited record; the receipt records their official MD5 and SHA-256 hashes.
 
+### Specialist and nested-tuning comparisons
+
+We tested one HGB expert per externally recorded prime mover, routed by task metadata, and a 16-setting HGB parameter search nested inside the 13 participant-held-out folds. Neither improved EMG performance. Specialist-by-prime-mover is not an extension/flexion model: synchronized movement-phase labels are absent. The nested procedure selects from training participants only, then predicts each held-out participant once.
+
+| Model | Participant-macro Accuracy (95% CI) | Participant-macro F1 (95% CI) |
+| --- | ---: | ---: |
+| Global fixed HGB | 0.656 (0.611–0.698) | 0.630 (0.585–0.670) |
+| Nested-tuned HGB | 0.654 (0.609–0.697) | 0.627 (0.581–0.668) |
+| HGB experts by prime mover | 0.639 (0.596–0.678) | 0.612 (0.569–0.651) |
+| Time-only shortcut control | 0.941 (0.911–0.966) | 0.937 (0.904–0.965) |
+
+Nested HGB minus fixed HGB paired participant-bootstrap differences were −0.0019 Accuracy (95% CI −0.0076 to 0.0033) and −0.0029 macro-F1 (−0.0099 to 0.0032). Specialist minus global HGB was −0.0174 (−0.0267 to −0.0070) and −0.0177 (−0.0267 to −0.0075), respectively. The time-only control exceeded every EMG model on all 13 participants; these results do not establish a useful generalized EMG fatigue detector.
+
+The supplement gives the complete [methods, preprocessing and feature equations](docs/FATIGUE_WINDOW_EXPERIMENT.md), the [nested-tuning manifest](results/reference_fatigue/nested_hgb_manifest.json), [selected parameters](results/reference_fatigue/nested_hgb_selected_params.csv), paired comparisons and confusion matrices. Individual predictions, per-participant rows and input signals remain private.
+
+![Participant-level accuracy and macro-F1 for perceived-fatigue windows](docs/figures/perceived_fatigue_window_metrics.png)
+
+![Out-of-fold confusion matrices with counts and row-normalized rates](docs/figures/perceived_fatigue_window_confusions.png)
+
 ```powershell
 $env:EMG_ZIP = 'C:\private-data\sEMG_data.zip'
 $env:LABELS_ZIP = 'C:\private-data\self_perceived_fatigue_index.zip'
@@ -82,6 +101,12 @@ python experiments/reference_fatigue/export_public_evidence.py --run-dir $env:RU
 ```
 
 This dataset has no synchronized extension/flexion reference or objective force-loss reference. Therefore, this benchmark does not train or evaluate a phase classifier, a phase-to-fatigue cascade, or an objective mechanical-fatigue classifier. The course archive remains separate and still lacks those references; see the [reference-data checklist](docs/REFERENCE_DATA_REQUIREMENTS.md).
+
+## Separate external benchmark: trial outcome
+
+The [Rossato et al. Figshare dataset](https://doi.org/10.6084/m9.figshare.15273906.v1) contains 14 complete participant pairs (28 trials): reference contractions versus sustained TLim knee extension to task failure, recorded at 2048 Hz. Its target is one label per complete trial. It is **not a window-level fatigue classifier**. The EMG logistic model with eight trial summaries reaches Accuracy/macro-F1 0.964/0.964; the CNN with multiple-instance pooling reaches 0.679/0.678. A control using timing and active-bout structure reaches 1.000/1.000, while reference and TLim trials differ in four versus one active bouts. That perfect control exposes a protocol shortcut. See [aggregate results](results/reference_fatigue/figshare_task_level/benchmark_results.csv), [confusion matrices](results/reference_fatigue/figshare_task_level/confusion_matrix.csv), [method supplement](docs/FATIGUE_WINDOW_EXPERIMENT.md#benchmark-complementario-a-nivel-de-ensayo), and [reproduction entry point](scripts/run_figshare_task_level.py).
+
+![Trial-level confusion matrices, separate from fatigue windows](docs/figures/figshare_trial_outcome_confusion.png)
 
 The original exploratory project is retained separately: [proyecto-biomecanica-emg](https://github.com/EthanGL1/proyecto-biomecanica-emg/tree/772b7a39c18ecfd34bfbd5f20fa0a14d2ddfa003). This repository implements a new binary task; its metrics must not be substituted for the old three-class scores or for Borg/Cerqueira results from other tasks.
 

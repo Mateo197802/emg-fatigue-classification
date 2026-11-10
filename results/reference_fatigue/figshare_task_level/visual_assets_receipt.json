@@ -1,0 +1,15 @@
+{
+  "status": "built",
+  "source_hashes": {
+    "benchmark_results.csv": "9d2996d81925e6d2d918394465e0e55ea0f8b2809ac7191d27c0dab8327dea0b",
+    "confusion_matrix.csv": "e89b7bec165ab4850df0bb36589159a0d7b4436ae81a240b26d3600de055a54c",
+    "run_manifest.json": "088e147823220ad473861fc14197ea875d69bfc11b07b6f298980010ce57c0fb"
+  },
+  "output_hashes": {
+    "figshare_trial_outcome_metrics.png": "826818a505624a4276db9e084d43bf9582b8cbcd5285c186d4bbe179cf0c4ba6",
+    "figshare_trial_outcome_confusion.png": "3b9918b7ace135c475cdd15b86f141531374408400b40a9186e33377fd67a2b8",
+    "figshare_trial_outcome_structure.png": "356ead7d6c85207be4e6cebb0956a247c860ed88a21c3503c10d761d38e87967",
+    "figshare_trial_outcome_architecture.png": "ac711cfea21ff8a913d6d32a6fecd88a85099905248bf9f941c544c809655ccd"
+  },
+  "slide_summary_sha256": "04cafb560af1a041c629ca36de2cab388bc43ccf40e180298feea8dcff1f2c28"
+}
