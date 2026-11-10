@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- `raw.rar` remains unopened until model and preprocessing choices are frozen.
+- The final RAR remains unopened until model and preprocessing choices are frozen.
 - The only training input is the supplied training ZIP; the RAR is never mixed into development or fitted transformations.
 - Source folder identity is not verified participant identity.
 - No labels may be derived from time, filename, feature thresholds, repetition order, or phase halves.
@@ -63,7 +63,7 @@
 - [x] Measure sample count, duration, timestamp monotonicity, interval distribution, duplicates, resets, gaps, jitter, Nyquist, and robust sampling-rate estimate per source file.
 - [x] Quantify ADC/voltage linear relation, amplitude distribution, flatline and transient candidates, baseline, PSD, and 50/60 Hz contamination.
 - [x] Produce restricted per-file tables and aggregate-only public tables/plots.
-- [x] Select the common processing rate, passband, optional notch, and QC rules from the observed audit; do not presume 1000 Hz or a notch.
+- [x] Select the common processing rate, passband, optional notch, and QC rules from development-group audits only; apply the frozen choices unchanged to held-out groups.
 
 **Execution check:** Run the audit over all source files and inspect before/after waveform and PSD figures from representative recordings selected by deterministic opaque IDs.
 
@@ -97,7 +97,7 @@
 - `audit_references(training_archive) -> LabelAudit`
 - `source_group_split(group_ids, seed) -> GroupPartition`
 
-- [x] Search only the authorized training source for synchronized independent fatigue and phase measurements; record modality and granularity if found.
+- [x] Inventory all authorized archive members and signal-schema headers. If sidecars or non-signal CSVs exist without validated content, mark reference search incomplete and keep supervised outputs blocked.
 - [x] Do not read label information from filenames or timestamps.
 - [x] If no labels exist, write a precise supervised blocker and do not create class targets, model metrics, or confusion matrices.
 - [x] Make a deterministic 12/3 source-group split for self-supervised reconstruction validation, clearly marked as source-group rather than verified-participant holdout.
@@ -147,7 +147,7 @@
 - [x] Freeze the complete training configuration and compute its hash before accessing the RAR.
 - [x] Only then inspect the RAR's integrity, signal format, acquisition compatibility, labels, and identity/provenance; if references are absent or identities unverifiable, explicitly limit results to held-out file analysis.
 - [x] Keep external per-file details, hashes, predictions, and model artifacts private.
-- [x] Verify private manifest hashes and deterministic inference; commit only code and safe aggregate evidence.
+- [x] Recompute and verify frozen configuration/checkpoint hashes before any RAR read; verify private manifest hashes and deterministic inference; commit only code and safe aggregate evidence.
 - [x] Create a local commit on `research/raw-first-fatigue-v2`; attempt push/PR only if repository permission allows.
 
 **Execution check:** Review repository diff for private data, then record local commit and the actual push/PR status without claiming an unavailable remote update.

@@ -122,6 +122,7 @@ def _aggregate_audit(
     audits: list[dict[str, object]],
     sampling_plan: dict[str, object],
     inventory: dict[str, object],
+    label_audit: dict[str, object],
     window_counts: dict[str, int],
     rejection_counts: dict[str, int],
 ) -> pd.DataFrame:
@@ -148,8 +149,15 @@ def _aggregate_audit(
     add("adc_rms", json.dumps(_finite_stats(rms)), "ADC-derived units", "Exported signal scale; no verified physical calibration.")
     add("adc_to_voltage_r2", json.dumps(_finite_stats(r2s)), "R^2", "Linear relationship only; does not verify sensor calibration or ADC representation.")
     add("effective_target_sampling_rate_hz", sampling_plan["target_sampling_rate_hz"], "Hz", str(sampling_plan["target_rate_selection"]))
+    add("preprocessing_selection_scope", sampling_plan["selection_scope"], "scope")
+    add("preprocessing_selection_group_count", sampling_plan["selection_group_count"])
+    add("preprocessing_selection_recording_count", sampling_plan["selection_recording_count"])
     add("selected_bandpass_hz", f"{sampling_plan['bandpass_low_hz']}-{sampling_plan['bandpass_high_hz']}", "Hz")
     add("selected_notch_hz", sampling_plan["notch_frequency_hz"] if sampling_plan["notch_frequency_hz"] is not None else "none", "Hz", str(sampling_plan["notch_selection"]))
+    add("reference_search_complete", label_audit["reference_search_complete"], "boolean")
+    add("reference_audit_status", label_audit["status"], "status", str(label_audit["rationale"]))
+    add("unreviewed_non_signal_csv_count", label_audit["unreviewed_non_signal_csv_count"])
+    add("unreviewed_sidecar_count", label_audit["sidecar_count"])
     add("primary_500ms_valid_window_count", window_counts.get("0.5", 0))
     add("primary_500ms_rejected_window_count", rejection_counts.get("0.5", 0))
     for key, count in sorted(window_counts.items()):
@@ -301,35 +309,60 @@ def _markdown_summary(
     rejection_counts: dict[str, int],
 ) -> str:
     rates = _finite_stats(np.asarray([row["effective_sampling_rate_hz"] for row in audits], dtype=float))
-    best_robust = robust_frame[robust_frame["corruption_family"] != "clean"].groupby(["corruption_family", "requested_severity"], as_index=False)["median_embedding_cosine_similarity"].median()
-    if len(best_robust):
-        worst = best_robust.sort_values("median_embedding_cosine_similarity").iloc[0]
-        worst_text = f"Lowest median embedding cosine in this label-free stress analysis: {worst['corruption_family']} at {worst['requested_severity']:.0%}, {worst['median_embedding_cosine_similarity']:.3f}. This is representation stability, not classification accuracy."
+    corruption_rows = robust_frame[robust_frame["corruption_family"] != "clean"]
+    if len(corruption_rows):
+        by_model = {
+            condition: corruption_rows[corruption_rows["model_condition"] == condition]
+            for condition in ("clean", "augmented")
+        }
+        cosine_at_severity = {
+            (condition, severity): float(
+                frame.loc[frame["requested_severity"] == severity, "median_embedding_cosine_similarity"].median()
+            )
+            for condition, frame in by_model.items()
+            for severity in (0.20, 0.50)
+        }
+        worst_rows = {
+            condition: frame[frame["requested_severity"] == 0.50]
+            .sort_values("median_embedding_cosine_similarity")
+            .iloc[0]
+            for condition, frame in by_model.items()
+        }
+        worst_text = (
+            f"Median across family-level embedding cosine summaries at 20% severity: clean {cosine_at_severity[('clean', 0.20)]:.4f}, "
+            f"augmentation-trained {cosine_at_severity[('augmented', 0.20)]:.4f}; at 50% stress: "
+            f"{cosine_at_severity[('clean', 0.50)]:.4f} and {cosine_at_severity[('augmented', 0.50)]:.4f}. "
+            f"Worst 50% family: clean {worst_rows['clean']['corruption_family']} at "
+            f"{worst_rows['clean']['median_embedding_cosine_similarity']:.3f}; augmentation-trained "
+            f"{worst_rows['augmented']['corruption_family']} at {worst_rows['augmented']['median_embedding_cosine_similarity']:.3f}. "
+            "These measure representation stability, not classification accuracy."
+        )
     else:
         worst_text = "No robustness summary available."
     expected_archive_name = str(inventory.get("expected_training_archive_name", "EMG_TRAIN_SOLO_CSV_ANONIMO.zip"))
     if bool(inventory.get("supplied_archive_name_matches_objective", False)):
-        archive_name_text = f"The supplied archive filename matches the expected name `{expected_archive_name}`."
+        archive_name_text = f"The supplied training archive filename matches expected `{expected_archive_name}`."
     else:
-        archive_name_text = (
-            f"The expected archive `{expected_archive_name}` was absent; "
-            f"the supplied archive `{inventory['input_archive_name']}` was used."
-        )
+        archive_name_text = f"The supplied training archive filename differs from expected `{expected_archive_name}`; the actual name is retained only in the restricted manifest."
     notch_hz = sampling_plan["notch_frequency_hz"]
-    notch_text = f"notch at {float(notch_hz):.1f} Hz" if notch_hz is not None else "no notch applied"
+    if notch_hz is not None:
+        notch_text = f"notch at {float(notch_hz):.1f} Hz; {sampling_plan['notch_selection']}"
+    else:
+        notch_text = "no notch applied because no line frequency met the prespecified prevalence threshold"
     return "\n".join(
         [
             "# Raw First sEMG Experiment Summary",
             "",
             "## Input audit",
             "",
-            f"- Training archive: `{inventory['input_archive_name']}`; its SHA-256 and original-file hashes are recorded in the restricted local run manifest.",
+            "- Training input: the supplied ZIP archive; its exact filename, SHA-256, and original-file hashes are recorded in the restricted local run manifest.",
             f"- Parsed {inventory['csv_count']} CSV files in {inventory['source_group_count']} opaque source groups. Source-group identity is not verified participant identity.",
             f"- {archive_name_text} Source folders were assigned opaque aliases in memory.",
             f"- Effective sampling rate across valid files: median {rates['median']:.3f} Hz, range {rates['min']:.3f}–{rates['max']:.3f} Hz.",
+            f"- Sampling-rate, passband, and notch choices were derived from {sampling_plan['selection_group_count']} development source groups only ({sampling_plan['selection_recording_count']} recordings); held-out groups were excluded from selection.",
             f"- Chosen common rate: {sampling_plan['target_sampling_rate_hz']:.3f} Hz. {sampling_plan['target_rate_selection']}",
-            f"- Filter: {sampling_plan['bandpass_low_hz']:.1f}–{sampling_plan['bandpass_high_hz']:.1f} Hz; {notch_text}. {sampling_plan['notch_selection']}",
-            f"- Valid windows: 500 ms {window_counts.get('0.5', 0)}, 250 ms {window_counts.get('0.25', 0)}, 1000 ms {window_counts.get('1.0', 0)}. Primary 500 ms rejected: {rejection_counts.get('0.5', 0)}.",
+            f"- Filter: {sampling_plan['bandpass_low_hz']:.1f}–{sampling_plan['bandpass_high_hz']:.1f} Hz; {notch_text}.",
+            f"- Valid windows: 500 ms {window_counts.get('0.5', 0):,}, 250 ms {window_counts.get('0.25', 0):,}, 1000 ms {window_counts.get('1.0', 0):,}. Primary 500 ms rejected: {rejection_counts.get('0.5', 0):,}.",
             "- `ADC_Value` is treated as an exported signed signal scale. The paired voltage column is analyzed for numerical relationship only; sensor calibration and raw ADC hardware representation are not verified.",
             "",
             "## Labels and supervised scope",
@@ -337,7 +370,7 @@ def _markdown_summary(
             f"- Status: **{label_audit['status']}**. {label_audit['rationale']}",
             "- Missing independent fatigue references: Borg CR-10, pre/post MVC, force/torque, repetition-level performance, or a mechanical failure criterion.",
             "- Missing independent phase references: synchronized extension/flexion or knee-angle/video annotations.",
-            "- No fatigue classifier, phase specialist, Accuracy, macro-F1, sensitivity, or confusion matrix was produced.",
+            "- No supervised fatigue/phase model or classification metric (accuracy, macro-F1, sensitivity, or confusion matrix) was produced.",
             "",
             "## Self-supervised training",
             "",
@@ -388,10 +421,23 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
         raise ValueError("Source-group count differs from the configured input contract.")
     write_json(private / "input_manifest.json", inventory)
 
+    # Partition first so data-dependent sampling and filter choices see only
+    # development-group acquisition audits. Validation audits stay descriptive.
+    group_ids = sorted({recording.group_id for recording in recordings})
+    split = source_group_split(group_ids, run_seed, float(run_config["train_fraction"]))
+    write_json(private / "group_partition.json", split)
+    development_groups = set(split["train_group_ids"])
+
     audits = audit_all(recordings)
     audit_frame = pd.DataFrame(audits)
     _write_csv(private / "acquisition_audit.csv", audit_frame)
-    sampling_plan = choose_sampling_plan(audits)
+    development_audits = [row for row in audits if row["group_id"] in development_groups]
+    if not development_audits:
+        raise ValueError("No development-group acquisition audits are available for preprocessing selection.")
+    sampling_plan = choose_sampling_plan(development_audits)
+    sampling_plan["selection_scope"] = "development source groups only; held-out groups excluded"
+    sampling_plan["selection_group_count"] = len(development_groups)
+    sampling_plan["selection_recording_count"] = len(development_audits)
     write_json(private / "sampling_plan.json", sampling_plan)
     make_sampling_histogram(audits, private / "plots" / "sampling_rate_distribution.png")
     make_global_signal_summary(audits, private / "plots" / "global_signal_spectral_summary.png")
@@ -431,9 +477,6 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
     write_json(private / "segment_processing_receipts.json", segment_receipts)
     make_before_after_plots(recordings, segments, private / "plots" / "before_after", audit_by_recording, sampling_plan)
 
-    group_ids = sorted({recording.group_id for recording in recordings})
-    split = source_group_split(group_ids, run_seed, float(run_config["train_fraction"]))
-    write_json(private / "group_partition.json", split)
     label_audit = audit_references(inventory).to_dict()
     write_json(private / "label_audit.json", label_audit)
 
@@ -554,7 +597,7 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
         ssl_histories[condition] = history
         ssl_metadata[condition] = metadata
 
-    private_summary = _aggregate_audit(audits, sampling_plan, inventory, window_counts, rejection_counts)
+    private_summary = _aggregate_audit(audits, sampling_plan, inventory, label_audit, window_counts, rejection_counts)
     _write_csv(private / "aggregate_acquisition_summary.csv", private_summary)
     _safe_aggregate_feature_summary(primary_features, schema, private / "aggregate_feature_summary.csv")
     _save_private_embeddings(ssl_models, validation_windows, signal_scale, private / "validation_embeddings.npz")
@@ -578,7 +621,7 @@ def run_training(training_zip: Path, output_root: Path | None = None, config_pat
 
     public_dir = _repo_root() / "results" / "raw_first"
     public_dir.mkdir(parents=True, exist_ok=True)
-    aggregate_frame = _aggregate_audit(audits, sampling_plan, inventory, window_counts, rejection_counts)
+    aggregate_frame = _aggregate_audit(audits, sampling_plan, inventory, label_audit, window_counts, rejection_counts)
     _write_csv(public_dir / "aggregate_audit.csv", aggregate_frame)
     _write_csv(public_dir / "feature_robustness.csv", robust_frame)
     _write_csv(public_dir / "feature_window_sensitivity.csv", window_sensitivity_frame)

@@ -22,10 +22,10 @@ Build and execute a reproducible raw first signal pipeline for the supplied sEMG
 
 ## Constraints and evidence
 
-- The user supplied `OneDrive_1_10-10-2026.zip` and `raw.rar`. The ZIP currently contains 140 CSV files in 15 source folders with the required columns, but its folder names are not the expected anonymized `G01`–`G15`. Processing will replace those names with deterministic opaque group IDs and will not publish the name map.
+- The user supplied a training ZIP and a reserved final RAR. The ZIP contains 140 CSV files in 15 source folders with the required columns, but its folder names are not the expected anonymized `G01`–`G15`. Processing will replace those names with deterministic opaque group IDs and will not publish the name map.
 - There are no label sidecars in the training ZIP; no independent fatigue or movement-phase reference is present in the supplied training source.
 - The source folders are grouping units only. They are not verified participant identities.
-- `raw.rar` is reserved for the post-freeze final check and must not affect model development, normalization, feature selection, augmentation calibration, or training.
+- The final RAR is reserved for the post-freeze check and must not affect model development, normalization, feature selection, augmentation calibration, or training.
 - GitHub reports read-only repository permissions, so code and evidence can be committed locally, while push/PR creation may be unavailable.
 - The only ADC/voltage evidence in the supplied training source is the paired CSV columns. The audit will quantify their relationship, but will not infer ADC hardware bit depth or claim a calibrated physical voltage without device metadata.
 
@@ -48,7 +48,7 @@ Training-only augmentation uses 5%, 10%, 15%, and 20% of the clean-window RMS. H
 
 ## External check contract
 
-Only after preprocessing and model choices are frozen, inspect `raw.rar` for archive integrity, CSV count and schema, group/file layout, timestamp and sampling compatibility, signal and protocol correspondence, any available references and their granularity, previous exposure, and evidence of source-group independence. Do not fit or tune on its contents. If valid references are absent or independence is unverified, do not report supervised fatigue metrics or claim external validation. Any feature/embedding output is exploratory held-out file analysis, reported separately by opaque source group where safe.
+Only after preprocessing and model choices are frozen, inspect the final RAR for archive integrity, CSV count and schema, group/file layout, timestamp and sampling compatibility, signal and protocol correspondence, any available references and their granularity, previous exposure, and evidence of source-group independence. Do not fit or tune on its contents. If valid references are absent or independence is unverified, do not report supervised fatigue metrics or claim external validation. Any feature/embedding output is exploratory held-out file analysis, reported separately by opaque source group where safe.
 
 ## Delivery boundary
 

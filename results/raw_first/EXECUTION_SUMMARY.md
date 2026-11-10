@@ -1,36 +1,42 @@
 # Raw First sEMG Experiment Summary
 
-## Input and acquisition audit
+## Input audit
 
-- The task's expected training archive (`EMG_TRAIN_SOLO_CSV_ANONIMO.zip`) was not among the supplied files, so the provided `OneDrive_1_10-10-2026.zip` was used. Its SHA-256 and original-file hashes are in the restricted local run manifest.
-- Parsed 140 CSVs across 15 opaque source-folder groups. These groups are not verified participant identities; original folder names were mapped in memory and kept out of public outputs.
-- All 140 files had a robust effective rate of approximately 1000 Hz (median 1000.000 Hz; observed range 999.9999999998881–1000.0000000005542 Hz). The selected common rate was 1000 Hz.
-- Selected 20–400 Hz bandpass; no notch was applied because neither line frequency met the prespecified prevalence threshold. No primary-window rejections occurred.
-- Valid windows: 16,629 at 500 ms, 33,649 at 250 ms, and 8,128 at 1000 ms. ADC-to-voltage linear fit median R² was 0.999999996; this is a numerical relationship, not sensor calibration or verification of hardware ADC units.
+- Training input: the supplied ZIP archive; its exact filename, SHA-256, and original-file hashes are recorded in the restricted local run manifest.
+- Parsed 140 CSV files in 15 opaque source groups. Source-group identity is not verified participant identity.
+- The supplied training archive filename differs from expected `EMG_TRAIN_SOLO_CSV_ANONIMO.zip`; the actual name is retained only in the restricted manifest. Source folders were assigned opaque aliases in memory.
+- Effective sampling rate across valid files: median 1000.000 Hz, range 1000.000–1000.000 Hz.
+- Sampling-rate, passband, and notch choices were derived from 12 development source groups only (110 recordings); held-out groups were excluded from selection.
+- Chosen common rate: 1000.000 Hz. 1000 Hz supported: median is within 1% and at least 95% of valid recordings are within 2%.
+- Filter: 20.0–400.0 Hz; no notch applied because no line frequency met the prespecified prevalence threshold.
+- Valid windows: 500 ms 16,629, 250 ms 33,649, 1000 ms 8,128. Primary 500 ms rejected: 0.
+- `ADC_Value` is treated as an exported signed signal scale. The paired voltage column is analyzed for numerical relationship only; sensor calibration and raw ADC hardware representation are not verified.
 
 ## Labels and supervised scope
 
-- The training CSV schema contains only `Relative_Time_s`, `ADC_Value`, and `Voltage_mV`. There are no independent synchronized fatigue or movement-phase references in the authorized training archive.
-- Missing references include Borg CR-10, pre/post MVC, force/torque, repetition-level performance or mechanical failure, and synchronized extension/flexion or knee-angle/video labels.
-- No target was derived from time, filename, amplitude, repetition order, or phase halves. No supervised classifier, fatigue or phase score, accuracy, macro-F1, sensitivity, or confusion matrix was produced.
+- Status: **blocked_no_independent_reference**. All archive members were CSV signals with only Relative_Time_s, ADC_Value, and Voltage_mV columns. No independent synchronized fatigue or movement-phase reference was present; filenames and temporal position are not labels.
+- Missing independent fatigue references: Borg CR-10, pre/post MVC, force/torque, repetition-level performance, or a mechanical failure criterion.
+- Missing independent phase references: synchronized extension/flexion or knee-angle/video annotations.
+- No supervised fatigue/phase model or classification metric (accuracy, macro-F1, sensitivity, or confusion matrix) was produced.
 
 ## Self-supervised training
 
-- Source-group split: 12 development groups and 3 held-out groups for reconstruction validation. Participant independence is unverified.
-- Trained compact 1D CNN masked-reconstruction encoders on 13,333 training windows and evaluated on 3,296 validation windows, with 12 epochs requested and best epoch 11 in both conditions.
-- Clean: best validation masked-reconstruction loss 1.025430; checkpoint SHA-256 `56261450c04f8d5c76ada6555e57aff28e8c62d19a9a64139e2d0ff12eb62b07`.
-- Augmentation-trained: best validation masked-reconstruction loss 1.018922; checkpoint SHA-256 `c7a4bf16b307be5c462919650dd4f15c6949479553d4079900e9fef47000c550`. Training corruptions used ten signal-noise families at 5%, 10%, 15%, and 20% of clean-window RMS.
+- Source-group split: 12 development groups and 3 held-out groups. These are not verified participants.
+- Model: compact 1D CNN trained from scratch with masked reconstruction; clean and augmentation-trained versions use the same training/validation source groups.
+- clean: best epoch 11; validation masked reconstruction loss 1.02543; checkpoint SHA-256 `56261450c04f8d5c76ada6555e57aff28e8c62d19a9a64139e2d0ff12eb62b07`.
+- augmented: best epoch 11; validation masked reconstruction loss 1.01892; checkpoint SHA-256 `c7a4bf16b307be5c462919650dd4f15c6949479553d4079900e9fef47000c550`.
 
-## Corruption and sensitivity analysis
+## Noise robustness
 
-- Compared clean and augmentation-trained encoders on 255 matched held-out windows across ten corruption families, at 5%, 10%, 15%, 20%, 25%, and 50%; 25% and 50% are stress tests. No windows were quality-rejected in the matched set.
-- Median across family-level median embedding cosine at 20% severity: clean 0.9968, augmentation-trained 0.9976. At 50%: clean 0.9764, augmentation-trained 0.9797.
-- The most affected family at 50% was baseline shift/wander: median cosine 0.743 for the clean encoder and 0.813 for the augmentation-trained encoder. This measures representation stability, not classification robustness.
-- Filtering sensitivity used a 320 Hz high-cut alternative on held-out source groups; window-size sensitivity compared 250, 500, and 1000 ms. Detailed feature tables and per-file plots remain in the restricted local run directory.
+- Median across family-level embedding cosine summaries at 20% severity: clean 0.9968, augmentation-trained 0.9976; at 50% stress: 0.9764 and 0.9797. Worst 50% family: clean baseline_shift_wander at 0.743; augmentation-trained baseline_shift_wander at 0.813. These measure representation stability, not classification accuracy.
+- All robustness numbers are feature, embedding, and reconstruction stability summaries under fixed matched corruptions; they do not establish a fatigue classifier's robustness.
+- Filtering sensitivity is summarized on held-out source groups using a lower high-cut/no-notch alternative; window-size sensitivity is summarized at 250, 500, and 1000 ms.
+- Detailed feature-family × severity × encoder tables, training histories, audit tables, waveforms, spectra, per-file hashes, and embeddings are stored in the restricted local run directory.
 
-## Final-only external RAR analysis
+## External RAR
 
-- The supplied archive was `raw.rar`; the objective names `raw(2).rar`. The RAR integrity check passed after the training configuration and both encoders were frozen.
-- Inspected 20 CSV members in one opaque source group. All 20 matched the frozen three-column schema and were sampling-compatible; frozen preprocessing and both encoders produced 2,763 exploratory windows. No non-CSV members or independent label references were found.
-- No fatigue or phase predictions/metrics were produced. Source identity independence and prior project exposure cannot be ruled out, so this is held-out file analysis rather than independent external validation.
-- Encoder checkpoint round-trip and repeated inference were exact for both models on the same 255-window input; embeddings and reconstructions matched exactly.
+- The archive integrity check passed. The supplied archive filename differs from expected `raw(2).rar`; the actual name is kept in the restricted audit.
+- Inspected 20 CSV members across 1 opaque source group; 20 matched the frozen signal schema, and 0 were excluded for sampling incompatibility.
+- 20 of 20 parsed CSVs matched the frozen three-column schema. Frozen preprocessing and both encoders produced 2,763 exploratory windows after training freeze.
+- A complete reference search found no independent fatigue or movement-phase labels. No predictions or supervised metrics were produced.
+- Source identity independence and prior exposure remain unverified. Treat this as held-out file analysis, not independent external validation.

@@ -6,6 +6,7 @@ import csv
 import hashlib
 import io
 import json
+import locale
 import re
 import shutil
 import subprocess
@@ -23,6 +24,11 @@ from .io import sha256_file, write_json
 from .preprocessing import preprocess_recording
 from .ssl import MaskedConvAutoencoder, apply_signal_scale, model_embedding, model_reconstruct
 from .windows import segment_windows
+
+MAX_EXTERNAL_MEMBERS = 1000
+MAX_EXTERNAL_MEMBER_BYTES = 64 * 1024 * 1024
+MAX_EXTERNAL_TOTAL_BYTES = 256 * 1024 * 1024
+MAX_EXTERNAL_LISTING_BYTES = 8 * 1024 * 1024
 
 
 def _find_7z() -> str | None:
@@ -56,32 +62,43 @@ def _find_unrar() -> str | None:
 
 def _list_rar_members(executable: str, archive: Path, tool: str) -> list[str]:
     if tool == "unrar":
-        result = subprocess.run(
-            # UnRAR's -inul switch suppresses the member listing itself, not
-            # only diagnostics. Keep listing stdout available for the parser.
-            [executable, "lb", "-p-", str(archive)],
-            capture_output=True,
-            text=True,
-            errors="replace",
-            check=False,
-        )
-        if result.returncode != 0:
-            raise RuntimeError("UnRAR could not list the external archive.")
+        # UnRAR's -inul switch suppresses the member listing itself.
+        args = [executable, "lb", "-p-", str(archive)]
+    else:
+        args = [executable, "l", "-slt", str(archive)]
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    listing = bytearray()
+    try:
+        if process.stdout is None:
+            raise RuntimeError("RAR member listing pipe could not be opened.")
+        while True:
+            chunk = process.stdout.read(65536)
+            if not chunk:
+                break
+            if len(listing) + len(chunk) > MAX_EXTERNAL_LISTING_BYTES:
+                process.kill()
+                process.wait()
+                raise ValueError("The external RAR member listing exceeded the configured size limit.")
+            listing.extend(chunk)
+        return_code = process.wait()
+    finally:
+        if process.stdout is not None:
+            process.stdout.close()
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+    if return_code != 0:
+        message = "UnRAR could not list the external archive." if tool == "unrar" else "The available RAR utility could not list the external archive."
+        raise RuntimeError(message)
+    text = bytes(listing).decode(locale.getpreferredencoding(False), errors="replace")
+    if tool == "unrar":
         return [
             line.strip()
-            for line in result.stdout.splitlines()
+            for line in text.splitlines()
             if line.strip() and not line.strip().endswith(("/", "\\"))
         ]
-    result = subprocess.run(
-        [executable, "l", "-slt", str(archive)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        raise RuntimeError("The available RAR utility could not list the external archive.")
     members: list[str] = []
-    for section in re.split(r"\r?\n\s*\r?\n", result.stdout):
+    for section in re.split(r"\r?\n\s*\r?\n", text):
         fields = {}
         for line in section.splitlines():
             if " = " in line:
@@ -93,26 +110,70 @@ def _list_rar_members(executable: str, archive: Path, tool: str) -> list[str]:
     return members
 
 
-def _read_rar_member(executable: str, archive: Path, member: str, tool: str) -> bytes:
+def _read_rar_member(executable: str, archive: Path, member: str, tool: str, max_bytes: int) -> bytes:
     if tool == "unrar":
-        result = subprocess.run(
-            # -inul also suppresses streamed member bytes with this UnRAR
-            # build, so capture p's stdout without that switch.
-            [executable, "p", "-p-", str(archive), member],
-            capture_output=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            raise RuntimeError("UnRAR could not stream a CSV member from the locked external RAR.")
-        return result.stdout
-    result = subprocess.run(
-        [executable, "x", "-so", "-bso0", "-bsp0", str(archive), member],
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        raise RuntimeError("A CSV member could not be streamed from the locked external RAR.")
-    return result.stdout
+        # -inul also suppresses streamed member bytes with this UnRAR build.
+        args = [executable, "p", "-p-", str(archive), member]
+    else:
+        args = [executable, "x", "-so", "-bso0", "-bsp0", str(archive), member]
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    payload = bytearray()
+    try:
+        if process.stdout is None:
+            raise RuntimeError("RAR member output pipe could not be opened.")
+        while True:
+            chunk = process.stdout.read(65536)
+            if not chunk:
+                break
+            if len(payload) + len(chunk) > max_bytes:
+                process.kill()
+                process.wait()
+                raise ValueError("A RAR CSV member exceeded the configured private inspection size limit.")
+            payload.extend(chunk)
+        return_code = process.wait()
+    finally:
+        if process.stdout is not None:
+            process.stdout.close()
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+    if return_code != 0:
+        message = "UnRAR could not stream a CSV member from the locked external RAR." if tool == "unrar" else "A CSV member could not be streamed from the locked external RAR."
+        raise RuntimeError(message)
+    return bytes(payload)
+
+
+def _verify_frozen_run(private: Path, freeze: dict[str, object]) -> None:
+    """Recompute frozen configuration and encoder hashes before touching the RAR."""
+    manifest_path = private / "run_manifest.json"
+    configuration_path = private / "frozen_configuration.json"
+    if not manifest_path.is_file() or not configuration_path.is_file():
+        raise ValueError("The frozen run is missing its manifest or configuration receipt.")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    configuration = json.loads(configuration_path.read_text(encoding="utf-8"))
+    configuration_hash = hashlib.sha256(json.dumps(configuration, sort_keys=True).encode()).hexdigest()
+    if configuration_hash != freeze.get("configuration_sha256"):
+        raise ValueError("Frozen configuration hash does not match its freeze receipt.")
+    if sha256_file(configuration_path) != manifest.get("output_sha256", {}).get("private/frozen_configuration.json"):
+        raise ValueError("Frozen configuration does not match the private run manifest.")
+    if manifest.get("input_archive_sha256") != freeze.get("input_archive_sha256"):
+        raise ValueError("Training input hash does not match the private run manifest and freeze receipt.")
+    if manifest.get("external_rar_opened") is not False:
+        raise ValueError("The private run manifest records that the external archive was already opened.")
+
+    recorded = freeze.get("encoder_checkpoint_sha256")
+    if not isinstance(recorded, dict) or set(recorded) != {"clean", "augmented"}:
+        raise ValueError("Freeze receipt does not contain both encoder checkpoint hashes.")
+    output_hashes = manifest.get("output_sha256", {})
+    for condition in ("clean", "augmented"):
+        checkpoint = private / "models" / f"encoder_{condition}.pt"
+        relative = f"private/models/encoder_{condition}.pt"
+        expected = recorded.get(condition)
+        if not checkpoint.is_file() or not isinstance(expected, str):
+            raise ValueError("A frozen encoder checkpoint is missing from the run.")
+        actual = sha256_file(checkpoint)
+        if actual != expected or output_hashes.get(relative) != expected:
+            raise ValueError("An encoder checkpoint hash does not match the freeze receipt and run manifest.")
 
 
 def _parse_csv(payload: bytes, group_id: str, recording_id: str, digest: str) -> RawRecording:
@@ -199,6 +260,7 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
     freeze = json.loads(freeze_path.read_text(encoding="utf-8"))
     if freeze.get("status") != "frozen_training_configuration_and_self_supervised_encoders" or freeze.get("external_rar_opened") is not False:
         raise ValueError("External input freeze receipt is invalid or has already been used.")
+    _verify_frozen_run(private, freeze)
     if rar_path.suffix.casefold() != ".rar" or not rar_path.is_file():
         raise ValueError("Final external input must be the supplied RAR archive.")
 
@@ -251,6 +313,8 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
         return result
 
     member_names = _list_rar_members(executable, rar_path, tool)
+    if len(member_names) > MAX_EXTERNAL_MEMBERS:
+        raise ValueError("The external RAR exceeds the configured member-count limit.")
     csv_names = [name for name in member_names if PurePosixPath(name.replace("\\", "/")).suffix.casefold() == ".csv"]
     non_csv_names = [name for name in member_names if name not in csv_names]
     group_map, group_ids = _assign_external_groups(csv_names)
@@ -258,11 +322,22 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
     private_hashes: list[dict[str, str]] = []
     grouped_indices: dict[str, int] = {}
     candidate_label_files: list[dict[str, object]] = []
+    total_csv_bytes = 0
     for name in sorted(csv_names):
         group_id = group_map[name]
         grouped_indices[group_id] = grouped_indices.get(group_id, 0) + 1
         recording_id = f"{group_id}_F{grouped_indices[group_id]:03d}"
-        content = _read_rar_member(executable, rar_path, name, tool)
+        remaining_bytes = MAX_EXTERNAL_TOTAL_BYTES - total_csv_bytes
+        if remaining_bytes <= 0:
+            raise ValueError("The external RAR exceeded the configured total CSV size limit.")
+        content = _read_rar_member(
+            executable,
+            rar_path,
+            name,
+            tool,
+            max_bytes=min(MAX_EXTERNAL_MEMBER_BYTES, remaining_bytes),
+        )
+        total_csv_bytes += len(content)
         digest = hashlib.sha256(content).hexdigest()
         private_hashes.append({"group_id": group_id, "recording_id": recording_id, "sha256": digest})
         try:
@@ -313,6 +388,8 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
 
     csv_count = len(csv_names)
     schema_compatible = csv_count > 0 and len(records) == csv_count
+    reference_search_complete = csv_count > 0 and len(non_csv_names) == 0 and len(records) == csv_count and not candidate_label_files
+    independent_labels_found: bool | None = False if reference_search_complete else None
     group_counts = {group: sum(record.group_id == group for record in records) for group in group_ids}
     result = {
         "status": "held_out_file_analysis_no_frozen_supervised_model",
@@ -335,7 +412,9 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
         "schema_compatible": schema_compatible,
         "incompatible_recording_count_due_to_nyquist": len(incompatible),
         "analyzed_window_count": len(all_windows),
-        "independent_labels_found": False,
+        "reference_search_complete": reference_search_complete,
+        "reference_search_status": "complete_no_reference_columns_found" if reference_search_complete else "incomplete_or_ambiguous",
+        "independent_labels_found": independent_labels_found,
         "reference_candidate_count": sum(bool(item["reference_column_candidate"]) for item in candidate_label_files),
         "reference_candidates_validated": False,
         "reference_like_csv_header_count": sum(bool(item["reference_column_candidate"]) for item in candidate_label_files),
@@ -349,7 +428,11 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
             (
                 "A reference-like CSV header was present, but synchronization, modality, granularity, and independence were not validated; no supervised model was frozen."
                 if any(bool(item["reference_column_candidate"]) for item in candidate_label_files)
-                else "The held-out RAR has no independent synchronized fatigue or movement-phase reference in the observed signal CSV schema."
+                else (
+                    "No independent synchronized fatigue or movement-phase reference was present in the complete observed three-column signal schema."
+                    if reference_search_complete
+                    else f"Reference search is incomplete: {len(non_csv_names)} non-CSV member(s) and {csv_count - len(records)} non-signal CSV member(s) were not validated; no label absence is claimed."
+                )
             ),
             "The observed external source grouping cannot be verified as independent of training identities or prior project exposure.",
             "Encoder outputs are exploratory representations and reconstruction errors, not fatigue predictions or external validation metrics.",
@@ -362,7 +445,8 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
         "csv_count": csv_count,
         "group_count": len(group_ids),
         "analyzed_window_count": len(all_windows),
-        "independent_labels_found": False,
+        "reference_search_complete": reference_search_complete,
+        "independent_labels_found": independent_labels_found,
         "fatigue_metrics_produced": False,
         "identity_independence_verified": False,
         "limitations": result["limitations"],
@@ -384,11 +468,12 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
     manifest["output_sha256"]["public/EXECUTION_SUMMARY.md"] = sha256_file(_repo_results_dir() / "EXECUTION_SUMMARY.md")
     manifest["external_rar_opened"] = True
     manifest["external_checked_at_utc"] = result["checked_at_utc"]
-    write_json(manifest_path, manifest)
     freeze["external_rar_opened"] = True
     freeze["external_archive_sha256"] = archive_hash
     freeze["external_check_status"] = result["status"]
     write_json(freeze_path, freeze)
+    manifest.setdefault("output_sha256", {})["private/freeze.json"] = sha256_file(freeze_path)
+    write_json(manifest_path, manifest)
     return result
 
 
@@ -401,17 +486,22 @@ def _refresh_execution_summary(result: dict[str, object]) -> None:
     summary_path = _repo_results_dir() / "EXECUTION_SUMMARY.md"
     if not summary_path.is_file():
         return
-    archive_name = str(result["actual_archive_name"])
     expected_name = str(result["expected_archive_name"])
     filename_note = (
-        f"The supplied archive `{archive_name}` matches expected `{expected_name}`."
+        f"The supplied archive filename matches expected `{expected_name}`."
         if bool(result.get("archive_name_matches_objective"))
-        else f"The supplied archive filename `{archive_name}` differs from expected `{expected_name}`."
+        else f"The supplied archive filename differs from expected `{expected_name}`; the actual name is kept in the restricted audit."
     )
     csv_count = int(result.get("csv_count") or 0)
     group_count = int(result.get("group_count") or 0)
+    group_word = "group" if group_count == 1 else "groups"
     signal_count = int(result.get("signal_csv_count") or 0)
     window_count = int(result.get("analyzed_window_count") or 0)
+    reference_status = (
+        "A complete reference search found no independent fatigue or movement-phase labels."
+        if bool(result.get("reference_search_complete")) and result.get("independent_labels_found") is False
+        else "Reference search was incomplete or ambiguous; no label absence is claimed and supervised outputs remain blocked."
+    )
     schema_text = (
         f"{signal_count} of {csv_count} parsed CSVs matched"
         if bool(result.get("schema_compatible"))
@@ -422,9 +512,9 @@ def _refresh_execution_summary(result: dict[str, object]) -> None:
             "## External RAR",
             "",
             f"- The archive integrity check passed. {filename_note}",
-            f"- Inspected {csv_count} CSV members across {group_count} opaque source group(s); {signal_count} matched the frozen signal schema, and {int(result.get('incompatible_recording_count_due_to_nyquist') or 0)} were excluded for sampling incompatibility.",
-            f"- {schema_text} the frozen three-column schema. Frozen preprocessing and both encoders produced {window_count} exploratory windows after training freeze.",
-            "- No independent synchronized fatigue or movement-phase labels were found; no predictions or supervised metrics were produced.",
+            f"- Inspected {csv_count} CSV members across {group_count} opaque source {group_word}; {signal_count} matched the frozen signal schema, and {int(result.get('incompatible_recording_count_due_to_nyquist') or 0)} were excluded for sampling incompatibility.",
+            f"- {schema_text} the frozen three-column schema. Frozen preprocessing and both encoders produced {window_count:,} exploratory windows after training freeze.",
+            f"- {reference_status} No predictions or supervised metrics were produced.",
             "- Source identity independence and prior exposure remain unverified. Treat this as held-out file analysis, not independent external validation.",
             "",
         ]

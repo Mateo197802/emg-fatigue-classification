@@ -12,8 +12,15 @@ sampling_interval_jitter_mad_percent,"{""count"": 140, ""min"": 4.44089209850111
 adc_rms,"{""count"": 140, ""min"": 15.6987607119967, ""p05"": 18.97174646793631, ""median"": 56.20697172193266, ""mean"": 56.206170919127764, ""p95"": 101.30511371428274, ""max"": 130.50540341200306}",ADC-derived units,Exported signal scale; no verified physical calibration.
 adc_to_voltage_r2,"{""count"": 140, ""min"": 0.9999999475608441, ""p05"": 0.9999999641327452, ""median"": 0.9999999959552874, ""mean"": 0.9999999898022671, ""p95"": 0.9999999987532613, ""max"": 0.9999999992467815}",R^2,Linear relationship only; does not verify sensor calibration or ADC representation.
 effective_target_sampling_rate_hz,1000.0,Hz,1000 Hz supported: median is within 1% and at least 95% of valid recordings are within 2%.
+preprocessing_selection_scope,development source groups only; held-out groups excluded,scope,
+preprocessing_selection_group_count,12,count,
+preprocessing_selection_recording_count,110,count,
 selected_bandpass_hz,20.0-400.0,Hz,
 selected_notch_hz,none,Hz,No line frequency crossed the prespecified prevalence threshold; no notch applied.
+reference_search_complete,True,boolean,
+reference_audit_status,blocked_no_independent_reference,status,"All archive members were CSV signals with only Relative_Time_s, ADC_Value, and Voltage_mV columns. No independent synchronized fatigue or movement-phase reference was present; filenames and temporal position are not labels."
+unreviewed_non_signal_csv_count,0,count,
+unreviewed_sidecar_count,0,count,
 primary_500ms_valid_window_count,16629,count,
 primary_500ms_rejected_window_count,0,count,
 valid_250ms_window_count,33649,count,
