@@ -91,3 +91,99 @@ class ArchiveInventory:
             "duplicate_within_group_hashes": list(self.duplicate_within_group_hashes),
             "malformed_row_count": self.malformed_row_count,
         }
+
+
+@dataclass(frozen=True)
+class AcquisitionAudit:
+    group_id: str
+    recording_id: str
+    sample_count: int
+    duration_s: float
+    sampling_rate_hz: float
+    median_dt_s: float
+    dt_p05_s: float
+    dt_p95_s: float
+    jitter_percent: float
+    gap_threshold_s: float
+    continuous_ranges: tuple[tuple[int, int], ...]
+    duplicate_timestamp_count: int
+    clock_reset_count: int
+    gap_count: int
+    nyquist_hz: float
+    adc_voltage_pair_count: int
+    adc_voltage_slope_mv_per_unit: float
+    adc_voltage_intercept_mv: float
+    adc_voltage_r_squared: float
+    adc_value_integer_like_fraction: float
+    sampling_compatible: bool
+    in_band_power_fraction: float
+    below_20_hz_power_fraction: float
+    above_400_hz_power_fraction: float
+    signal_compatible: bool
+    line_prominence_db: dict[str, float]
+    notch_frequency_hz: float | None
+    quality_flags: tuple[str, ...]
+    quality_invalid_mask: np.ndarray
+    artifact_masks: dict[str, np.ndarray]
+
+
+@dataclass(frozen=True)
+class ProcessedSegment:
+    group_id: str
+    recording_id: str
+    segment_index: int
+    signal: np.ndarray
+    sampling_rate_hz: float
+    start_time_s: float
+    original_sampling_rate_hz: float
+    edge_mask: np.ndarray
+    quality_invalid_mask: np.ndarray
+    artifact_masks: dict[str, np.ndarray]
+    quality_flags: tuple[str, ...]
+    acquisition_compatible: bool
+
+
+@dataclass(frozen=True)
+class ProcessedRecording:
+    group_id: str
+    recording_id: str
+    audit: AcquisitionAudit
+    segments: tuple[ProcessedSegment, ...]
+
+
+@dataclass(frozen=True)
+class SegmentActivity:
+    segment_index: int
+    status: str
+    threshold_rms: float
+    active_fraction: float
+    valid_frame_count: int
+    frame_rms: np.ndarray
+    frame_start_samples: np.ndarray
+    frame_active: np.ndarray
+    frame_valid: np.ndarray
+    sample_active_mask: np.ndarray
+    active_ranges: tuple[tuple[int, int], ...]
+
+
+@dataclass(frozen=True)
+class ActivitySegments:
+    status: str
+    active_fraction: float
+    segments: tuple[SegmentActivity, ...]
+
+
+@dataclass(frozen=True)
+class SignalWindow:
+    group_id: str
+    recording_id: str
+    segment_index: int
+    window_index: int
+    start_sample: int
+    start_time_s: float
+    duration_s: float
+    sampling_rate_hz: float
+    signal: np.ndarray
+    activity_occupancy: float
+    eligible_for_label: bool
+    rejection_reason: str | None

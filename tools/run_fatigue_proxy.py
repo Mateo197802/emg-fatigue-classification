@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from emg_fatigue.weak_supervision.acquisition_stage import run_acquisition_stage
 from emg_fatigue.weak_supervision.runner import prepare_training_run
 
 
@@ -17,7 +18,9 @@ def _repo_root() -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the raw-first EMG fatigue proxy experiment.")
-    parser.add_argument("--prepare-training-zip", action="store_true", help="Inventory ZIP and parse development groups only.")
+    stage = parser.add_mutually_exclusive_group(required=True)
+    stage.add_argument("--prepare-training-zip", action="store_true", help="Inventory ZIP and parse development groups only.")
+    stage.add_argument("--run-acquisition-stage", action="store_true", help="Run development-only acquisition QC and window audits.")
     parser.add_argument("--training-zip", type=Path, help="Original training ZIP; RAR is never accepted here.")
     parser.add_argument("--run-dir", type=Path, help="Private run directory outside the repository.")
     parser.add_argument(
@@ -27,10 +30,18 @@ def main() -> None:
         help="Frozen experiment configuration TOML.",
     )
     args = parser.parse_args()
-    if not args.prepare_training_zip:
-        parser.error("select --prepare-training-zip for the first, development-only stage")
     if args.training_zip is None or args.run_dir is None:
-        parser.error("--training-zip and --run-dir are required with --prepare-training-zip")
+        parser.error("--training-zip and --run-dir are required")
+
+    if args.run_acquisition_stage:
+        result = run_acquisition_stage(args.training_zip, args.run_dir, args.config)
+        print(
+            "Completed development acquisition stage: "
+            f"{result['development_record_count']} recordings; internal-test numeric values parsed=0; "
+            f"external archive opened=False."
+        )
+        print(f"Private acquisition receipt: {result['acquisition_manifest_path']}")
+        return
 
     result = prepare_training_run(args.training_zip, args.run_dir, args.config)
     print(
