@@ -351,7 +351,7 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
                 if any(bool(item["reference_column_candidate"]) for item in candidate_label_files)
                 else "The held-out RAR has no independent synchronized fatigue or movement-phase reference in the observed signal CSV schema."
             ),
-            "The two source groups cannot be verified as independent of training identities or prior project exposure.",
+            "The observed external source grouping cannot be verified as independent of training identities or prior project exposure.",
             "Encoder outputs are exploratory representations and reconstruction errors, not fatigue predictions or external validation metrics.",
         ],
         "checked_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -368,6 +368,7 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
         "limitations": result["limitations"],
     }
     write_json(_repo_results_dir() / "external_summary.json", public_result)
+    _refresh_execution_summary(result)
 
     manifest_path = private / "run_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -380,6 +381,7 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
     manifest.setdefault("output_sha256", {}).update(manifest["external_output_sha256"])
     public_summary = _repo_results_dir() / "external_summary.json"
     manifest["output_sha256"]["public/external_summary.json"] = sha256_file(public_summary)
+    manifest["output_sha256"]["public/EXECUTION_SUMMARY.md"] = sha256_file(_repo_results_dir() / "EXECUTION_SUMMARY.md")
     manifest["external_rar_opened"] = True
     manifest["external_checked_at_utc"] = result["checked_at_utc"]
     write_json(manifest_path, manifest)
@@ -392,3 +394,41 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
 
 def _repo_results_dir() -> Path:
     return Path(__file__).resolve().parents[3] / "results" / "raw_first"
+
+
+def _refresh_execution_summary(result: dict[str, object]) -> None:
+    """Replace the pre-external placeholder with the post-freeze file audit."""
+    summary_path = _repo_results_dir() / "EXECUTION_SUMMARY.md"
+    if not summary_path.is_file():
+        return
+    archive_name = str(result["actual_archive_name"])
+    expected_name = str(result["expected_archive_name"])
+    filename_note = (
+        f"The supplied archive `{archive_name}` matches expected `{expected_name}`."
+        if bool(result.get("archive_name_matches_objective"))
+        else f"The supplied archive filename `{archive_name}` differs from expected `{expected_name}`."
+    )
+    csv_count = int(result.get("csv_count") or 0)
+    group_count = int(result.get("group_count") or 0)
+    signal_count = int(result.get("signal_csv_count") or 0)
+    window_count = int(result.get("analyzed_window_count") or 0)
+    schema_text = (
+        f"{signal_count} of {csv_count} parsed CSVs matched"
+        if bool(result.get("schema_compatible"))
+        else f"not all parsed CSVs matched ({signal_count} of {csv_count} parsed)"
+    )
+    section = "\n".join(
+        [
+            "## External RAR",
+            "",
+            f"- The archive integrity check passed. {filename_note}",
+            f"- Inspected {csv_count} CSV members across {group_count} opaque source group(s); {signal_count} matched the frozen signal schema, and {int(result.get('incompatible_recording_count_due_to_nyquist') or 0)} were excluded for sampling incompatibility.",
+            f"- {schema_text} the frozen three-column schema. Frozen preprocessing and both encoders produced {window_count} exploratory windows after training freeze.",
+            "- No independent synchronized fatigue or movement-phase labels were found; no predictions or supervised metrics were produced.",
+            "- Source identity independence and prior exposure remain unverified. Treat this as held-out file analysis, not independent external validation.",
+            "",
+        ]
+    )
+    text = summary_path.read_text(encoding="utf-8")
+    prefix = text.split("## External RAR", 1)[0].rstrip()
+    summary_path.write_text(prefix + "\n\n" + section, encoding="utf-8")

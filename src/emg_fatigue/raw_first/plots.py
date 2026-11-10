@@ -19,8 +19,12 @@ from .preprocessing import contiguous_raw_segments
 def make_sampling_histogram(audits: list[dict[str, object]], output_path: Path) -> Path:
     rates = np.asarray([row["effective_sampling_rate_hz"] for row in audits], dtype=np.float64)
     rates = rates[np.isfinite(rates)]
+    # Sub-nanohertz floating-point noise around a common rate should not
+    # dominate matplotlib's automatic axis offset and bin selection.
+    rates = np.round(rates, 3)
     figure, axis = plt.subplots(figsize=(8, 4.5), constrained_layout=True)
     axis.hist(rates, bins=min(20, max(5, int(np.sqrt(max(1, len(rates)))))), color="#2b6cb0", edgecolor="#1a365d")
+    axis.ticklabel_format(axis="x", style="plain", useOffset=False)
     axis.set_title("Effective sampling rates across source files")
     axis.set_xlabel("Robust rate estimated from valid timestamp intervals (Hz)")
     axis.set_ylabel("Source file count")
@@ -38,13 +42,15 @@ def make_global_signal_summary(audits: list[dict[str, object]], output_path: Pat
     axes[0].set_title("ADC-value RMS across files")
     axes[0].set_xlabel("log10(RMS), exported ADC-derived scale")
     axes[0].set_ylabel("Source file count")
+    rates = np.round(frame["effective_sampling_rate_hz"].to_numpy(dtype=float), 3)
     histogram = axes[1].hist2d(
-        frame["effective_sampling_rate_hz"],
+        rates,
         frame["spectral_median_hz"],
         bins=14,
         cmap="Blues",
     )
     figure.colorbar(histogram[3], ax=axes[1], label="Source file count per bin")
+    axes[1].ticklabel_format(axis="x", style="plain", useOffset=False)
     axes[1].set_title("Aggregate sampling rate and spectral median")
     axes[1].set_xlabel("Effective sampling rate (Hz)")
     axes[1].set_ylabel("Median PSD frequency (Hz)")

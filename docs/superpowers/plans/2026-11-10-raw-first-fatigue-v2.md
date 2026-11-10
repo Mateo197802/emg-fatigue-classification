@@ -44,9 +44,9 @@
 - `RawRecording` contains only opaque `group_id`, opaque `recording_id`, internal archive member name, and parsed numeric arrays.
 - The runner accepts explicit input archive and output root arguments and rejects any RAR path as a training input.
 
-- [ ] Validate ZIP CRC/structure, CSV count, group count, required columns, parseability, nonfinite counts, and deterministic anonymized aliases without writing raw files to the repository.
-- [ ] Save input hash and source-member hashes in the private run receipts only.
-- [ ] Record the actual supplied ZIP name and the expected-name mismatch in aggregate metadata without publishing source names.
+- [x] Validate ZIP CRC/structure, CSV count, group count, required columns, parseability, nonfinite counts, and deterministic anonymized aliases without writing raw files to the repository.
+- [x] Save input hash and source-member hashes in the private run receipts only.
+- [x] Record the actual supplied ZIP name and the expected-name mismatch in aggregate metadata without publishing source names.
 
 **Execution check:** Run the inventory against the supplied ZIP and confirm 140 numeric CSV records, 15 opaque groups, and a uniform required schema.
 
@@ -60,10 +60,10 @@
 - `audit_recording(recording) -> (record_summary, interval_summary, signal_summary)`
 - `make_audit_figures(sampled_records, output_dir) -> list[Path]`
 
-- [ ] Measure sample count, duration, timestamp monotonicity, interval distribution, duplicates, resets, gaps, jitter, Nyquist, and robust sampling-rate estimate per source file.
-- [ ] Quantify ADC/voltage linear relation, amplitude distribution, flatline and transient candidates, baseline, PSD, and 50/60 Hz contamination.
-- [ ] Produce restricted per-file tables and aggregate-only public tables/plots.
-- [ ] Select the common processing rate, passband, optional notch, and QC rules from the observed audit; do not presume 1000 Hz or a notch.
+- [x] Measure sample count, duration, timestamp monotonicity, interval distribution, duplicates, resets, gaps, jitter, Nyquist, and robust sampling-rate estimate per source file.
+- [x] Quantify ADC/voltage linear relation, amplitude distribution, flatline and transient candidates, baseline, PSD, and 50/60 Hz contamination.
+- [x] Produce restricted per-file tables and aggregate-only public tables/plots.
+- [x] Select the common processing rate, passband, optional notch, and QC rules from the observed audit; do not presume 1000 Hz or a notch.
 
 **Execution check:** Run the audit over all source files and inspect before/after waveform and PSD figures from representative recordings selected by deterministic opaque IDs.
 
@@ -79,11 +79,11 @@
 - `segment_windows(segment, duration_s, overlap) -> Iterable[SignalWindow]`
 - `extract_features(window) -> dict[str, float]`
 
-- [ ] Detrend, filter with SOS and zero-phase processing where segment length allows, and preserve discontinuities.
-- [ ] Segment 500 ms windows at 50% overlap plus 250 ms and 1000 ms sensitivities when supported.
-- [ ] Exclude nonfinite, discontinuous, and clearly invalid windows using prespecified signal-quality criteria; report rejection counts.
-- [ ] Extract temporal, spectral, band-power/ratio, Hjorth, and Haar wavelet-energy features with formulas and units/limitations.
-- [ ] Fit feature standardization on development groups only and apply unchanged to validation groups.
+- [x] Detrend, filter with SOS and zero-phase processing where segment length allows, and preserve discontinuities.
+- [x] Segment 500 ms windows at 50% overlap plus 250 ms and 1000 ms sensitivities when supported.
+- [x] Exclude nonfinite, discontinuous, and clearly invalid windows using prespecified signal-quality criteria; report rejection counts.
+- [x] Extract temporal, spectral, band-power/ratio, Hjorth, and Haar wavelet-energy features with formulas and units/limitations.
+- [x] Fit feature standardization on development groups only and apply unchanged to validation groups.
 
 **Execution check:** Run all window sizes, generate feature schema/formula receipts, and review global feature distributions, correlations, and filter sensitivity.
 
@@ -97,10 +97,10 @@
 - `audit_references(training_archive) -> LabelAudit`
 - `source_group_split(group_ids, seed) -> GroupPartition`
 
-- [ ] Search only the authorized training source for synchronized independent fatigue and phase measurements; record modality and granularity if found.
-- [ ] Do not read label information from filenames or timestamps.
-- [ ] If no labels exist, write a precise supervised blocker and do not create class targets, model metrics, or confusion matrices.
-- [ ] Make a deterministic 12/3 source-group split for self-supervised reconstruction validation, clearly marked as source-group rather than verified-participant holdout.
+- [x] Search only the authorized training source for synchronized independent fatigue and phase measurements; record modality and granularity if found.
+- [x] Do not read label information from filenames or timestamps.
+- [x] If no labels exist, write a precise supervised blocker and do not create class targets, model metrics, or confusion matrices.
+- [x] Make a deterministic 12/3 source-group split for self-supervised reconstruction validation, clearly marked as source-group rather than verified-participant holdout.
 
 **Execution check:** Confirm the label audit and partition manifest contain only opaque groups, disclose that participant identity is unverified, and have no target labels.
 
@@ -114,11 +114,11 @@
 - `corrupt_signal(signal, family, severity, seed, config) -> (corrupted, corruption_receipt)`
 - `train_masked_encoder(train_windows, validation_windows, augmentation, config) -> (model, history)`
 
-- [ ] Define Gaussian, colored, line-frequency, baseline, impulsive, motion, small-shift, gain, and combined corruptions relative to clean RMS.
-- [ ] Verify achieved RMS ratios/SNR and record parameters and seeds.
-- [ ] Train a compact 1D CNN masked-reconstruction encoder from scratch in clean and augmentation-trained conditions using development groups only.
-- [ ] Save checkpoints, software versions, training history, and hashes to the private output root.
-- [ ] Report reconstruction only; never call it fatigue detection.
+- [x] Define Gaussian, colored, line-frequency, baseline, impulsive, motion, small-shift, gain, and combined corruptions relative to clean RMS.
+- [x] Verify achieved RMS ratios/SNR and record parameters and seeds.
+- [x] Train a compact 1D CNN masked-reconstruction encoder from scratch in clean and augmentation-trained conditions using development groups only.
+- [x] Save checkpoints, software versions, training history, and hashes to the private output root.
+- [x] Report reconstruction only; never call it fatigue detection.
 
 **Execution check:** Run both training conditions with fixed seeds and compare final and best validation reconstruction loss on held-out source groups.
 
@@ -128,10 +128,10 @@
 - Create: `src/emg_fatigue/raw_first/robustness.py`
 - Modify: `tools/run_raw_first_experiment.py`
 
-- [ ] Freeze preprocessing, features, and encoders before robustness evaluation.
-- [ ] Evaluate clean, 5%, 10%, 15%, 20%, 25%, and 50% corruption using matched held-out windows and fixed seeds.
-- [ ] Evaluate all applicable families independently and combined; measure feature change, embedding similarity, reconstruction error, and invalid-window rate.
-- [ ] Label severe 25% and 50% cases as stress tests; do not interpret representation stability as classification robustness.
+- [x] Freeze preprocessing, features, and encoders before robustness evaluation.
+- [x] Evaluate clean, 5%, 10%, 15%, 20%, 25%, and 50% corruption using matched held-out windows and fixed seeds.
+- [x] Evaluate all applicable families independently and combined; measure feature change, embedding similarity, reconstruction error, and invalid-window rate.
+- [x] Label severe 25% and 50% cases as stress tests; do not interpret representation stability as classification robustness.
 
 **Execution check:** Re-run the frozen encoders on identical clean/corrupted windows and confirm the same input produces identical saved predictions/embeddings under deterministic inference.
 
@@ -144,10 +144,10 @@
 - Create: `docs/raw_first/feature_robustness.csv`
 - Create: `docs/raw_first/ssl_training_summary.csv`
 
-- [ ] Freeze the complete training configuration and compute its hash before accessing `raw.rar`.
-- [ ] Only then inspect the RAR's integrity, signal format, acquisition compatibility, labels, and identity/provenance; if references are absent or identities unverifiable, explicitly limit results to held-out file analysis.
-- [ ] Keep external per-file details, hashes, predictions, and model artifacts private.
-- [ ] Verify private manifest hashes and deterministic inference; commit only code and safe aggregate evidence.
-- [ ] Create a local commit on `research/raw-first-fatigue-v2`; attempt push/PR only if repository permission allows.
+- [x] Freeze the complete training configuration and compute its hash before accessing the RAR.
+- [x] Only then inspect the RAR's integrity, signal format, acquisition compatibility, labels, and identity/provenance; if references are absent or identities unverifiable, explicitly limit results to held-out file analysis.
+- [x] Keep external per-file details, hashes, predictions, and model artifacts private.
+- [x] Verify private manifest hashes and deterministic inference; commit only code and safe aggregate evidence.
+- [x] Create a local commit on `research/raw-first-fatigue-v2`; attempt push/PR only if repository permission allows.
 
 **Execution check:** Review repository diff for private data, then record local commit and the actual push/PR status without claiming an unavailable remote update.

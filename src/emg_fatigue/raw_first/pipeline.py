@@ -307,6 +307,16 @@ def _markdown_summary(
         worst_text = f"Lowest median embedding cosine in this label-free stress analysis: {worst['corruption_family']} at {worst['requested_severity']:.0%}, {worst['median_embedding_cosine_similarity']:.3f}. This is representation stability, not classification accuracy."
     else:
         worst_text = "No robustness summary available."
+    expected_archive_name = str(inventory.get("expected_training_archive_name", "EMG_TRAIN_SOLO_CSV_ANONIMO.zip"))
+    if bool(inventory.get("supplied_archive_name_matches_objective", False)):
+        archive_name_text = f"The supplied archive filename matches the expected name `{expected_archive_name}`."
+    else:
+        archive_name_text = (
+            f"The expected archive `{expected_archive_name}` was absent; "
+            f"the supplied archive `{inventory['input_archive_name']}` was used."
+        )
+    notch_hz = sampling_plan["notch_frequency_hz"]
+    notch_text = f"notch at {float(notch_hz):.1f} Hz" if notch_hz is not None else "no notch applied"
     return "\n".join(
         [
             "# Raw First sEMG Experiment Summary",
@@ -315,10 +325,10 @@ def _markdown_summary(
             "",
             f"- Training archive: `{inventory['input_archive_name']}`; its SHA-256 and original-file hashes are recorded in the restricted local run manifest.",
             f"- Parsed {inventory['csv_count']} CSV files in {inventory['source_group_count']} opaque source groups. Source-group identity is not verified participant identity.",
-            f"- The supplied archive filename matches the objective's expected training archive name: {bool(inventory.get('supplied_archive_name_matches_objective', False))}. Source folders were assigned opaque aliases in memory.",
+            f"- {archive_name_text} Source folders were assigned opaque aliases in memory.",
             f"- Effective sampling rate across valid files: median {rates['median']:.3f} Hz, range {rates['min']:.3f}–{rates['max']:.3f} Hz.",
             f"- Chosen common rate: {sampling_plan['target_sampling_rate_hz']:.3f} Hz. {sampling_plan['target_rate_selection']}",
-            f"- Filter: {sampling_plan['bandpass_low_hz']:.1f}–{sampling_plan['bandpass_high_hz']:.1f} Hz; notch {sampling_plan['notch_frequency_hz'] if sampling_plan['notch_frequency_hz'] is not None else 'none'} Hz. {sampling_plan['notch_selection']}",
+            f"- Filter: {sampling_plan['bandpass_low_hz']:.1f}–{sampling_plan['bandpass_high_hz']:.1f} Hz; {notch_text}. {sampling_plan['notch_selection']}",
             f"- Valid windows: 500 ms {window_counts.get('0.5', 0)}, 250 ms {window_counts.get('0.25', 0)}, 1000 ms {window_counts.get('1.0', 0)}. Primary 500 ms rejected: {rejection_counts.get('0.5', 0)}.",
             "- `ADC_Value` is treated as an exported signed signal scale. The paired voltage column is analyzed for numerical relationship only; sensor calibration and raw ADC hardware representation are not verified.",
             "",

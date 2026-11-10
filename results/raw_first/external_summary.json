@@ -1,0 +1,14 @@
+{
+  "status": "held_out_file_analysis_no_frozen_supervised_model",
+  "csv_count": 20,
+  "group_count": 1,
+  "analyzed_window_count": 2763,
+  "independent_labels_found": false,
+  "fatigue_metrics_produced": false,
+  "identity_independence_verified": false,
+  "limitations": [
+    "The held-out RAR has no independent synchronized fatigue or movement-phase reference in the observed signal CSV schema.",
+    "The observed external source grouping cannot be verified as independent of training identities or prior project exposure.",
+    "Encoder outputs are exploratory representations and reconstruction errors, not fatigue predictions or external validation metrics."
+  ]
+}
