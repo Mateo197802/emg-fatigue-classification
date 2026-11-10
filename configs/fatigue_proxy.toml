@@ -1,0 +1,102 @@
+[run]
+seed = 20261110
+split_seed = 20261112
+train_fraction = 0.8
+expected_training_csv_count = 140
+expected_source_group_count = 15
+expected_training_archive_name = "EMG_TRAIN_SOLO_CSV_ANONIMO.zip"
+primary_window_s = 0.5
+window_durations_s = [0.25, 0.5, 1.0]
+window_overlap = 0.5
+
+[acquisition]
+target_sampling_rate_hz = 1000.0
+minimum_source_rate_hz = 800.0
+maximum_jitter_percent = 5.0
+gap_median_dt_multiplier = 1.5
+minimum_gap_s = 0.0015
+filter_order = 4
+bandpass_low_hz = 20.0
+bandpass_high_hz = 400.0
+line_prominence_notch_db = 10.0
+notch_q = 30.0
+filter_edge_mask_s = 0.1
+minimum_in_band_power_fraction = 0.80
+maximum_below_20_hz_power_fraction = 0.20
+maximum_above_400_hz_power_fraction = 0.05
+flatline_duration_s = 0.1
+clipping_minimum_samples = 5
+clipping_minimum_fraction = 0.001
+impulse_local_robust_scale_multiple = 10.0
+
+[activity]
+rms_frame_s = 0.05
+rms_hop_s = 0.025
+fill_inactive_gap_s = 0.1
+minimum_active_frame_fraction = 0.05
+maximum_active_frame_fraction = 0.95
+primary_window_occupancy = 0.5
+window_occupancy_sensitivity = [0.40, 0.60, 0.75]
+
+[labels]
+version = "spectral_persistence_v1"
+reference_window_count = 5
+reference_instability_percent = 20.0
+reference_instability_sensitivity_percent = [15.0, 25.0, 35.0]
+minimum_mdf_mnf_drop_hz = 4.0
+minimum_scaled_mad_multiple = 3.0
+low_band_hz = [20.0, 80.0]
+high_band_hz = [80.0, 400.0]
+line_exclusion_hz = 2.0
+minimum_log_ratio_increase_when_mad_zero = 0.04879016416943205
+entry_window_count = 3
+entry_rolling_window_count = 4
+recovery_consecutive_window_count = 3
+sensitivity_relative_change_percent = [5.0, 10.0, 15.0, 20.0]
+sensitivity_scaled_mad_multiples = [2.0, 3.0, 4.0]
+sensitivity_persistence_windows = [1, 3, 5]
+sensitivity_reference_window_counts = [3, 5]
+
+[cv]
+outer_group_folds = 4
+inner_group_folds = 3
+seed = 20261113
+selection_metric = "mean_validation_group_macro_f1"
+group_bootstrap_replicates = 2000
+
+[models]
+random_state = 20261114
+logistic_c_values = [0.1, 1.0, 10.0]
+svm_c_values = [0.1, 1.0, 10.0]
+random_forest_trees = 300
+random_forest_max_depths = [4, 8, 0]
+hist_gradient_learning_rates = [0.05, 0.1]
+hist_gradient_max_leaf_nodes = [15, 31]
+mlp_hidden_layers = [[32], [64, 32]]
+mlp_alpha_values = [0.001, 0.01]
+neural_epochs = 20
+neural_batch_size = 128
+neural_learning_rate = 0.001
+neural_patience = 4
+encoder_pretrain_epochs = 12
+encoder_mask_fraction = 0.15
+encoder_mask_span_ms = 20.0
+moe_expert_count = 3
+moe_load_balance_weight = 0.01
+moe_collapsed_gate_entropy = 0.001
+
+[augmentation]
+training_levels = [0.05, 0.10, 0.15, 0.20]
+evaluation_levels = [0.05, 0.10, 0.15, 0.20, 0.25, 0.50]
+colored_ar1_rho = 0.9
+motion_frequency_hz = [0.5, 2.0]
+maximum_shift_fraction = 0.05
+line_frequencies_hz = [50.0, 60.0]
+impulse_probability = 0.01
+fixed_seed = 20261115
+
+[guardrails]
+confidence_thresholds = [0.55, 0.65, 0.75]
+ood_lower_quantile = 0.005
+ood_upper_quantile = 0.995
+minimum_coverage_warning = 0.50
