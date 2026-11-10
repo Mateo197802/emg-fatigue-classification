@@ -57,7 +57,9 @@ def _find_unrar() -> str | None:
 def _list_rar_members(executable: str, archive: Path, tool: str) -> list[str]:
     if tool == "unrar":
         result = subprocess.run(
-            [executable, "lb", "-inul", "-p-", str(archive)],
+            # UnRAR's -inul switch suppresses the member listing itself, not
+            # only diagnostics. Keep listing stdout available for the parser.
+            [executable, "lb", "-p-", str(archive)],
             capture_output=True,
             text=True,
             errors="replace",
@@ -94,7 +96,9 @@ def _list_rar_members(executable: str, archive: Path, tool: str) -> list[str]:
 def _read_rar_member(executable: str, archive: Path, member: str, tool: str) -> bytes:
     if tool == "unrar":
         result = subprocess.run(
-            [executable, "p", "-inul", "-p-", str(archive), member],
+            # -inul also suppresses streamed member bytes with this UnRAR
+            # build, so capture p's stdout without that switch.
+            [executable, "p", "-p-", str(archive), member],
             capture_output=True,
             check=False,
         )
