@@ -17,6 +17,12 @@ report/*.docx
 report/*.pdf
 results/*
 !results/README.md
+!results/raw_first/
+results/raw_first/*
+!results/raw_first/*.csv
+!results/raw_first/*.md
+!results/raw_first/*.json
+!results/raw_first/*.png
 !results/phase_experiment/
 results/phase_experiment/*
 !results/phase_experiment/*.csv

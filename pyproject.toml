@@ -9,8 +9,12 @@ description = "Auditable offline binary sEMG classification with explicit weak l
 requires-python = ">=3.12"
 dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "PyWavelets", "matplotlib", "joblib", "PyYAML", "pyarrow"]
 
+[project.optional-dependencies]
+raw-first-ssl = ["torch==2.12.1"]
+
 [project.scripts]
 emg-fatigue = "emg_fatigue.cli:main"
+emg-fatigue-raw-first = "emg_fatigue.raw_first.pipeline:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

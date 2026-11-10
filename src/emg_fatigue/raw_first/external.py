@@ -1,0 +1,342 @@
+"""Final-only inspection of the locked external RAR after training freeze."""
+
+from __future__ import annotations
+
+import csv
+import hashlib
+import io
+import json
+import re
+import shutil
+import subprocess
+import zipfile
+from datetime import datetime, timezone
+from pathlib import Path, PurePosixPath
+
+import numpy as np
+import pandas as pd
+import torch
+
+from .audit import audit_recording
+from .contracts import RawRecording
+from .io import sha256_file, write_json
+from .preprocessing import preprocess_recording
+from .ssl import MaskedConvAutoencoder, apply_signal_scale, model_embedding, model_reconstruct
+from .windows import segment_windows
+
+
+def _find_7z() -> str | None:
+    for command in ("7z", "7za", "7zz"):
+        path = shutil.which(command)
+        if path:
+            return path
+    candidates = (
+        Path(r"C:\Program Files\7-Zip\7z.exe"),
+        Path(r"C:\Program Files (x86)\7-Zip\7z.exe"),
+    )
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
+def _list_rar_members(executable: str, archive: Path) -> list[str]:
+    result = subprocess.run(
+        [executable, "l", "-slt", str(archive)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError("The available RAR utility could not list the external archive.")
+    members: list[str] = []
+    for section in re.split(r"\r?\n\s*\r?\n", result.stdout):
+        fields = {}
+        for line in section.splitlines():
+            if " = " in line:
+                key, value = line.split(" = ", 1)
+                fields[key.strip()] = value.strip()
+        value = fields.get("Path")
+        if value and value != str(archive) and "Size" in fields and fields.get("Folder") != "+":
+            members.append(value)
+    return members
+
+
+def _read_rar_member(executable: str, archive: Path, member: str) -> bytes:
+    result = subprocess.run(
+        [executable, "x", "-so", "-bso0", "-bsp0", str(archive), member],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError("A CSV member could not be streamed from the locked external RAR.")
+    return result.stdout
+
+
+def _parse_csv(payload: bytes, group_id: str, recording_id: str, digest: str) -> RawRecording:
+    try:
+        text = payload.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("An external CSV is not valid UTF-8 text.") from exc
+    reader = csv.DictReader(io.StringIO(text))
+    expected = ("Relative_Time_s", "ADC_Value", "Voltage_mV")
+    if tuple(reader.fieldnames or ()) != expected:
+        raise ValueError("An external CSV does not match the frozen three-column input schema.")
+    times: list[float] = []
+    adc: list[float] = []
+    voltage: list[float] = []
+    for row in reader:
+        try:
+            times.append(float(row["Relative_Time_s"]))
+            adc.append(float(row["ADC_Value"]))
+            voltage.append(float(row["Voltage_mV"]))
+        except (TypeError, ValueError):
+            times.append(float("nan"))
+            adc.append(float("nan"))
+            voltage.append(float("nan"))
+    return RawRecording(
+        group_id=group_id,
+        recording_id=recording_id,
+        relative_time_s=np.asarray(times, dtype=np.float64),
+        adc_value=np.asarray(adc, dtype=np.float64),
+        voltage_mv=np.asarray(voltage, dtype=np.float64),
+        source_sha256=digest,
+    )
+
+
+def _assign_external_groups(member_names: list[str]) -> tuple[dict[str, str], list[str]]:
+    raw_groups: dict[str, list[str]] = {}
+    for name in member_names:
+        parts = PurePosixPath(name.replace("\\", "/")).parts
+        match = next((part.upper() for part in parts if re.fullmatch(r"P\d{2}", part, flags=re.IGNORECASE)), None)
+        key = match or (parts[0] if len(parts) > 1 else "external_root")
+        raw_groups.setdefault(key, []).append(name)
+    mapping: dict[str, str] = {}
+    for index, raw_group in enumerate(sorted(raw_groups, key=lambda item: (item.casefold(), item)), start=1):
+        if raw_group.upper() in {"P11", "P12"}:
+            group_id = raw_group.upper()
+        else:
+            group_id = f"EX{index:02d}"
+        for member in raw_groups[raw_group]:
+            mapping[member] = group_id
+    return mapping, sorted(set(mapping.values()))
+
+
+def _load_model(path: Path) -> MaskedConvAutoencoder:
+    bundle = torch.load(path, map_location="cpu", weights_only=True)
+    model = MaskedConvAutoencoder().cpu().eval()
+    model.load_state_dict(bundle["state_dict"])
+    return model
+
+
+def _record_blocked_external(run_root: Path, output_dir: Path, status: str, archive_hash: str, contents_opened: bool) -> None:
+    manifest_path = run_root / "private" / "run_manifest.json"
+    if not manifest_path.is_file():
+        return
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["external_stage_status"] = status
+    manifest["external_archive_sha256"] = archive_hash
+    manifest["external_rar_opened"] = bool(contents_opened)
+    manifest["external_output_sha256"] = {
+        str(path.relative_to(run_root)).replace("\\", "/"): sha256_file(path)
+        for path in sorted(output_dir.rglob("*"))
+        if path.is_file()
+    }
+    write_json(manifest_path, manifest)
+
+
+def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
+    """Inspect the RAR only when a completed frozen training run is present."""
+    rar_path = rar_path.expanduser().resolve()
+    run_root = run_root.expanduser().resolve()
+    private = run_root / "private"
+    freeze_path = private / "freeze.json"
+    if not freeze_path.is_file():
+        raise ValueError("External input is locked until the private training freeze receipt exists.")
+    freeze = json.loads(freeze_path.read_text(encoding="utf-8"))
+    if freeze.get("status") != "frozen_training_configuration_and_self_supervised_encoders" or freeze.get("external_rar_opened") is not False:
+        raise ValueError("External input freeze receipt is invalid or has already been used.")
+    if rar_path.suffix.casefold() != ".rar" or not rar_path.is_file():
+        raise ValueError("Final external input must be the supplied RAR archive.")
+
+    output_dir = private / "external"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    archive_hash = sha256_file(rar_path)
+    executable = _find_7z()
+    if executable is None:
+        result: dict[str, object] = {
+            "status": "blocked_rar_extractor_unavailable",
+            "actual_archive_name": rar_path.name,
+            "expected_archive_name": "raw(2).rar",
+            "archive_name_matches_objective": rar_path.name.casefold() == "raw(2).rar",
+            "archive_sha256": archive_hash,
+            "rar_test_passed": False,
+            "csv_count": None,
+            "independent_labels_found": False,
+            "fatigue_metrics_produced": False,
+            "identity_independence_verified": False,
+            "limitations": ["No 7-Zip/UnRAR extractor is available; the RAR contents were not inspected."],
+            "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        write_json(output_dir / "external_audit.json", result)
+        _record_blocked_external(run_root, output_dir, str(result["status"]), archive_hash, False)
+        return result
+
+    test = subprocess.run([executable, "t", str(rar_path)], capture_output=True, text=True, check=False)
+    if test.returncode != 0:
+        result = {
+            "status": "blocked_rar_integrity_check_failed",
+            "actual_archive_name": rar_path.name,
+            "expected_archive_name": "raw(2).rar",
+            "archive_name_matches_objective": rar_path.name.casefold() == "raw(2).rar",
+            "archive_sha256": archive_hash,
+            "rar_test_passed": False,
+            "csv_count": None,
+            "independent_labels_found": False,
+            "fatigue_metrics_produced": False,
+            "identity_independence_verified": False,
+            "limitations": ["The RAR integrity test failed; no member data were used."],
+            "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        write_json(output_dir / "external_audit.json", result)
+        _record_blocked_external(run_root, output_dir, str(result["status"]), archive_hash, False)
+        return result
+
+    member_names = _list_rar_members(executable, rar_path)
+    csv_names = [name for name in member_names if PurePosixPath(name.replace("\\", "/")).suffix.casefold() == ".csv"]
+    non_csv_names = [name for name in member_names if name not in csv_names]
+    group_map, group_ids = _assign_external_groups(csv_names)
+    records: list[RawRecording] = []
+    private_hashes: list[dict[str, str]] = []
+    grouped_indices: dict[str, int] = {}
+    candidate_label_files: list[dict[str, object]] = []
+    for name in sorted(csv_names):
+        group_id = group_map[name]
+        grouped_indices[group_id] = grouped_indices.get(group_id, 0) + 1
+        recording_id = f"{group_id}_F{grouped_indices[group_id]:03d}"
+        content = _read_rar_member(executable, rar_path, name)
+        digest = hashlib.sha256(content).hexdigest()
+        private_hashes.append({"group_id": group_id, "recording_id": recording_id, "sha256": digest})
+        try:
+            records.append(_parse_csv(content, group_id, recording_id, digest))
+        except ValueError:
+            try:
+                header = next(csv.reader(io.StringIO(content.decode("utf-8-sig"))))
+            except (UnicodeDecodeError, StopIteration):
+                header = []
+            header_lower = {value.strip().casefold() for value in header}
+            label_like = bool(header_lower & {"fatigue", "borg", "borg_cr10", "mvc", "force", "torque", "phase", "extension", "flexion", "label"})
+            candidate_label_files.append({"opaque_member_id": recording_id, "header": header, "reference_column_candidate": label_like})
+
+    audits = [audit_recording(recording) for recording in records]
+    training_config = json.loads((private / "frozen_configuration.json").read_text(encoding="utf-8"))
+    plan = training_config["sampling_plan"]
+    run_config = training_config["config"]["run"]
+    by_recording = {str(row["recording_id"]): row for row in audits}
+    all_windows = []
+    incompatible = []
+    for recording in records:
+        audit = by_recording[recording.recording_id]
+        if float(audit["nyquist_hz"]) < float(plan["bandpass_high_hz"]):
+            incompatible.append(recording.recording_id)
+            continue
+        segments, _ = preprocess_recording(recording, audit, plan, filter_order=int(run_config["filter_order"]))
+        windows, _ = segment_windows(segments, float(run_config["primary_window_s"]), float(run_config["window_overlap"]))
+        all_windows.extend(windows)
+
+    output_embeddings: dict[str, np.ndarray] = {
+        "group_id": np.asarray([window.group_id for window in all_windows]),
+        "recording_id": np.asarray([window.recording_id for window in all_windows]),
+        "start_time_s": np.asarray([window.start_time_s for window in all_windows], dtype=np.float64),
+    }
+    if all_windows:
+        signal_scale = json.loads((private / "signal_standardization.json").read_text(encoding="utf-8"))
+        signals = np.stack([window.signal for window in all_windows]).astype(np.float32)
+        normalized = apply_signal_scale(signals, signal_scale)
+        for condition in ("clean", "augmented"):
+            checkpoint = private / "models" / f"encoder_{condition}.pt"
+            model = _load_model(checkpoint)
+            output_embeddings[f"embedding_{condition}"] = model_embedding(model, normalized)
+            reconstructions = model_reconstruct(model, normalized)
+            output_embeddings[f"reconstruction_mse_{condition}"] = np.mean((reconstructions - normalized) ** 2, axis=1)
+        np.savez_compressed(output_dir / "exploratory_embeddings.npz", **output_embeddings)
+    else:
+        np.savez_compressed(output_dir / "exploratory_embeddings.npz", **output_embeddings)
+
+    csv_count = len(csv_names)
+    schema_compatible = csv_count > 0 and len(records) == csv_count
+    group_counts = {group: sum(record.group_id == group for record in records) for group in group_ids}
+    result = {
+        "status": "held_out_file_analysis_no_frozen_supervised_model",
+        "actual_archive_name": rar_path.name,
+        "expected_archive_name": "raw(2).rar",
+        "archive_name_matches_objective": rar_path.name.casefold() == "raw(2).rar",
+        "archive_sha256": archive_hash,
+        "rar_test_passed": True,
+        "csv_count": csv_count,
+        "signal_csv_count": len(records),
+        "non_csv_member_count": len(non_csv_names),
+        "reference_like_non_csv_member_count": sum(
+            bool(re.search(r"borg|mvc|force|torque|fatigue|phase|label|annotation", name, flags=re.IGNORECASE))
+            for name in non_csv_names
+        ),
+        "group_count": len(group_ids),
+        "group_file_counts": group_counts,
+        "private_csv_hashes": private_hashes,
+        "schema_compatible": schema_compatible,
+        "incompatible_recording_count_due_to_nyquist": len(incompatible),
+        "analyzed_window_count": len(all_windows),
+        "independent_labels_found": False,
+        "reference_candidate_count": sum(bool(item["reference_column_candidate"]) for item in candidate_label_files),
+        "reference_candidates_validated": False,
+        "reference_like_csv_header_count": sum(bool(item["reference_column_candidate"]) for item in candidate_label_files),
+        "private_reference_csv_headers": candidate_label_files,
+        "fatigue_predictions_generated": False,
+        "fatigue_metrics_produced": False,
+        "phase_metrics_produced": False,
+        "identity_independence_verified": False,
+        "previous_exposure_ruled_out": False,
+        "limitations": [
+            (
+                "A reference-like CSV header was present, but synchronization, modality, granularity, and independence were not validated; no supervised model was frozen."
+                if any(bool(item["reference_column_candidate"]) for item in candidate_label_files)
+                else "The held-out RAR has no independent synchronized fatigue or movement-phase reference in the observed signal CSV schema."
+            ),
+            "The two source groups cannot be verified as independent of training identities or prior project exposure.",
+            "Encoder outputs are exploratory representations and reconstruction errors, not fatigue predictions or external validation metrics.",
+        ],
+        "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    write_json(output_dir / "external_audit.json", result)
+    public_result = {
+        "status": result["status"],
+        "csv_count": csv_count,
+        "group_count": len(group_ids),
+        "analyzed_window_count": len(all_windows),
+        "independent_labels_found": False,
+        "fatigue_metrics_produced": False,
+        "identity_independence_verified": False,
+        "limitations": result["limitations"],
+    }
+    write_json(_repo_results_dir() / "external_summary.json", public_result)
+
+    manifest_path = private / "run_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["external_archive_sha256"] = archive_hash
+    manifest["external_output_sha256"] = {
+        str(path.relative_to(run_root)).replace("\\", "/"): sha256_file(path)
+        for path in sorted(output_dir.rglob("*"))
+        if path.is_file() and path.name != "run_manifest.json"
+    }
+    manifest["external_rar_opened"] = True
+    manifest["external_checked_at_utc"] = result["checked_at_utc"]
+    write_json(manifest_path, manifest)
+    freeze["external_rar_opened"] = True
+    freeze["external_archive_sha256"] = archive_hash
+    freeze["external_check_status"] = result["status"]
+    write_json(freeze_path, freeze)
+    return result
+
+
+def _repo_results_dir() -> Path:
+    return Path(__file__).resolve().parents[3] / "results" / "raw_first"
