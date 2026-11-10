@@ -40,7 +40,36 @@ def _find_7z() -> str | None:
     return None
 
 
-def _list_rar_members(executable: str, archive: Path) -> list[str]:
+def _find_unrar() -> str | None:
+    path = shutil.which("unrar")
+    if path:
+        return path
+    candidates = (
+        Path(r"C:\Program Files\WinRAR\UnRAR.exe"),
+        Path(r"C:\Program Files (x86)\WinRAR\UnRAR.exe"),
+    )
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
+def _list_rar_members(executable: str, archive: Path, tool: str) -> list[str]:
+    if tool == "unrar":
+        result = subprocess.run(
+            [executable, "lb", "-inul", "-p-", str(archive)],
+            capture_output=True,
+            text=True,
+            errors="replace",
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError("UnRAR could not list the external archive.")
+        return [
+            line.strip()
+            for line in result.stdout.splitlines()
+            if line.strip() and not line.strip().endswith(("/", "\\"))
+        ]
     result = subprocess.run(
         [executable, "l", "-slt", str(archive)],
         capture_output=True,
@@ -62,7 +91,16 @@ def _list_rar_members(executable: str, archive: Path) -> list[str]:
     return members
 
 
-def _read_rar_member(executable: str, archive: Path, member: str) -> bytes:
+def _read_rar_member(executable: str, archive: Path, member: str, tool: str) -> bytes:
+    if tool == "unrar":
+        result = subprocess.run(
+            [executable, "p", "-inul", "-p-", str(archive), member],
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError("UnRAR could not stream a CSV member from the locked external RAR.")
+        return result.stdout
     result = subprocess.run(
         [executable, "x", "-so", "-bso0", "-bsp0", str(archive), member],
         capture_output=True,
@@ -142,6 +180,7 @@ def _record_blocked_external(run_root: Path, output_dir: Path, status: str, arch
         for path in sorted(output_dir.rglob("*"))
         if path.is_file()
     }
+    manifest.setdefault("output_sha256", {}).update(manifest["external_output_sha256"])
     write_json(manifest_path, manifest)
 
 
@@ -163,6 +202,10 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
     archive_hash = sha256_file(rar_path)
     executable = _find_7z()
+    tool = "7z"
+    if executable is None:
+        executable = _find_unrar()
+        tool = "unrar"
     if executable is None:
         result: dict[str, object] = {
             "status": "blocked_rar_extractor_unavailable",
@@ -182,7 +225,8 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
         _record_blocked_external(run_root, output_dir, str(result["status"]), archive_hash, False)
         return result
 
-    test = subprocess.run([executable, "t", str(rar_path)], capture_output=True, text=True, check=False)
+    test_args = [executable, "t", "-inul", "-p-", str(rar_path)] if tool == "unrar" else [executable, "t", str(rar_path)]
+    test = subprocess.run(test_args, capture_output=True, text=True, errors="replace", check=False)
     if test.returncode != 0:
         result = {
             "status": "blocked_rar_integrity_check_failed",
@@ -202,7 +246,7 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
         _record_blocked_external(run_root, output_dir, str(result["status"]), archive_hash, False)
         return result
 
-    member_names = _list_rar_members(executable, rar_path)
+    member_names = _list_rar_members(executable, rar_path, tool)
     csv_names = [name for name in member_names if PurePosixPath(name.replace("\\", "/")).suffix.casefold() == ".csv"]
     non_csv_names = [name for name in member_names if name not in csv_names]
     group_map, group_ids = _assign_external_groups(csv_names)
@@ -214,7 +258,7 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
         group_id = group_map[name]
         grouped_indices[group_id] = grouped_indices.get(group_id, 0) + 1
         recording_id = f"{group_id}_F{grouped_indices[group_id]:03d}"
-        content = _read_rar_member(executable, rar_path, name)
+        content = _read_rar_member(executable, rar_path, name, tool)
         digest = hashlib.sha256(content).hexdigest()
         private_hashes.append({"group_id": group_id, "recording_id": recording_id, "sha256": digest})
         try:
@@ -273,6 +317,7 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
         "archive_name_matches_objective": rar_path.name.casefold() == "raw(2).rar",
         "archive_sha256": archive_hash,
         "rar_test_passed": True,
+        "external_extractor": tool,
         "csv_count": csv_count,
         "signal_csv_count": len(records),
         "non_csv_member_count": len(non_csv_names),
@@ -328,6 +373,9 @@ def finalize_external(rar_path: Path, run_root: Path) -> dict[str, object]:
         for path in sorted(output_dir.rglob("*"))
         if path.is_file() and path.name != "run_manifest.json"
     }
+    manifest.setdefault("output_sha256", {}).update(manifest["external_output_sha256"])
+    public_summary = _repo_results_dir() / "external_summary.json"
+    manifest["output_sha256"]["public/external_summary.json"] = sha256_file(public_summary)
     manifest["external_rar_opened"] = True
     manifest["external_checked_at_utc"] = result["checked_at_utc"]
     write_json(manifest_path, manifest)
