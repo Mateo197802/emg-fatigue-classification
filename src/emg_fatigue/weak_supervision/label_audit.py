@@ -585,6 +585,10 @@ def run_label_audit(training_zip: Path, run_dir: Path, config_path: Path) -> dic
             "primary_duration_s": primary_duration,
             "label_scope": "EMG-derived operational fatigue-like proxy; not clinical, perceived, or mechanical ground truth",
             "feature_independence": "A1 excludes MDF, MNF, spectral ratios, spectral entropy, bands, and wavelet energies used as label indicators",
+            "label_confidence_semantics": {
+                "kind": "normalized_threshold_margin_heuristic",
+                "probability_calibrated": False,
+            },
         },
     )
 

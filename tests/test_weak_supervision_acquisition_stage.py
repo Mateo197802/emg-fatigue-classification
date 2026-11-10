@@ -101,3 +101,8 @@ def test_acquisition_stage_writes_private_dev_only_receipts_and_plots(tmp_path: 
     label_receipt = json.loads((feature_dir / "feature_label_stage_manifest.json").read_text())
     assert label_receipt["internal_test_numeric_values_parsed"] == 0
     assert label_receipt["primary_label_counts"].keys() == {"-1", "0", "1"}
+    label_rule_config = json.loads((feature_dir / "label_rule_config.json").read_text())
+    assert label_rule_config["label_confidence_semantics"] == {
+        "kind": "normalized_threshold_margin_heuristic",
+        "probability_calibrated": False,
+    }
