@@ -22,6 +22,7 @@ from scipy import signal
 
 from .activity import detect_candidate_activity
 from .contracts import ActivitySegments, ProcessedRecording, RawRecording
+from .features import window_key
 from .io import load_training_zip
 from .preprocess import preprocess_recording
 from .windows import make_windows
@@ -157,10 +158,7 @@ def _activity_rows(processed: ProcessedRecording, activity: ActivitySegments):
 def _window_rows(processed: ProcessedRecording, activity: ActivitySegments, duration_s: float, overlap: float):
     for window in make_windows(processed, activity, duration_s, overlap):
         yield {
-            "window_key": (
-                f"{window.group_id}:{window.recording_id}:s{window.segment_index}:"
-                f"d{int(round(window.duration_s * 1000)):04d}:i{window.window_index:06d}"
-            ),
+            "window_key": window_key(window),
             "group_id": window.group_id,
             "recording_id": window.recording_id,
             "segment_index": window.segment_index,

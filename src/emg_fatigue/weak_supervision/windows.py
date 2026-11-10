@@ -42,12 +42,13 @@ def make_windows(
     activity: ActivitySegments,
     duration_s: float,
     overlap: float,
+    *,
+    minimum_occupancy: float = 0.5,
 ) -> list[SignalWindow]:
-    if duration_s <= 0 or not 0.0 <= overlap < 1.0:
+    if duration_s <= 0 or not 0.0 <= overlap < 1.0 or not 0.0 <= minimum_occupancy <= 1.0:
         raise ValueError("Window duration must be positive and overlap must be in [0, 1).")
     activity_by_segment = {item.segment_index: item for item in activity.segments}
     windows: list[SignalWindow] = []
-    minimum_occupancy = 0.5
     for segment in processed.segments:
         fs = float(segment.sampling_rate_hz)
         width = int(round(duration_s * fs))

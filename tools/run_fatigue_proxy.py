@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from emg_fatigue.weak_supervision.acquisition_stage import run_acquisition_stage
+from emg_fatigue.weak_supervision.label_audit import run_label_audit
 from emg_fatigue.weak_supervision.runner import prepare_training_run
 
 
@@ -21,6 +22,7 @@ def main() -> None:
     stage = parser.add_mutually_exclusive_group(required=True)
     stage.add_argument("--prepare-training-zip", action="store_true", help="Inventory ZIP and parse development groups only.")
     stage.add_argument("--run-acquisition-stage", action="store_true", help="Run development-only acquisition QC and window audits.")
+    stage.add_argument("--run-label-stage", action="store_true", help="Extract development-only features and audit proxy labels.")
     parser.add_argument("--training-zip", type=Path, help="Original training ZIP; RAR is never accepted here.")
     parser.add_argument("--run-dir", type=Path, help="Private run directory outside the repository.")
     parser.add_argument(
@@ -41,6 +43,16 @@ def main() -> None:
             f"external archive opened=False."
         )
         print(f"Private acquisition receipt: {result['acquisition_manifest_path']}")
+        return
+
+    if args.run_label_stage:
+        result = run_label_audit(args.training_zip, args.run_dir, args.config)
+        print(
+            "Completed development feature-label audit: "
+            f"{result['feature_row_count']} feature rows, {result['primary_label_row_count']} primary labels; "
+            f"internal-test numeric values parsed=0; external archive opened=False."
+        )
+        print(f"Private feature-label receipt: {result['feature_label_manifest_path']}")
         return
 
     result = prepare_training_run(args.training_zip, args.run_dir, args.config)

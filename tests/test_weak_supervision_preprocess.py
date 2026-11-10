@@ -127,6 +127,10 @@ def test_activity_and_windows_require_candidate_occupancy_and_qc():
     assert eligible
     assert all(window.activity_occupancy >= 0.5 for window in eligible)
     assert all(window.rejection_reason is None for window in eligible)
+    stricter = windows.make_windows(processed, activity_segments, 0.5, 0.5, minimum_occupancy=0.75)
+    stricter_eligible = [window for window in stricter if window.eligible_for_label]
+    assert len(stricter_eligible) <= len(eligible)
+    assert all(window.activity_occupancy >= 0.75 for window in stricter_eligible)
 
 
 def test_impulsive_artifact_makes_overlapping_windows_ineligible():

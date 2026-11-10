@@ -31,6 +31,7 @@ def _signal_csv() -> bytes:
 def test_acquisition_stage_writes_private_dev_only_receipts_and_plots(tmp_path: Path):
     io_module = importlib.import_module("emg_fatigue.weak_supervision.io")
     stage_module = importlib.import_module("emg_fatigue.weak_supervision.acquisition_stage")
+    label_stage_module = importlib.import_module("emg_fatigue.weak_supervision.label_audit")
     repo_root = Path(__file__).resolve().parents[1]
     config_source = repo_root / "configs" / "fatigue_proxy.toml"
     config = tomllib.loads(config_source.read_text(encoding="utf-8"))
@@ -55,6 +56,7 @@ def test_acquisition_stage_writes_private_dev_only_receipts_and_plots(tmp_path: 
 
     preparation = prepare_training_run(archive, run_dir, config_copy)
     result = stage_module.run_acquisition_stage(archive, run_dir, config_copy)
+    label_result = label_stage_module.run_label_audit(archive, run_dir, config_copy)
 
     assert preparation["development_record_count"] == 1
     assert result["development_record_count"] == 1
@@ -73,3 +75,29 @@ def test_acquisition_stage_writes_private_dev_only_receipts_and_plots(tmp_path: 
     assert receipt["internal_test_numeric_values_parsed"] == 0
     assert receipt["external_archive_opened"] is False
     assert prepared[1].unparsed_internal_test_member_count == 1
+    assert label_result["feature_row_count"] > 0
+    assert label_result["primary_label_row_count"] > 0
+    feature_dir = run_dir / "private" / "features_labels"
+    for name in (
+        "features.parquet",
+        "features.csv",
+        "pseudo_labels.parquet",
+        "pseudo_labels.csv",
+        "pseudo_labels_alternatives.parquet",
+        "pseudo_labels_alternatives.csv",
+        "window_size_sensitivity_labels.csv",
+        "label_sensitivity_by_run.csv",
+        "label_rule_agreement.csv",
+        "label_counts_by_group.csv",
+        "label_counts_by_recording.csv",
+        "label_counts_by_metadata.csv",
+        "label_counts_by_temporal_quartile.csv",
+        "feature_schema.json",
+        "feature_correlation_spearman.csv",
+        "label_rule_config.json",
+        "feature_label_stage_manifest.json",
+    ):
+        assert (feature_dir / name).is_file()
+    label_receipt = json.loads((feature_dir / "feature_label_stage_manifest.json").read_text())
+    assert label_receipt["internal_test_numeric_values_parsed"] == 0
+    assert label_receipt["primary_label_counts"].keys() == {"-1", "0", "1"}

@@ -187,3 +187,44 @@ class SignalWindow:
     activity_occupancy: float
     eligible_for_label: bool
     rejection_reason: str | None
+
+
+@dataclass(frozen=True)
+class ReferenceEstimate:
+    group_id: str
+    recording_id: str
+    segment_index: int
+    available: bool
+    stable: bool
+    window_count: int
+    reference_window_keys: tuple[str, ...]
+    center: dict[str, float]
+    scaled_mad: dict[str, float]
+    stability_ratios: dict[str, float]
+    status: str
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class WeakLabel:
+    window_key: str
+    group_id: str
+    recording_id: str
+    segment_index: int
+    start_time_s: float
+    duration_s: float
+    class_id: int
+    class_name: str
+    rule_version: str
+    label_confidence: float
+    label_reason: str
+    state_transition: str
+    reference_window_keys: tuple[str, ...]
+    reference_center: dict[str, float]
+    reference_scaled_mad: dict[str, float]
+    observed_indicators: dict[str, float]
+    indicator_deltas: dict[str, float]
+    indicator_thresholds: dict[str, float]
+    persistence_candidates: int
+    persistence_span_s: float
+    state_latched: bool
