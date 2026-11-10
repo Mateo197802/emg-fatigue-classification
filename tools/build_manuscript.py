@@ -3,11 +3,13 @@
 Run with the bundled document Python runtime (python-docx 1.2.0). This script
 reads no raw recordings. The retained template is never modified.
 """
-import argparse, csv, hashlib, json, platform, subprocess
+import argparse, csv, hashlib, json, platform, subprocess, sys
 from copy import deepcopy
 from pathlib import Path
-from statistics import mean
+from statistics import mean, stdev
+import pandas as pd
 from docx import Document
+from docx.text.paragraph import Paragraph
 from docx.shared import Inches, Pt, RGBColor
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -20,19 +22,23 @@ parser.add_argument('--include-phase',action='store_true',help='Include verified
 args=parser.parse_args()
 root=Path(args.output_root).resolve();assets=root/'report_assets'
 repo=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(repo/'src'))
+from emg_fatigue.protocol_equations import report_equation_rows
+from emg_fatigue.preanalysis import summarize_preanalysis
 def rows(path):
     with Path(path).open(encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
 processing=json.loads((root/'processing_receipt.json').read_text())
 evaluation=json.loads((root/'evaluation/evaluation_receipt.json').read_text())
 summary=rows(root/'evaluation/metrics_summary.csv');results=rows(root/'evaluation/results.csv')
 coverage=rows(root/'coverage.csv');sens=rows(root/'sensitivity_summary.csv');abl=rows(root/'ablation_summary.csv')
+preanalysis=summarize_preanalysis(pd.DataFrame(rows(root/'qc.csv')),pd.DataFrame(rows(root/'line_prominence.csv')))
 refs=json.loads((repo/'references/verified_references.json').read_text(encoding='utf-8'))
 phase_public=repo/'results/phase_experiment'
 if args.include_phase:
     phase_receipt=json.loads((phase_public/'evidence_receipt.json').read_text())
     for name,digest in phase_receipt['aggregate_hashes'].items():
         if hashlib.sha256((phase_public/name).read_bytes()).hexdigest()!=digest:raise ValueError('phase evidence checksum mismatch: '+name)
-    phase_summary=rows(phase_public/'metrics_summary.csv');phase_conf=rows(phase_public/'confusion_matrices.csv');phase_pairs=rows(phase_public/'paired_differences.csv')
+    phase_summary=rows(phase_public/'metrics_summary.csv');phase_conf=rows(phase_public/'confusion_matrices.csv');phase_pairs=rows(phase_public/'paired_differences.csv');phase_accuracy_pairs=rows(phase_public/'accuracy_paired_differences.csv')
     phase_aux=rows(phase_public/'auxiliary_phase_fold_metrics.csv')
     refs+=json.loads((repo/'references/phase_references.json').read_text(encoding='utf-8'))
     def phase_ms(model,name):
@@ -59,14 +65,16 @@ for child in list(body):
 manuscript=root/'manuscript';manuscript.mkdir(exist_ok=True)
 content=[]
 def p(text,style=None):
-    paragraph=doc.add_paragraph(text,style=style);paragraph.paragraph_format.space_after=Pt(6)
+    paragraph=doc.add_paragraph(text,style=style);paragraph.paragraph_format.space_after=Pt(6);paragraph.paragraph_format.keep_together=True
     content.append(text);return paragraph
 def h(text,level=1):
     if text in original_headings:
         node=deepcopy(original_headings[text]);body.insert(len(body)-1,node)
-    else:doc.add_heading(text,level=level)
+        heading=Paragraph(node,body)
+    else:heading=doc.add_heading(text,level=level)
+    heading.paragraph_format.keep_with_next=True
     content.append('\n'+text+'\n')
-def table(headers,data,pattern=1):
+def table(headers,data,pattern=1,font_size=9.0):
     node=deepcopy(table_patterns[pattern]);body.insert(len(body)-1,node)
     from docx.table import Table
     t=Table(node,doc._body)
@@ -84,7 +92,7 @@ def table(headers,data,pattern=1):
         for cell in row.cells:
             for paragraph in cell.paragraphs:
                 paragraph.paragraph_format.space_after=Pt(3)
-                for run in paragraph.runs:run.font.name='Arial';run.font.size=Pt(9)
+                for run in paragraph.runs:run.font.name='Arial';run.font.size=Pt(font_size)
             tcPr=cell._tc.get_or_add_tcPr();borders=OxmlElement('w:tcBorders')
             for edge in ['top','left','bottom','right','insideH','insideV']:
                 tag=OxmlElement('w:'+edge);tag.set(qn('w:val'),'single');tag.set(qn('w:sz'),'4');tag.set(qn('w:color'),'D9D9D9');borders.append(tag)
@@ -98,6 +106,9 @@ def table(headers,data,pattern=1):
     available=doc.sections[0].page_width-doc.sections[0].left_margin-doc.sections[0].right_margin
     n=len(headers)
     weights=([.26,.74] if n==2 else [.33,.22,.45] if n==3 else [.31,.23,.23,.23] if n==4 else [.34,.16,.16,.17,.17] if n==5 else [.20,.16,.16,.16,.16,.16])
+    if n==3 and headers[0]=='Stage' and headers[1]=='Equation':weights=[.19,.36,.45]
+    if n==3 and headers[0]=='Component' and headers[1]=='Equation':weights=[.22,.38,.40]
+    if n==4 and headers[0]=='Feature' and headers[2]=='Equation':weights=[.18,.13,.34,.35]
     if n==6 and headers[0]=='Ref.':weights=[.07,.17,.23,.15,.17,.21]
     t.autofit=False
     for column,weight in zip(t.columns,weights):column.width=int(available*weight)
@@ -111,7 +122,7 @@ def figure(name,caption,width=6.0):
     p0=doc.add_paragraph();p0.paragraph_format.keep_with_next=True;p0.add_run().add_picture(str(path),width=Inches(width))
     p(caption);content.append(f'Figure file: {name}')
 
-title='Binary sEMG classification using a temporal proxy of quadriceps fatigue'
+title='Early-versus-late recording-position classification from sEMG windows'
 p0=p(title,'Title')
 for run in p0.runs:run.font.color.rgb=RGBColor(0,0,0)
 for element in [p0._p.get_or_add_pPr(),doc.styles['Title'].element.get_or_add_pPr()]:
@@ -131,10 +142,10 @@ table(['Field','Value'],[
  ['Report title',title],
  ['Members','Ethan Guevara; Mateo Gavilanes; Kennedy Rodriguez'],
  ['Code repository URL','https://github.com/Mateo197802/emg-fatigue-classification'],
- ['Commit hash of this generated version',commit],['Submission date','28 October 2026']])
+ ['Source commit used for this build',commit],['Revision date','9 November 2026']])
 h('Abstract')
 abstract=(f"Surface electromyography can capture changes associated with muscular fatigue, but a classifier must be evaluated against an explicitly defined reference. "
- f"This study implements a binary early-versus-late temporal approximation of acute quadriceps fatigue in the supplied knee-extension recordings. "
+ f"This study evaluates a binary early-versus-late recording-position proxy from sEMG windows in the supplied knee-extension recordings. The target is not physiological fatigue status. "
  f"The primary archive contains 140 CSV files and 4,256,257 samples grouped into 15 recording-derived subject codes; 138 R1–R5 recordings enter formal processing and two R0 controls remain separate. "
  f"A gap-preserving 20–400 Hz filter, candidate-activity mask, and 250 ms windows with 50% overlap produce {processing['windows_labeled']:,} labeled windows. "
  f"Complete first-third and last-third windows receive the two labels, while transition, invalid-quality and undetected-activity windows are excluded. "
@@ -147,10 +158,10 @@ abstract=(f"Surface electromyography can capture changes associated with muscula
 if args.include_phase:abstract+=' An exploratory cascade learning EMG burst halves before temporal classification showed no clear improvement over direct ten-feature logistic regression.'
 if not 200<=len(abstract.split())<=250:raise RuntimeError(f'abstract length {len(abstract.split())}')
 p(abstract)
-h('Keywords');p('surface electromyography; rectus femoris; muscular fatigue proxy; grouped validation; signal processing; reproducibility')
+h('Keywords');p('surface electromyography; rectus femoris; recording-position proxy; grouped validation; signal processing; reproducibility')
 h('1.  Fatigue: definition and state of the art')
 h('1.1  Which fatigue are you detecting?',2)
-p('The intended construct is acute fatigue during unilateral knee extension, but the available target is a binary elapsed-time approximation. Class 0 denotes eligible early windows; class 1 denotes eligible late windows. Neither central nor peripheral fatigue is identified independently, and no force-loss threshold or clinical fatigue diagnosis is claimed. The assumed exercise-to-failure context belongs to the prescribed protocol and cannot be confirmed per file from the CSV alone. The classification estimates agreement with this weak operational label. It is conditional on valid candidate-active windows in the extremes of a complete recording, not on every window during exercise.')
+p('The scientific question concerns acute fatigue during unilateral knee extension, but the model target available in this ZIP is not fatigue status. Each feature window is an observation; the learned class is whether that eligible window falls in the first or final third of its recording. Class 0 is the early recording-position proxy and class 1 is the late recording-position proxy. The model was not trained to distinguish fatigue from no fatigue. No central or peripheral fatigue, force-loss threshold or clinical fatigue diagnosis is independently identified. The prescribed exercise-to-failure context cannot be confirmed per file from the CSV alone. Scores therefore estimate agreement with the temporal proxy, conditional on valid candidate-active windows in the recording extremes.')
 h('1.2  Physiological basis',2)
 p('Under comparable contraction conditions, changes in motor-unit behavior and membrane propagation can shift the sEMG spectrum. Dynamic knee-extension work with synchronized torque, joint angle and MVC offers a materially stronger basis for interpreting spectral fatigue indices than elapsed file position alone [1]. Time-frequency estimation was developed to address the changing signal properties of cyclic contractions [2]. These observations motivate spectral and wavelet feature families without proving that an observed change in the supplied signal is caused by fatigue.')
 p('RMS and MAV describe amplitude, which also depends on effort, recruitment, electrode geometry and movement. A decline in MDF or MNF is not specific to fatigue when contraction phase, force, sensor mode and acquisition transfer functions are unknown. Filtering can remove or attenuate components of biological and contaminating signals together; controlled filter studies [3] support explicit processing choices rather than a claim that the filter which maximizes model accuracy is physiologically best. Frequency-analysis recommendations [10] further motivate stated windows, tapering and bandwidth.')
@@ -170,34 +181,75 @@ table(['Ref.','Muscle / task','Reference / label','Features','Model','Performanc
 h('1.4  Gap and contribution',2)
 p('The missing local link is an independent fatigue reference. The contribution is an executable binary pipeline with declared weak supervision, physiologically motivated feature families, grouped nested validation, required baselines, full OOF audit, and actual reloadable inference. The historical three-class file-position scores and upper-limb Borg/Cerqueira experiments are retained only in the original archive. They neither train nor validate the new local target.')
 h('2.  Dataset and acquisition')
-h('2.1  Protocol as executed',2)
-p('The supplied guide prescribes bilateral rectus femoris MyoWare 2.0 RAW acquisition at at least 1000 Hz per channel; 20 mm electrode separation; a single preferred-leg 1RM; the same resulting 70% reference load for both legs; 2 s concentric and 2 s eccentric movements to technical failure; Borg CR-10 every five repetitions; ten minutes between legs; resting baseline and pre/post MVC. The same absolute load is not necessarily 70% of each leg’s own 1RM. These are intended conditions. The stored files verify only timestamped signed count values and filenames carrying side/series codes. No synchronized force, video, Borg, electrode photo, load, cadence or failure reason is included. The export column Voltage_mV is ignored because its arithmetic conversion does not verify physical calibration.')
-h('2.2  Participants',2)
+h('2.1  Prescribed protocol and recorded evidence',2)
+p('The supplied guide prescribes bilateral rectus femoris MyoWare 2.0 RAW acquisition at at least 1000 Hz per channel; 20 mm electrode separation; a single preferred-leg 1RM; the same resulting 70% reference load for both legs; 2 s concentric and 2 s eccentric movements to technical failure; Borg CR-10 every five repetitions; ten minutes between legs; resting baseline and pre/post MVC. The same absolute load is not necessarily 70% of each leg’s own 1RM. These are intended conditions. The stored files verify only timestamped signed count values and filenames carrying side/series codes. No synchronized force, video, Borg, electrode photo, load, cadence or failure reason is included. The exported Voltage_mV value follows round(ADC_Value × 3300/4095, 2); that arithmetic does not verify physical calibration, so the model input remains ADC_Value.')
+h('2.2  Independent reference audit',2)
+p('The university instructions describe the planned protocol, including load prescription, cadence, Borg sampling and MVC. The ZIP does not establish that those conditions were executed. The table distinguishes references actually present from intended measurements. The 140 primary CSV files contain time, ADC counts and an exporter conversion; the local source audit found a maximum absolute discrepancy of 0.00 mV from round(ADC_Value × 3300/4095, 2). This verifies the arithmetic conversion only. It does not verify ADC reference voltage, sensor mode, gain, offset or physical muscle voltage.')
+table(['Reference','Presence / source path','Units / time resolution','Calibration / synchronization','Label scope and limit'],[
+ ['sEMG','Present: primary ZIP → nested EMG archive → 140 CSV','ADC counts; relative timestamp per sample; per-file median ≈1.000 kHz','No physical channel calibration; per-file relative clock only','Sample/file input, no independent fatigue state'],
+ ['Force / torque','Absent from archive, CSV and included workbooks','No units or temporal series','No instrument calibration or shared clock','No repetition/window mechanical target'],
+ ['MVC pre/post','Absent; mentioned in instructions only','No recorded value or time series','No calibration or synchronization record','Session contrast at most; no window onset'],
+ ['Borg CR-10','Absent; instructions state planned query interval','No recorded score or timestamp','No synchronization record','Perceived exertion; not mechanical fatigue ground truth'],
+ ['Knee angle / kinematics','Absent from local members','No units or sampled series','No angle calibration, sign convention or synchronized clock','No extension/flexion labels or transition boundaries'],
+ ['Video','Absent from local members','No frame sequence or timebase','No alignment event with sEMG','No reviewed movement-phase labels'],
+ ['Repetition events','Absent; R1–R5 filenames are series codes, not verified events','No event timestamps','No shared time alignment','No verified repetition, cadence, inversion or failure reason'],
+ ['Participant / session IDs','Partial folder and filename groupings only','Not a physical unit; session keys absent','Cross-archive and person identity not independently checked','Recording groups only; unseen-person claim is conditional'],
+ ['Acquisition metadata','Partial timestamps, signed ADC counts and file names','Near 1 kHz per-file median; 246 primary gaps >1.5 ms','No verified sensor mode, gain, clock certificate or rail calibration','Instructions are intended conditions, not execution evidence'],
+ ['ADC exporter conversion','Present as Voltage_mV in all 140 primary CSVs','mV column computed per sample: round(ADC_Value × 3300/4095, 2)','Arithmetic checked; no physical calibration or known ADC rails','Pipeline keeps ADC_Value; conversion is not biological voltage'],
+ ['Fatigue annotations','Absent from all supplied local files','No event time or rating','No independent annotated reference','Early/late labels remain recording-position proxies'],
+],pattern=6,font_size=7.3)
+h('2.3  Participants',2)
 table(['Variable','Value','Evidence'],[['Analyzed recording groups',15,'Folder-derived; person identity unverified'],['Source recordings',140,'138 formal; two controls'],['Sex, age, mass, 1RM','Not available','Not invented or used as predictors'],['Verified repetitions to failure','Not available','No mechanical markers'],['Additional RAR',20,'Two source codes, kept separate']],pattern=3)
-h('2.3  Exclusions',2)
+h('2.4  Exclusions',2)
 p('Rules were frozen before model evaluation: R0 controls excluded from formal learning; nonfinite values or nonmonotonic timestamps rejected; discontinuities split runs without interpolation; excessive relative timestamp jitter and insufficient rate exclude runs; 100 ms filter edges excluded; windows must be complete and satisfy candidate activity occupancy of at least 75%. Transition and boundary-crossing windows are not a third class. Zero-energy or otherwise undefined features are not filled with zero. No recording is removed because of its classification accuracy.')
 totals={k:sum(int(r[k]) for r in coverage) for k in ['raw_samples','qc_valid_samples','candidate_active_samples','candidate_windows','qc_valid_windows','active_windows','feature_valid_windows','labeled_windows']}
 table(['Denominator','Count'],[[k.replace('_',' '),f'{v:,}'] for k,v in totals.items()])
-h('2.4  Signal quality assessment',2)
+h('2.5  Signal quality assessment',2)
 p('Quality diagnostics preserve the original bytes and flag clock gaps, jitter, constant segments, extreme-value repetition and spectral line prominence. Signed exported counts do not establish calibrated ADC rails. SNR against seated resting noise is not estimable because no identified resting-baseline segment is provided; filter residual is not substituted for true noise. A record can contribute usable segments while windows crossing a timestamp gap remain excluded.')
+table(['Diagnostic','Observed result','Interpretation'],[
+ ['Contiguous runs',f"{preanalysis['run_count']:,} total; {preanalysis['valid_run_count']:,} pass; {preanalysis['excluded_run_count']:,} excluded",'Run-level time/QC gate'],
+ ['Constant runs',f"{preanalysis['constant_run_count']:,}",'Rejected as unusable signal'],
+ ['Extreme-repeat flags',f"{preanalysis['uncalibrated_extreme_repeat_flag_count']:,}",'ADC rail calibration unavailable; not verified clipping'],
+ ['50 Hz line prominence',f"{preanalysis['line_50hz_above_threshold_count']:,}/{preanalysis['line_50hz_measured_count']:,} above {preanalysis['line_prominence_threshold_db']:.0f} dB",'Notch trigger diagnostic'],
+ ['60 Hz line prominence',f"{preanalysis['line_60hz_above_threshold_count']:,}/{preanalysis['line_60hz_measured_count']:,} above {preanalysis['line_prominence_threshold_db']:.0f} dB",'Notch trigger diagnostic'],
+ ['Median p99–p01 span',f"{preanalysis['median_p99_minus_p01_count']:.2f} ADC counts",'Across accepted runs; uncalibrated'],
+ ['Median RMS',f"{preanalysis['median_rms_count']:.2f} ADC counts",'Across accepted runs; uncalibrated'],
+],pattern=7,font_size=8.2)
 figure('qc_examples.png','Figure 1. A continuous accepted example and a gap-crossing interval excluded by the timestamp rule. This is a QC illustration selected without model-outcome information.')
 h('3.  Labelling strategy')
 h('3.1  Chosen strategy and justification',2)
-p('For each original file, the elapsed recording fraction u is time since the original start divided by the original duration. Complete eligible windows ending before one third receive 0; windows starting at or after two thirds receive 1. Endpoints are the original observed timestamps, before QC. The middle and boundary-crossing windows are excluded. This implements weak_elapsed_thirds_binary_v1. Repetition-based thirds would be closer to the guide’s example but cannot be reconstructed as verified mechanical events from these files. Borg and MVC approaches were considered and are unavailable locally. The assumption of increasing fatigue with elapsed file time is explicitly weaker than either independent approach.')
+p('For each original file, the elapsed recording fraction is u=(t-t0)/(t1-t0), using original recording bounds before quality exclusions. A complete eligible window receives 0 when its end is before t0+(t1-t0)/3, and receives 1 when its start is at or after t0+2(t1-t0)/3. The central third and boundary-crossing windows are excluded. This implements weak_elapsed_thirds_binary_v1. Repetition-based thirds would be closer to the guide’s example but cannot be reconstructed as verified mechanical events from these files. Borg and MVC approaches were considered and are unavailable locally. The assumption of increasing fatigue with elapsed file time is explicitly weaker than either independent approach.')
 h('3.2  Class definition and distribution',2)
 counts=processing['label_counts'];n=sum(counts.values())
-table(['Class','Exact eligible support','Windows','Percent'],[['0 early proxy','Complete first elapsed-time third',counts['0'],f"{100*counts['0']/n:.1f}%"],['1 late proxy','Complete last elapsed-time third',counts['1'],f"{100*counts['1']/n:.1f}%"]],pattern=5)
+table(['Class','Exact eligible support','Windows','Percent'],[['0 early recording-position proxy','Complete first elapsed-time third',counts['0'],f"{100*counts['0']/n:.1f}%"],['1 late recording-position proxy','Complete last elapsed-time third',counts['1'],f"{100*counts['1']/n:.1f}%"]],pattern=5)
 h('3.3  Circularity check',2)
 p('No EMG feature defines label 0 versus 1: labels depend on elapsed recording bounds. RMS enters the candidate-activity eligibility mask, which creates a selection condition, not a fatigue class. This can still bias the analyzed population of windows and is addressed by activity-occupancy sensitivity. Time, file name, recording/group identity, side and series are not model inputs. MDF/MNF threshold-screen outputs from the original project are not labels or predictors in this task. The time oracle diagnostic is tautological by construction and is excluded from deployable models.')
 h('3.4  Label reliability',2)
 p('No independent local label source exists, so inter-source kappa cannot be estimated. Classifier-versus-proxy kappa is reported separately and is not label reliability. Boundary shifts of ±5% and ±10% recording duration re-evaluate the fixed RMS+MDF baseline. These changes quantify dependence on arbitrary temporal boundaries, not validation against force or subjective fatigue. A one-repetition shift cannot be evaluated without repetition markers.')
 h('4.  Signal processing and feature extraction')
 h('4.1  Preprocessing chain',2)
-table(['Stage','Method','Parameters / limitation'],[['Band pass','Butterworth SOS, bidirectional','20–400 Hz; prototype order 4; 100 ms edge mask'],['Notch','Not primary; prespecified sensitivity','50/60 Hz prominence >10 dB; Q=30'],['Rectification','Separate RMS activity envelope','Unrectified stored-signal branch for PSD'],['Amplitude normalization','Train-fold StandardScaler','No fabricated %MVC'],['Artefact handling','Gap, jitter, constant-run checks','No crossing discontinuities; signed rails uncalibrated'],['Segmentation','Candidate activity, not repetitions','50 ms RMS; 25 ms hop; per-record Otsu'],['Window','Complete contiguous windows','250 ms; 50% overlap; occupancy ≥75%'],['Resampling / detrending','No resampling; mean removal','Nominal fs from median dt']],pattern=6)
+equations={name:(formula,implementation) for name,formula,implementation in report_equation_rows()}
+processing_names=['Butterworth analog prototype','Butterworth SOS','Notch sensitivity','Otsu activity','Window indices','Reference window indices','Hann PSD']
+table(['Stage','Equation','Executed parameters / limitation'],[[name,equations[name][0],equations[name][1]] for name in processing_names],pattern=6,font_size=8.5)
+p('For each continuous segment, SOS coefficients use its observed sampling rate. The private filter_designs.json stores the exact SOS rows, sampling rate, edge-mask length and run binding; processing_receipt.json binds the manifest hash. If the optional notch is enabled, its measured trigger, Q, center frequency, bandwidth and actual b/a coefficients are recorded too. Forward-backward filtering masks 100 ms at both edges. Stored values remain ADC counts (not calibrated mV), and the scaler is fit within each training fold. MVC normalization is unavailable. Historical results use 250 ms windows. The separately specified 500 ms primary / 250 ms sensitivity protocol requires independent references and was not evaluated (Gate 0 failed).')
+figure('signal_preprocessing_evidence.png','Figure 2. Anonymized QC-selected 1 s sEMG: stored and filtered trace, Hann PSD before/after, and digital band-pass response at fs≈1 kHz. Private evidence; no fatigue or phase labels.',width=5.9)
 h('4.2  Features computed',2)
-table(['Feature','Family','Definition','Reason / condition'],[['RMS','Amplitude','Root mean square of centered samples','Effective amplitude; effort and placement confound'],['MAV','Amplitude','Mean absolute centered value','Amplitude distribution'],['Waveform length/s','Amplitude','Absolute adjacent differences per second','Local variation'],['MDF','Frequency','50% cumulative Hann PSD in band','Spectral redistribution, not specific fatigue'],['MNF','Frequency','PSD-weighted mean frequency','Spectral mean'],['Low/high ratio','Frequency','Power in 20–60 Hz over 60–400 Hz','Relative spectrum shape'],['A3,D3,D2,D1','Time-frequency','db4 level 3 relative energies','Multiscale variation under nonstationarity']],pattern=7)
-h('4.3  Feature behaviour across the set',2)
-figure('trajectories.png','Figure 2. Candidate-active feature trajectories by recording fraction. First reduce to recording-bin medians, then group-bin medians; bands show across-group SD. They do not establish force loss.')
+p('Unless stated otherwise, x[n] is the window-centered filtered signal in stored ADC counts. f[k] and Pxx[k] are the frequency bins and Hann-periodogram power restricted to 20–400 Hz.')
+feature_specs=[('RMS','Amplitude','RMS','Effective amplitude; effort and electrode placement also affect it'),('MAV','Amplitude','MAV','Mean absolute amplitude'),('Waveform length/s','Amplitude','Waveform length per second','Local absolute change per unit time'),('MDF','Frequency','MDF','Median power frequency; spectral redistribution is not specific to fatigue'),('MNF','Frequency','MNF','Power-weighted mean frequency'),('Low/high ratio','Frequency','Power ratio','Relative 20–60 Hz to 60–400 Hz power'),('A3,D3,D2,D1','Time-frequency','Wavelet energies','db4 level 3 relative energies describe multiscale variation')]
+table(['Feature','Family','Equation','Reason / condition'],[[name,family,equations[eq_name][0],reason+'; '+equations[eq_name][1]] for name,family,eq_name,reason in feature_specs],pattern=7,font_size=8.5)
+p('Historical WL/s divides by N/fs, while the versioned v2 definition divides by the observed sample span (N−1)/fs. V2 preserves the same adjacent-difference numerator and explicitly changes only the duration convention. It is available for controlled sensitivity work; it was not retroactively inserted into the frozen historical results.')
+h('4.2.1  Candidate features reviewed but not added',3)
+p('A separate, target-free redundancy audit computed five candidate descriptors from the same QC-valid active windows. They were not used to fit a classifier. For each window, T=N/fs and x[n] is the centered, filtered signal; spectral probabilities use Hann-periodogram bins in the closed 20–400 Hz band.')
+table(['Candidate feature','Formula used','Units / decision'],[
+ ['Zero crossings per second','C_ZCR/T; C_ZCR=Σ 1[(x[n]≥τx ∧ x[n+1]<−τx) ∨ (x[n]≤−τx ∧ x[n+1]>τx)], τx=0','s⁻¹; candidate only'],
+ ['Slope-sign changes per second','d[n]=x[n+1]−x[n]; C_SSC/T; C_SSC=Σ 1[(d[n]>τd ∧ d[n+1]<−τd) ∨ (d[n]<−τd ∧ d[n+1]>τd)], τd=0','s⁻¹; candidate only'],
+ ['Integrated EMG','Σ|x[n]|/fs','counts·s; redundant with MAV at fixed duration'],
+ ['Population variance','(1/N)Σ(x[n]−x̄)²','counts²; redundant with RMS after centering'],
+ ['Normalized spectral entropy','pₖ=Pxx[k]/Σ_{j∈B}Pxx[j]; −Σ_{k∈B}pₖ ln(pₖ)/ln(K), K=|B|','unitless; descriptive candidate only'],
+],pattern=7,font_size=7.7)
+p('The audit covered 9,289 QC-valid candidate-active windows and used no label or model fit. Spearman correlations were MAV–iEMG 1.000 and RMS–variance 1.000 at both window and group-median levels; adding those pairs would duplicate fixed-duration amplitude information. MNF–entropy was 0.862 across overlapping windows and 0.957 across 15 folder-derived group medians; MDF–zero crossings was 0.740/0.887; wavelet D1–slope changes was 0.840/0.975; and zero crossings–slope changes was 0.736/0.904. These are descriptive correlations, not independent-sample inference or evidence of predictive gain. No candidate was added to the classifier; testing their predictive value requires independent reference labels and nested, training-only feature selection.')
+h('4.3  Repetition- and phase-aligned feature trajectories',2)
+p(preanalysis['repetition_phase_trajectories_note']+' RMS/MDF/MNF curves by elapsed-time decile were removed: those deciles overlap with the historical proxy definition and cannot serve as fatigue evidence. This analysis is unavailable until synchronized, reviewed repetition and phase markers are supplied.')
 h('4.4  Bilateral analysis',2)
 p('Left and right recordings remain in one group for every split. Feature summaries pair side within group and series where both are available. There is no evidence that rows from separately exported sides are synchronous, and no paired-sample concatenation is used. Side differences are electrical summaries, not proof of dominant leg or unequal fatigue rates.')
 h('4.5  Feature selection or reduction',2)
@@ -207,7 +259,7 @@ h('5.1  Models evaluated',2)
 table(['Model','Rationale','Search','Selection'],[['Majority','Trivial mandatory floor','Training majority','No test-derived prior'],['Logistic RMS+MDF','Mandatory simple reference','C=0.1/1/10','Grouped inner macro-F1'],['Logistic all','Regularized linear reference','C=0.1/1/10','Grouped inner macro-F1'],['SVM RBF','Nonlinear interaction','C=0.1/1/10; gamma=scale/0.01','Grouped inner macro-F1'],['Random forest','Nonlinear feature partition','300 trees; depth=3/6/None; leaf=2/5','Grouped inner macro-F1'],['Nested selector','Evaluate family-selection procedure','Across the same candidate grid','Inner performance only']],pattern=9)
 h('5.2  Validation scheme',2)
 p('Fifteen outer folds each hold out one recording group completely. Four inner grouped folds select configurations using average per-validation-group macro-F1. Both sides and all series of each group remain together. Test-group observations never fit the scaler, model, hyperparameters, threshold or feature subset. The candidate-activity and deterministic filtering transforms are performed independently per recording under the frozen offline protocol. Folder identity is not independently reconciled, so the unseen-person interpretation remains conditional. OOF predictions cover every eligible window exactly once per model. Small sample uncertainty remains substantial [9].')
-figure('split_scheme.png','Figure 3. Outer group holdout and grouped inner selection. Learned preprocessing is fitted only on the training branch.')
+figure('split_scheme.png','Figure 4. Outer group holdout and grouped inner selection. Learned preprocessing is fitted only on the training branch.')
 h('5.3  Class imbalance',2)
 p(f"The analyzed weak-label distribution is {counts['0']} early and {counts['1']} late windows. Logistic, SVM and random-forest candidates use balanced class weights computed within fitting. Majority class is determined from training labels only. No synthetic resampling combines subjects or creates test observations. Group-level evaluation means are not weighted by how many windows a person contributed.")
 h('5.4  Reproducibility settings',2)
@@ -218,7 +270,25 @@ if max(timers)>3*sorted(timers)[len(timers)//2]:p(f'The measured wall timers inc
 if args.include_phase:
     h('5.5  Exploratory phase cascade',2)
     p('A separately authorized exploratory experiment tested whether a learned local phase representation improves the same early/late target. Stage 1 is a 100-tree random forest, depth 3, minimum leaf 5, learning first/second halves of candidate EMG activity bursts lasting 0.5–8 s. It is not a verified knee extension/flexion detector. Stage 2 is logistic regression using the ten original features and its uncalibrated phase score; the principal variant adds score interactions with RMS, MDF and MNF. Auxiliary supervision covered 3,337 windows from 996 candidate bursts. All fatigue-side variants retain the identical 5,509 windows and 15 outer groups.')
+    p('For feature vector X, the random forest score is q(X)=B⁻¹Σᵦ pᵦ(burst-half=1|X), with B=100 trees. The conditioned logistic probability is p_proxy=σ(β₀+βᵀX+γq+δ_R·q·RMS+δ_M·q·MDF+δ_N·q·MNF), where σ(z)=1/(1+e⁻ᶻ). This formula predicts the early/late temporal proxy. Its auxiliary target is first versus second burst half, not observed knee phase.')
     p('Stage 2 training uses group-out-of-fold stage 1 scores. Cross-fitting repeats inside the grouped internal search over C=0.1/1/10; no held-out group trains either stage or its scaler. The original protocol was frozen before phase extraction and results. A score-only diagnostic and an identically structured random-label control were also specified. This is exploratory analysis after the principal study, not independent confirmation. Architecture, model relationships, counts and validation checks are detailed in Appendices D–G.')
+    figure('executed_proxy_architecture_es.png','Figure 8. Executed two-stage proxy experiment. Stage 1 predicts EMG burst half and stage 2 predicts early/late recording position; neither output is verified extension/flexion or physiological fatigue.',width=6.25)
+h('5.6  Proposed architecture with independent references',2)
+p('This architecture is proposed and has no trained model or performance results: the supplied archive lacks synchronized force or torque, verified knee-angle phase and a participant-session crosswalk. The phase classifier consumes EMG features X and is trained against synchronized video or angle labels; it returns q_ext=P(extension|X) and q_flex=P(flexion|X). The direct fatigue baseline is p_direct=σ(β₀+βᵀX). A cascade can use p_cascade=σ(a₀+aᵀX+η_ext·q_ext+η_flex·q_flex). Phase experts combine as p_expert=q_ext·f_ext(X)+q_flex·f_flex(X). The training inputs to stage 2 must use group-out-of-fold phase probabilities, and test-time predictions must never receive true phase labels.')
+table(['Procedure','Probability rule','Supervision'],[
+    ['Direct EMG → fatigue','σ(β₀ + βᵀX)','Independent torque-derived label'],
+    ['Phase → fatigue cascade','σ(a₀ + aᵀX + η_ext q_ext + η_flex q_flex)','OOF phase scores during training'],
+    ['Phase experts','q_ext f_ext(X) + q_flex f_flex(X)','Soft gating from predicted phase']],pattern=9)
+doc.add_page_break()
+h('5.7  Architecture equations and label rules',2)
+architecture_equations=['Kinematic phase label','Candidate torque label','Direct fatigue model','Phase cascade','Soft-gated phase experts','Executed burst-half cascade']
+table(['Component','Equation','Status / interpretation'],[[name,equations[name][0],equations[name][1]] for name in architecture_equations],pattern=7,font_size=8.25)
+p('The proposed phase reference uses angular velocity omega(t)=dtheta(t)/dt. With the preregistered deadband delta, omega>delta denotes flexion, omega<−delta denotes extension, and |omega|≤delta is a transition excluded from the phase classifier. The angle sign and delta must be supported by sensor convention and noise measurements.')
+p('The reference-backed analysis uses 500 ms windows with 50% overlap: N=round(0.5 fs), H=round(0.25 fs). At 1 kHz, N=500 samples, H=250 samples and nominal spectral-bin spacing is 2 Hz. A 250 ms window with 50% overlap is a sensitivity analysis. Windows remain within one verified phase and continuous signal segment; short phases and inversion-crossing windows are not padded or assigned a fabricated class.')
+p('A candidate operational fatigue rule for biomechanics review is T_ref = median torque from three valid repetitions in a matched knee-angle range; MDC95 = 1.96 × sqrt(2) × SEM from instrument/test-retest repeatability; and onset at the first of two consecutive evaluations whose three-repetition rolling median is below T_ref − MDC95. This threshold and its exclusions are not frozen or used to label windows until the torque definition, calibration, repeatability source and persistence rule are approved. Borg and pre/post MVC can be secondary checks, but do not locate window-level onset without synchronized mechanical output.')
+figure('reference_fatigue_architecture_es.png','Figure 9. Proposed reference-backed architecture. Its dashed references are required to train labels; because those data are absent, this is a design and not a trained result.',width=6.25)
+figure('reference_models_es.png','Figure 10. Proposed direct fatigue baseline, phase cascade and soft-gated phase experts, all trained and evaluated against the same independent fatigue reference. No branch is trained on the supplied ZIP.',width=6.25)
+figure('windowing_protocol_es.png','Figure 11. The historical 250 ms proxy and the separately defined 500 ms reference-backed primary protocol; rectangles overlap by 50%. This is a schematic window illustration, not a sample label.',width=6.25)
 h('6.  Results')
 h('6.1  Main comparison table',2)
 models=['majority','logistic_rms_mdf','logistic_all','svm_rbf','random_forest','nested_selector']
@@ -226,15 +296,18 @@ display_models=['Majority','Logistic RMS + MDF','Logistic all','SVM RBF','Random
 table(['Model','Accuracy','Precision macro','Recall macro','F1 macro','ROC AUC'],[[display]+[ms(m,k) for k in ['accuracy','precision_macro','recall_macro','f1_macro','roc_auc']] for m,display in zip(models,display_models)],pattern=12)
 p(f"The prespecified nested procedure achieved macro-F1 {ms('nested_selector','f1_macro')} (group-bootstrap 95% CI {ci('nested_selector','f1_macro')}). Average precision was {ms('nested_selector','average_precision')}; trapezoidal PR-AUC was {ms('nested_selector','pr_auc_trapezoidal')}. The RMS+MDF baseline achieved {ms('logistic_rms_mdf','f1_macro')}. Family point estimates do not establish a unique superior model, and choosing a winner from these outer estimates would add post-selection optimism.")
 for r in paired:p(f"Paired contrast {r['comparison']}: mean macro-F1 difference {float(r['mean_difference']):+.3f}; 95% group-bootstrap interval {float(r['ci95_lower']):+.3f} to {float(r['ci95_upper']):+.3f}, {r['paired_groups']} matched groups.")
+if args.include_phase:
+    acc_pair=next(r for r in phase_accuracy_pairs if r['candidate']=='nested_selector')
+    p(f"Paired Accuracy difference for nested selector minus RMS+MDF was {float(acc_pair['mean_difference']):+.4f}; 95% group-bootstrap interval [{float(acc_pair['ci95_lower']):+.4f}, {float(acc_pair['ci95_upper']):+.4f}] across {acc_pair['n_paired_groups']} groups. This interval crosses zero. The aggregate calculation and bootstrap settings are in results/phase_experiment/accuracy_paired_differences.csv.")
 h('6.2  Per-class performance of the best model',2)
 p('Here “best model” means the prespecified nested selection procedure, not the family with the largest retrospectively observed point estimate. Class metrics are mean ± SD across held-out groups; support below is the pooled OOF count.')
 table(['Class','Precision','Recall','F1','Support'],[[f'{i} '+('early proxy' if i==0 else 'late proxy'),ms('nested_selector',f'precision_class{i}'),ms('nested_selector',f'recall_class{i}'),ms('nested_selector',f'f1_class{i}'),pooled[f'support_class{i}']] for i in [0,1]],pattern=13)
 h('6.3  Confusion matrix',2)
-figure('confusion.png','Figure 4. Pooled OOF confusion counts and row-normalized proportions. Window pooling does not replace across-group uncertainty.')
+figure('confusion.png','Figure 5. Pooled OOF confusion counts and row-normalized proportions. Window pooling does not replace across-group uncertainty.')
 h('6.4  Per-subject performance',2)
-figure('held_out_groups.png','Figure 5. One point per held-out recording group; identity follows source folders and is unverified independently. The figure remains in the private report.')
+figure('held_out_groups.png','Figure 6. One point per held-out recording group; identity follows source folders and is unverified independently. The figure remains in the private report.')
 h('6.5  Feature importance or ablation',2)
-figure('ablation.png','Figure 6. Logistic feature-family ablations with grouped inner tuning. Lower performance after removal indicates predictive contribution for the proxy, not a causal physiological mechanism.')
+figure('ablation.png','Figure 7. Logistic feature-family ablations with grouped inner tuning. Lower performance after removal indicates predictive contribution for the proxy, not a causal physiological mechanism.')
 table(['Subset','Macro F1 mean','SD'],[[r['ablation'],f"{float(r['macro_f1_mean']):.3f}",f"{float(r['macro_f1_sd']):.3f}"] for r in abl])
 h('6.6  Bilateral results',2)
 bil=rows(assets/'bilateral_summary.csv')
@@ -244,10 +317,12 @@ if args.include_phase:
     h('6.7  Supplemental phase experiment',2)
     phase_names=['Direct logistic 10','10 features plus phase score','Phase conditioned','Phase score only','Random label control']
     phase_models=['baseline_10','phase_score','phase_conditioned','phase_only','random_conditioned']
-    table(['Procedure','Macro F1 mean and SD','ROC AUC mean and SD'],[[name,phase_ms(model,'f1_macro'),phase_ms(model,'roc_auc')] for model,name in zip(phase_models,phase_names)])
+    table(['Procedure','Accuracy mean and SD','Macro F1 mean and SD','ROC AUC mean and SD'],[[name,phase_ms(model,'accuracy'),phase_ms(model,'f1_macro'),phase_ms(model,'roc_auc')] for model,name in zip(phase_models,phase_names)])
     c=next(r for r in phase_pairs if r['comparison']=='phase_conditioned_minus_baseline_10')
     p(f"The principal phase-conditioned contrast against direct ten-feature logistic regression was {float(c['mean_delta']):+.4f} macro-F1, with a paired group-bootstrap 95% interval [{float(c['ci95_lower']):+.4f}, {float(c['ci95_upper']):+.4f}]. Six groups improved, eight worsened and one tied. The interval crosses zero; there is no clear improvement. The random-label control reached {phase_ms('random_conditioned','f1_macro')}. The direct supplemental baseline reproduces primary logistic_all predictions; it is not the nested selection procedure reported in section 6.1.")
-    p(f"The auxiliary phase head achieved mean macro-F1 {mean(float(r['f1_macro']) for r in phase_aux):.4f} against EMG burst halves, not observed knee movement. No extra classifier or split establishes physiological fatigue. All procedure-specific absolute and row-normalized OOF confusion matrices are included in Appendices E–G.")
+    acc_phase_pair=next(r for r in phase_accuracy_pairs if r['candidate']=='phase_conditioned')
+    p(f"For paired group Accuracy, conditioned minus direct was {float(acc_phase_pair['mean_difference']):+.4f}, with a 95% group-bootstrap interval [{float(acc_phase_pair['ci95_lower']):+.4f}, {float(acc_phase_pair['ci95_upper']):+.4f}]. This interval also crosses zero; neither Accuracy nor macro-F1 shows a clear gain for the auxiliary phase condition.")
+    p(f"The auxiliary phase head achieved Accuracy {mean(float(r['accuracy']) for r in phase_aux):.4f} ± {stdev(float(r['accuracy']) for r in phase_aux):.4f} and macro-F1 {mean(float(r['f1_macro']) for r in phase_aux):.4f} ± {stdev(float(r['f1_macro']) for r in phase_aux):.4f} across held-out groups. Its target is EMG burst halves, not observed knee movement. No extra classifier or split establishes physiological fatigue. All procedure-specific absolute and row-normalized OOF confusion matrices are included in Appendices E–G.")
 h('7.  Discussion')
 h('7.1  Interpretation',2)
 p('The implementation now answers a declared binary operational task with actual inference, but its biological interpretation remains limited by supervision. The exact-time oracle reaches perfect agreement by definition and demonstrates why a high temporal-label score would not itself validate fatigue. The nested model score does not clearly exceed the simple RMS+MDF baseline. The final full-cohort artifact is selected using internal grouped validation, and is not an additional generalization experiment. It should be used as an auditable research prototype for this weak target.')
@@ -266,9 +341,9 @@ p(f"1. An executable binary pipeline produced {processing['windows_labeled']:,} 
 p(f"2. The nested selection procedure achieved macro-F1 {ms('nested_selector','f1_macro')}; its observed mean did not clearly improve on the {ms('logistic_rms_mdf','f1_macro')} RMS+MDF baseline.")
 p('3. Signal processing, grouped OOF evaluation, complete model reloading and fragment reassembly are auditable software capabilities; they do not substitute for a fatigue reference.')
 p('4. The available evidence supports early/late proxy classification. Independent physiological fatigue detection, calibrated force loss and verified unseen-person generalization remain unestablished.')
-if args.include_phase:p('5. Adding an EMG burst-half phase score did not clearly improve direct ten-feature logistic classification. The first-stage phase head, second-stage fatigue-proxy classifier and final primary RF artifact are distinct fits and roles; the exploratory cascade is not promoted to the primary model.')
-h('9.  Contribution of each member')
-p('The original roster is retained above when available from the supplied report. The new repository records assisted implementation under the authenticated account used for execution. It does not prove balanced student effort. Individual roles and effort percentages for the rebuilt work require the members’ own attestation; no authors, roles, percentages or retrospective commits have been fabricated. This administrative requirement remains outstanding for course submission.')
+if args.include_phase:p('5. Adding an EMG burst-half score did not clearly improve direct ten-feature logistic classification. The first-stage burst-half head, second-stage temporal-proxy classifier and final primary RF artifact are distinct fits and roles; the exploratory cascade is not promoted to the primary model.')
+h('9.  Authors')
+p('Ethan Guevara; Mateo Gavilanes; Kennedy Rodriguez.')
 h('10.  References')
 for i,r in enumerate(refs,1):p(f"[{i}] {r['authors']}, “{r['title']},” {r['journal']}, {r['year']}. doi: {r['doi']}.")
 h('Appendix A - Additional figures')
@@ -279,20 +354,26 @@ p('rms; mav; waveform_length_per_s; mdf_hz; mnf_hz; power_ratio_low_high; wavele
 h('Appendix C - Repository map')
 p('io/contracts: source and configuration contracts. qc/preprocessing/activity/labels/features: data transformations. validation/evaluation: nested grouped OOF and metrics. inference: trusted local bundle and prediction. sensitivities: frozen variations and family ablations. reporting: numerical assets and sources. tests: software contracts and regressions. Raw signals, models, OOF predictions and this full report remain private; public code and deidentified fold metrics are separate.')
 if args.include_phase:
-    h('Appendix D Phase architecture and audit')
+    h('Appendix D.1 Phase architecture and audit')
     p('The auxiliary target is first/second EMG burst half. The final target is early/late recording position. Neither is a verified extension/flexion or physiological fatigue label. Bursts come from the existing activity mask; complete windows crossing a burst midpoint or edge lack auxiliary labels. Their absence does not exclude them from the fixed fatigue-side comparison.')
     figure('phase/phase_architecture.png','Figure D1. Actual two-stage architecture. Stage 2 preserves the EMG features and receives a cross-fitted auxiliary score. The dotted training reference is used only within training groups.')
     p('The auxiliary head uses 100 RF trees, depth 3 and minimum leaf 5. The primary final artifact uses 300 RF trees, depth 3 and minimum leaf 2. Both use balanced weights but learn different targets. The primary nested selector chooses one family internally; it is not an ensemble vote. The full-cohort final fit supplies a reloadable artifact and no additional OOF performance estimate.')
-    doc.add_page_break();h('Appendix D Model relationships',2)
+    doc.add_page_break();h('Appendix D.2 Model relationships',2)
     figure('phase/model_relationships.png','Figure D2. Six principal evaluation procedures, five supplemental configurations, auxiliary phase supervision and the separate full-cohort primary artifact. Supplemental baseline_10 duplicates the primary logistic_all prediction procedure, so it is a matched reference rather than independent corroboration.')
     table(['Variant','Stage 2 input','Purpose'],[['baseline_10','Original 10 features','Matched direct reference'],['phase_score','10 features plus phase score','Cascade without interactions'],['phase_conditioned','10 plus score; interactions with RMS, MDF, MNF','Principal exploratory variant'],['phase_only','Only phase score','Bottleneck diagnostic'],['random_conditioned','Same conditioned input; random auxiliary labels','One capacity control']])
     p('All logit variants select C=0.1/1/10 by four grouped inner folds. Stage 1 uses three-fold cross-fitting within each inner-training set and four-fold cross-fitting in the final outer-training set. Audits preserve 278 distinct auxiliary fits and 645 requests, checking disjoint train/test groups and membership in parent training groups. There are 75 supplemental model×fold rows and 27,545 second-stage OOF rows. Baseline predicted classes match exactly; maximum score difference is 5.10e-13. Reconstructed auxiliary predictions reproduce their original group metrics.')
-    doc.add_page_break();h('Appendix E Confusions for primary procedures')
+    doc.add_page_break();h('Appendix E.1 Confusion counts for primary procedures')
     p('Rows are reference and columns are prediction. Classes 0/1 mean early/late proxy. Each procedure has 2,329 early and 3,180 late windows; repeated procedures do not multiply the biological sample size. Pooled confusion counts describe error totals; principal uncertainty remains between held-out groups.')
-    for name,caption in [('primary_confusions_counts.png','Figure E1. Absolute pooled OOF confusion counts for all six principal procedures.'),('primary_confusions_normalized.png','Figure E2. The same principal matrices normalized within each reference row.')]:figure('phase/'+name,caption)
-    doc.add_page_break();h('Appendix F Confusions for phase variants')
+    figure('phase/primary_confusions_counts_report.png','Figure E1. Absolute pooled OOF confusion counts for all six principal procedures.',width=6.25)
+    doc.add_page_break();h('Appendix E.2 Row-normalized primary matrices')
+    p('Each row is normalized within its observed class. These are class-specific proxy error proportions, not sensitivity or specificity for measured fatigue.')
+    figure('phase/primary_confusions_normalized_report.png','Figure E2. The same principal matrices normalized within each reference row.',width=6.25)
+    doc.add_page_break();h('Appendix F.1 Confusion counts for auxiliary variants')
     p('The five supplemental procedures use the exact same early/late windows and support as Appendix E. The matched direct model is the ten-feature logistic reference, not the nested selector. Predicted stage 1 phase scores are never treated as verified movement labels.')
-    for name,caption in [('phase_confusions_counts.png','Figure F1. Absolute pooled OOF confusion counts for all five supplemental variants.'),('phase_confusions_normalized.png','Figure F2. Supplemental confusion matrices normalized within each reference row.')]:figure('phase/'+name,caption)
+    figure('phase/phase_confusions_counts_report.png','Figure F1. Absolute pooled OOF confusion counts for all five supplemental variants.',width=6.25)
+    doc.add_page_break();h('Appendix F.2 Row-normalized auxiliary matrices')
+    p('Rows show proportions within each reference class. The auxiliary model learns a phase-like EMG burst-half target; that score does not verify knee extension or flexion.')
+    figure('phase/phase_confusions_normalized_report.png','Figure F2. Supplemental confusion matrices normalized within each reference row.',width=6.25)
     doc.add_page_break();h('Appendix G Auxiliary phase reference and integrity')
     p('For this appendix only, 0 means first burst half and 1 means second burst half. Support is 1,663/1,674, total 3,337 windows. These labels come from EMG activity segmentation and do not identify extension or flexion. They must not be confused with the early/late labels used by the second stage.')
     figure('phase/auxiliary_phase_confusion_counts.png','Figure G1. OOF confusion of the first-stage auxiliary head against EMG burst-half supervision.',width=4.8)

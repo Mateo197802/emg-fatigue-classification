@@ -47,12 +47,38 @@ def test_filter_removes_dc_and_low_frequency_without_crossing_gaps():
     assert np.sqrt(np.mean(y[mask]**2))==pytest.approx(1/np.sqrt(2),rel=.04)
 
 
+@pytest.mark.parametrize('f0',[50.,60.])
+def test_conditional_notch_receipt_records_scipy_coefficients(f0):
+    from dataclasses import replace
+    from scipy import signal
+    from emg_fatigue.contracts import StudyConfig
+    from emg_fatigue.preprocessing import filter_run
+    from emg_fatigue.protocol_equations import report_equation_rows
+
+    fs=1000.
+    t=np.arange(4000)/fs
+    x=np.sin(2*np.pi*f0*t)+.25*np.sin(2*np.pi*100*t)
+    _,_,design=filter_run(x,fs,replace(StudyConfig(),notch=True),return_design=True)
+    applied=design['notch']['applied']
+    assert len(applied)==1 and applied[0]['center_hz']==f0
+    b,a=signal.iirnotch(f0,30,fs)
+    np.testing.assert_allclose(applied[0]['b'],b,rtol=0,atol=1e-15)
+    np.testing.assert_allclose(applied[0]['a'],a,rtol=0,atol=1e-15)
+    assert applied[0]['quality_factor']==30
+    assert applied[0]['bandwidth_hz']==pytest.approx(f0/30)
+
+    equation=dict((name,formula) for name,formula,_ in report_equation_rows())['Notch sensitivity']
+    assert 'B = 2 pi f0/(Q fs)' in equation
+    assert 'beta = tan(B/2)' in equation
+    assert 'alpha =' not in equation
+
+
 def test_binary_boundaries_and_quality_are_not_negatives():
     from emg_fatigue.labels import label_interval
-    assert label_interval(0,2.9,0,9)=='early_proxy_nonfatigue'
+    assert label_interval(0,2.9,0,9)=='early_recording_position_proxy'
     assert label_interval(3,4,0,9) is None
     assert label_interval(2.9,3.1,0,9) is None
-    assert label_interval(6,9,0,9)=='late_proxy_fatigue'
+    assert label_interval(6,9,0,9)=='late_recording_position_proxy'
     assert label_interval(0,1,0,9,eligible=False) is None
 
 

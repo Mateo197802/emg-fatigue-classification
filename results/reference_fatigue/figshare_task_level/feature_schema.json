@@ -1,0 +1,90 @@
+{
+  "schema_id": "figshare_rf_task_outcome_trial_features_v1",
+  "dataset_doi": "10.6084/m9.figshare.15273906.v1",
+  "prediction_unit": "complete recording trial; one feature row and one prediction per trial",
+  "labels": {
+    "30": 0,
+    "TLim": 1
+  },
+  "label_semantics": "reference contraction condition versus sustained 30% peak-torque knee-extension task carried to task failure; not an instantaneous or per-window physiological fatigue state",
+  "force_trace_use": "uncalibrated reference force is used only to find active contraction bouts and exclude short post-task MVC; never enters any model feature or target",
+  "sampling_rate_hz": "read from each MAT file; expected to be 2048 Hz",
+  "windows": {
+    "type": "fixed-length sliding windows inside detected active bouts",
+    "duration_s": 0.5,
+    "overlap_fraction": 0.5,
+    "sample_count": "round(duration_s * measured_fs_hz)",
+    "hop_samples": "round(window_samples * (1 - overlap_fraction))",
+    "edge_mask_s_each_end": 0.1,
+    "force_bout_minimum_duration_s": 10.0,
+    "window_target": "none; windows are pooled to a complete-trial feature vector, and the CNN pools window logits before computing one trial-level loss"
+  },
+  "filter": {
+    "bandpass": "scipy.signal.butter(N=4, Wn=[20,450] Hz, btype='bandpass', fs=measured_fs, output='sos')",
+    "bandpass_prototype_order": 4,
+    "digital_bandpass_order": 8,
+    "application": "zero-phase scipy.signal.sosfiltfilt independently within detected active bouts",
+    "conditional_notch": "Q=30 at 50 or 60 Hz only if pooled Welch PSD prominence exceeds 10 dB; coefficients and decisions saved in processing_audit.csv"
+  },
+  "feature_formulas": {
+    "rms_log10": "log10(sqrt(sum((x[n]-mean(x))^2)/N))",
+    "mav_log10": "log10(sum(abs(x[n]-mean(x)))/N)",
+    "waveform_length_log10": "log10(sum(abs(x[n]-x[n-1])) / ((N-1)/fs))",
+    "psd": "one-sided periodogram using Hann window and density scaling",
+    "mdf_hz": "first f_k where cumulative Pxx reaches 0.5 * sum(Pxx), for 20<=f<=450 Hz",
+    "mnf_hz": "sum(f_k * Pxx[k]) / sum(Pxx[k]), for 20<=f<=450 Hz",
+    "bandpower_20_60_ratio": "sum(Pxx, 20<=f<60) / sum(Pxx, 20<=f<=450)",
+    "bandpower_60_150_ratio": "sum(Pxx, 60<=f<150) / sum(Pxx, 20<=f<=450)",
+    "spectral_entropy_norm": "-sum(p_k * log(p_k))/log(K), p_k=Pxx[k]/sum(Pxx), for 20<=f<=450 Hz",
+    "channel_pooling": "median over usable RF electrode channels per window",
+    "trial_pooling": "median, interquartile range, and least-squares slope across active-time-normalized windows"
+  },
+  "feature_columns": [
+    "rms_log10__median",
+    "rms_log10__iqr",
+    "rms_log10__slope",
+    "mav_log10__median",
+    "mav_log10__iqr",
+    "mav_log10__slope",
+    "waveform_length_log10__median",
+    "waveform_length_log10__iqr",
+    "waveform_length_log10__slope",
+    "mdf_hz__median",
+    "mdf_hz__iqr",
+    "mdf_hz__slope",
+    "mnf_hz__median",
+    "mnf_hz__iqr",
+    "mnf_hz__slope",
+    "bandpower_20_60_ratio__median",
+    "bandpower_20_60_ratio__iqr",
+    "bandpower_20_60_ratio__slope",
+    "bandpower_60_150_ratio__median",
+    "bandpower_60_150_ratio__iqr",
+    "bandpower_60_150_ratio__slope",
+    "spectral_entropy_norm__median",
+    "spectral_entropy_norm__iqr",
+    "spectral_entropy_norm__slope"
+  ],
+  "time_only_control_features": [
+    "total_duration_s",
+    "active_duration_s",
+    "active_to_total_ratio",
+    "active_bout_count",
+    "bout_duration_median_s",
+    "bout_duration_max_s"
+  ],
+  "feature_exclusions": [
+    "subject_id",
+    "condition",
+    "label",
+    "force_threshold_uncalibrated_units",
+    "raw_member",
+    "raw_member_sha256",
+    "notch_frequency_hz",
+    "notch_prominence_50_db",
+    "notch_prominence_60_db",
+    "eligible_window_count",
+    "valid_channel_count",
+    "sampling_rate_hz"
+  ]
+}

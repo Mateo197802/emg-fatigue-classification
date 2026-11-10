@@ -64,7 +64,7 @@ if(data.include_phase){
  text(s9,data.phase.contrast,65,575,1150,56,24,ink,true);
 }else{image(s9,'sensitivity.png',35,180,640,440);image(s9,'ablation.png',690,200,550,390);}
 const s10=slide(scripts[9][0],10,scripts[9][2]);
-rect(s10,65,190,550,390,'#eef5f1');rect(s10,655,190,560,390,'#eef3f6');text(s10,'Entregado',90,215,490,60,34,green,true);text(s10,'Código y entorno fijado\nResultados por modelo y pliegue\nModelo recargable\nPredicción con abstenciones',90,300,490,230,28,ink);text(s10,'Evidencia pendiente',680,215,510,60,34,blue,true);text(s10,'Referencia fisiológica independiente\nIdentidad entre fuentes\nCalibración y modo del canal\nAtestación de contribuciones',680,300,510,230,27,ink);
+rect(s10,65,190,550,390,'#eef5f1');rect(s10,655,190,560,390,'#eef3f6');text(s10,'Entregado',90,215,490,60,34,green,true);text(s10,'Código y entorno fijado\nResultados por modelo y pliegue\nModelo recargable\nPredicción con abstenciones',90,300,490,230,28,ink);text(s10,'Alcance del resultado',680,215,510,60,34,blue,true);text(s10,'Referencia fisiológica independiente\nIdentidad entre fuentes\nCalibración y modo del canal\nAtestación de contribuciones',680,300,510,230,27,ink);
 
 const reserveNotes=[];
 if(data.include_phase){

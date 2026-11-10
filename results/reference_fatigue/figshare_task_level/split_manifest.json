@@ -1,0 +1,1194 @@
+{
+  "outer_folds": [
+    {
+      "outer_fold": 1,
+      "held_out_subject": "S1",
+      "training_subjects": [
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S1_30",
+        "S1_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S15",
+            "S17",
+            "S2",
+            "S20",
+            "S23",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S22",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S2",
+            "S22",
+            "S23",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S17",
+            "S20",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S11",
+            "S17",
+            "S19",
+            "S20",
+            "S22",
+            "S3",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S23",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 2,
+      "held_out_subject": "S11",
+      "training_subjects": [
+        "S1",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S11_30",
+        "S11_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S15",
+            "S17",
+            "S2",
+            "S20",
+            "S23",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S19",
+            "S22",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S19",
+            "S2",
+            "S22",
+            "S23",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S17",
+            "S20",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S17",
+            "S19",
+            "S20",
+            "S22",
+            "S3",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S23",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 3,
+      "held_out_subject": "S15",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S15_30",
+        "S15_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S17",
+            "S2",
+            "S20",
+            "S23",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S19",
+            "S22",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S19",
+            "S2",
+            "S22",
+            "S23",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S17",
+            "S20",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S17",
+            "S19",
+            "S20",
+            "S22",
+            "S3",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S2",
+            "S23",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 4,
+      "held_out_subject": "S17",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S17_30",
+        "S17_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S2",
+            "S20",
+            "S23",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S19",
+            "S22",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S19",
+            "S2",
+            "S22",
+            "S23",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S20",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S19",
+            "S20",
+            "S22",
+            "S3",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S2",
+            "S23",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 5,
+      "held_out_subject": "S19",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S19_30",
+        "S19_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S2",
+            "S20",
+            "S23",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S22",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S2",
+            "S22",
+            "S23",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S20",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S20",
+            "S22",
+            "S3",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S2",
+            "S23",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 6,
+      "held_out_subject": "S2",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S2_30",
+        "S2_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S20",
+            "S23",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S22",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S19",
+            "S22",
+            "S23",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S20",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S20",
+            "S22",
+            "S3",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S23",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 7,
+      "held_out_subject": "S20",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S20_30",
+        "S20_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S2",
+            "S23",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S22",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S19",
+            "S22",
+            "S23",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S2",
+            "S22",
+            "S3",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S23",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 8,
+      "held_out_subject": "S22",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S22_30",
+        "S22_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S2",
+            "S23",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S20",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S19",
+            "S20",
+            "S23",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S2",
+            "S20",
+            "S3",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S23",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 9,
+      "held_out_subject": "S23",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S3",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S23_30",
+        "S23_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S2",
+            "S22",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S20",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S19",
+            "S20",
+            "S22",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S2",
+            "S20",
+            "S3",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S22",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 10,
+      "held_out_subject": "S3",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S5",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S3_30",
+        "S3_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S2",
+            "S22",
+            "S23",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S20",
+            "S5",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S19",
+            "S20",
+            "S22",
+            "S5",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S23",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S2",
+            "S20",
+            "S23",
+            "S5",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S22",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 11,
+      "held_out_subject": "S5",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S6",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S5_30",
+        "S5_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S2",
+            "S22",
+            "S23",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S20",
+            "S3",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S19",
+            "S20",
+            "S22",
+            "S3",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S23",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S2",
+            "S20",
+            "S23",
+            "S3",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S22",
+            "S6"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 12,
+      "held_out_subject": "S6",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S7",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S6_30",
+        "S6_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S2",
+            "S22",
+            "S23",
+            "S5",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S20",
+            "S3",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S19",
+            "S20",
+            "S22",
+            "S3",
+            "S5",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S23",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S2",
+            "S20",
+            "S23",
+            "S3",
+            "S7",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S22",
+            "S5"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 13,
+      "held_out_subject": "S7",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S8"
+      ],
+      "test_trial_ids": [
+        "S7_30",
+        "S7_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S2",
+            "S22",
+            "S23",
+            "S5",
+            "S6"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S20",
+            "S3",
+            "S8"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S19",
+            "S20",
+            "S22",
+            "S3",
+            "S5",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S23",
+            "S6"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S2",
+            "S20",
+            "S23",
+            "S3",
+            "S6",
+            "S8"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S22",
+            "S5"
+          ]
+        }
+      ]
+    },
+    {
+      "outer_fold": 14,
+      "held_out_subject": "S8",
+      "training_subjects": [
+        "S1",
+        "S11",
+        "S15",
+        "S17",
+        "S19",
+        "S2",
+        "S20",
+        "S22",
+        "S23",
+        "S3",
+        "S5",
+        "S6",
+        "S7"
+      ],
+      "test_trial_ids": [
+        "S8_30",
+        "S8_TLim"
+      ],
+      "inner_folds": [
+        {
+          "inner_fold": 1,
+          "train_subjects": [
+            "S11",
+            "S15",
+            "S19",
+            "S2",
+            "S22",
+            "S23",
+            "S5",
+            "S6"
+          ],
+          "validation_subjects": [
+            "S1",
+            "S17",
+            "S20",
+            "S3",
+            "S7"
+          ]
+        },
+        {
+          "inner_fold": 2,
+          "train_subjects": [
+            "S1",
+            "S11",
+            "S17",
+            "S19",
+            "S20",
+            "S22",
+            "S3",
+            "S5",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S15",
+            "S2",
+            "S23",
+            "S6"
+          ]
+        },
+        {
+          "inner_fold": 3,
+          "train_subjects": [
+            "S1",
+            "S15",
+            "S17",
+            "S2",
+            "S20",
+            "S23",
+            "S3",
+            "S6",
+            "S7"
+          ],
+          "validation_subjects": [
+            "S11",
+            "S19",
+            "S22",
+            "S5"
+          ]
+        }
+      ]
+    }
+  ]
+}

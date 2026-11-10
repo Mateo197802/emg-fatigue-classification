@@ -11,7 +11,7 @@ from matplotlib.patches import FancyBboxPatch
 from sklearn.metrics import confusion_matrix
 from emg_fatigue.contracts import read_config,sha256_file,write_json
 from emg_fatigue.reporting import verify_evaluation,export_public_results
-from emg_fatigue.evaluation import binary_metrics
+from emg_fatigue.evaluation import binary_metrics,paired_metric_contrast
 
 PRIMARY=['majority','logistic_rms_mdf','logistic_all','svm_rbf','random_forest','nested_selector']
 EXPERIMENT=['baseline_10','phase_score','phase_conditioned','phase_only','random_conditioned']
@@ -92,7 +92,15 @@ def draw_comparison(run,path):
     fig.suptitle('Exploratory phase experiment — weak early/late target');fig.tight_layout();fig.savefig(path,dpi=180);plt.close(fig)
 
 
-def draw_confusions(table,models,path,title,normalized=False,auxiliary=False):
+def draw_confusions(table,models,path,title,normalized=False,auxiliary=False,spanish=False):
+    spanish_names={
+        'majority':'Mayoría de entrenamiento','logistic_rms_mdf':'Logística RMS + MDF',
+        'logistic_all':'Logística 10 características','svm_rbf':'SVM RBF',
+        'random_forest':'Bosque aleatorio','nested_selector':'Selector anidado',
+        'baseline_10':'Logística directa 10','phase_score':'10 características + score',
+        'phase_conditioned':'Condicionado por fase','phase_only':'Solo score de fase',
+        'random_conditioned':'Control de etiquetas aleatorias','auxiliary_phase_head':'Cabeza auxiliar: mitad de ráfaga',
+    }
     ncols=1 if len(models)==1 else 3;nrows=int(np.ceil(len(models)/ncols))
     fig,axes=plt.subplots(nrows,ncols,figsize=(12,6.4) if len(models)>1 else (5.5,4.6),squeeze=False)
     for ax,model in zip(axes.ravel(),models):
@@ -102,10 +110,16 @@ def draw_confusions(table,models,path,title,normalized=False,auxiliary=False):
         for i in range(2):
             for j in range(2):ax.text(j,i,f'{data[i,j]:.3f}' if normalized else str(int(data[i,j])),ha='center',va='center',fontsize=19,color='white' if data[i,j]>(.55 if normalized else .55*np.nanmax(data)) else '#172c3d')
         ax.set_xticks([0,1],['0','1'],fontsize=12);ax.set_yticks([0,1],['0','1'],fontsize=12)
-        ax.set_title(NAMES[model],fontsize=12,pad=5);ax.set_xlabel('Predicted',fontsize=10);ax.set_ylabel('Reference',fontsize=10)
+        ax.set_title(spanish_names[model] if spanish else NAMES[model],fontsize=12,pad=5)
+        ax.set_xlabel('Predicción' if spanish else 'Predicted',fontsize=10)
+        ax.set_ylabel('Referencia' if spanish else 'Reference',fontsize=10)
     for ax in axes.ravel()[len(models):]:ax.set_visible(False)
     fig.suptitle(title,fontsize=15)
-    legend='0 = first burst half; 1 = second burst half.\nNot verified extension/flexion.' if auxiliary else '0 = early proxy; 1 = late proxy. Not independent physiological fatigue labels.'
+    if spanish:
+        legend=('0 = primera mitad; 1 = segunda mitad. No es extensión/flexión verificada.' if auxiliary
+                else '0 = proxy temprano; 1 = proxy tardío. No son etiquetas fisiológicas independientes de fatiga.')
+    else:
+        legend='0 = first burst half; 1 = second burst half.\nNot verified extension/flexion.' if auxiliary else '0 = early proxy; 1 = late proxy. Not independent physiological fatigue labels.'
     fig.text(.5,.025 if auxiliary else .015,legend,ha='center',fontsize=10 if auxiliary else 11)
     fig.tight_layout(rect=[0,.12 if auxiliary else .055,1,.94]);fig.savefig(path,dpi=180);plt.close(fig)
 
@@ -181,10 +195,22 @@ def build(primary,experiment,out,public,figures,config):
     validate_predictions(aux,['auxiliary_phase_head'],3337)
     conf=pd.concat([confusion_rows(p,'early_late_proxy'),confusion_rows(s,'early_late_proxy'),confusion_rows(aux,'burst_half_proxy')],ignore_index=True)
     conf.to_csv(out/'confusion_matrices.csv',index=False);conf.to_csv(public/'confusion_matrices.csv',index=False)
+    primary_results=pd.read_csv(primary/'evaluation/results.csv')
+    phase_results=pd.read_csv(run/'results.csv')
+    paired_accuracy=pd.DataFrame([
+        paired_metric_contrast(primary_results,candidate='nested_selector',baseline='logistic_rms_mdf',metric='accuracy',bootstrap_replicates=config.bootstrap_replicates,seed=config.seed),
+        paired_metric_contrast(phase_results,candidate='phase_conditioned',baseline='baseline_10',metric='accuracy',bootstrap_replicates=config.bootstrap_replicates,seed=config.seed),
+    ])
+    paired_accuracy.to_csv(public/'accuracy_paired_differences.csv',index=False)
+    shutil.copy2(public/'accuracy_paired_differences.csv',out/'accuracy_paired_differences.csv')
     for name,data,models,target in [('primary',conf,PRIMARY,'Primary procedures'),('phase',conf,EXPERIMENT,'Supplemental procedures')]:
         for normalized in [False,True]:
             file=f'{name}_confusions_'+('normalized' if normalized else 'counts')+'.png'
             draw_confusions(data,models,figures/file,target+' — '+('row proportions' if normalized else 'pooled OOF counts'),normalized)
+            spanish_file=f'{name}_confusions_'+('normalized' if normalized else 'counts')+'_es.png'
+            spanish_target='Procedimientos principales' if name=='primary' else 'Variantes auxiliares'
+            spanish_title=spanish_target+' — '+('proporciones por fila' if normalized else 'conteos OOF agrupados')
+            draw_confusions(data,models,figures/spanish_file,spanish_title,normalized,spanish=True)
     for normalized in [False,True]:
         file='auxiliary_phase_confusion_'+('normalized' if normalized else 'counts')+'.png'
         draw_confusions(conf,['auxiliary_phase_head'],figures/file,'Auxiliary burst-half reference — '+('row proportions' if normalized else 'OOF counts'),normalized,True)

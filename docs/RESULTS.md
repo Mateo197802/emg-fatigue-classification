@@ -6,19 +6,21 @@ Target: weak_elapsed_thirds_binary_v1. These scores measure early/late proxy cla
 
 Source: 140 files / 4,256,257 samples; formal: 138; labeled windows: 5,509 (early 2,329, late 3,180). Both sides stay in the same group.
 
-| Procedure | Macro F1 mean ± SD | ROC AUC mean ± SD |
-|---|---|---|
-| logistic_all | 0.635485 ± 0.126179 | 0.844745 ± 0.074570 |
-| logistic_rms_mdf | 0.627162 ± 0.097987 | 0.742990 ± 0.106871 |
-| majority | 0.359768 ± 0.034861 | 0.500000 ± 0.000000 |
-| nested_selector | 0.624004 ± 0.129191 | 0.798446 ± 0.113863 |
-| random_forest | 0.636556 ± 0.125872 | 0.817036 ± 0.076901 |
-| svm_rbf | 0.636259 ± 0.134276 | 0.803915 ± 0.110651 |
+| Procedure | Accuracy mean ± SD | Macro F1 mean ± SD | ROC AUC mean ± SD |
+|---|---|---|---|
+| logistic_all | 0.675198 ± 0.093479 | 0.635485 ± 0.126179 | 0.844745 ± 0.074570 |
+| logistic_rms_mdf | 0.653471 ± 0.088669 | 0.627162 ± 0.097987 | 0.742990 ± 0.106871 |
+| majority | 0.566090 ± 0.081973 | 0.359768 ± 0.034861 | 0.500000 ± 0.000000 |
+| nested_selector | 0.662771 ± 0.105100 | 0.624004 ± 0.129191 | 0.798446 ± 0.113863 |
+| random_forest | 0.671208 ± 0.105632 | 0.636556 ± 0.125872 | 0.817036 ± 0.076901 |
+| svm_rbf | 0.672012 ± 0.110125 | 0.636259 ± 0.134276 | 0.803915 ± 0.110651 |
 
 The nested selector is the prespecified primary selection-procedure estimate. Its observed mean does not clearly improve on the mandatory RMS+MDF logistic baseline. Family point estimates are not evidence of a unique winner.
 
 - nested_selector_minus_majority: +0.264236; paired group-bootstrap 95% interval [+0.194035, +0.332007].
 - nested_selector_minus_logistic_rms_mdf: -0.003158; paired group-bootstrap 95% interval [-0.059111, +0.050850].
+
+Paired Accuracy for nested_selector minus logistic_rms_mdf is +0.009299; its group-bootstrap 95% interval is [-0.037251, +0.054606]. The interval includes zero. Reproduction settings and the aggregate CSV are in [accuracy_paired_differences.csv](../results/phase_experiment/accuracy_paired_differences.csv).
 
 Three complete runs were preserved. Final versus first: all 33,054 OOF predicted classes identical; maximum score difference 4.44e-16.
 

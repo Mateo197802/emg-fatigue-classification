@@ -2,6 +2,7 @@
 import hashlib
 import importlib.util
 from pathlib import Path
+import subprocess
 import zipfile
 import pytest
 
@@ -69,3 +70,15 @@ def test_folder_manifest_checks_visible_files(tmp_path):
     assert m.verify_folder(tmp_path)['hashed_files']==1
     (tmp_path/'report.md').write_bytes(b'changed')
     with pytest.raises(ValueError,match='checksum'):m.verify_folder(tmp_path)
+
+
+def test_repository_source_manifest_covers_git_blob_bytes():
+    root = Path(__file__).resolve().parents[1]
+    tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode("utf-8").split("\0")
+    expected_paths = {name for name in tracked if name and name != "manifest/SHA256SUMS"}
+    manifest = verifier().parse_manifest((root / "manifest/SHA256SUMS").read_text(encoding="utf-8"))
+
+    assert set(manifest) == expected_paths
+    for name, expected_sha256 in manifest.items():
+        blob = subprocess.check_output(["git", "show", f":{name}"], cwd=root)
+        assert hashlib.sha256(blob).hexdigest() == expected_sha256, name

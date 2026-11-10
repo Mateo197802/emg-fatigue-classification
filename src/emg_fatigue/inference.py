@@ -8,7 +8,7 @@ from .contracts import StudyConfig, write_json, sha256_file, implementation_prov
 from .features import FEATURE_COLUMNS, extract_features
 from .preprocessing import preprocess
 from .activity import detect_activity
-from .labels import make_windows
+from .labels import make_windows, display_proxy_label
 from .validation import select_candidates, candidate_grid, fit_pipeline, predict_scores
 
 PREDICTION_COLUMNS=['start_s','end_s','row_type','qc_valid','activity_occupancy','status','reason','prediction','predicted_class','score','score_type','interpretation']
@@ -20,7 +20,7 @@ def fit_final(features,config,model_path,candidates=None):
     _,choice,search,splits=select_candidates(features,config,candidates or candidate_grid(),'final_full_data_inner_selection',audit_dir=path.parent/'final_search_audit')
     pipeline=fit_pipeline(choice,features,config.seed)
     bundle={'format_version':1,'pipeline':pipeline,'config':asdict(config),'feature_columns':FEATURE_COLUMNS,
-      'selected_configuration':choice,'label_vocabulary':{0:'early_proxy_nonfatigue',1:'late_proxy_fatigue'},
+      'selected_configuration':choice,'label_vocabulary':{0:'early_recording_position_proxy',1:'late_recording_position_proxy'},
       'target':config.label_version,'physiological_fatigue_detector_validated':False,
       'sklearn_version':importlib.metadata.version('scikit-learn')}
     before=predict_scores(pipeline,features)[1]
@@ -54,17 +54,17 @@ def predict_recording(recording,bundle):
         row={'start_s':r.start_s,'end_s':r.end_s,'row_type':'window','qc_valid':bool(r.qc_valid),'activity_occupancy':float(r.activity_occupancy),
           'status':'abstain_qc' if not r.qc_valid else 'abstain_activity' if not r.activity_eligible else 'abstain_features' if r.feature_status!='valid' else 'abstain_transition' if pd.isna(r.label) else 'predicted',
           'reason':r.feature_status if r.feature_status!='valid' else r.status,
-          'prediction':None,'predicted_class':None,'score':None,'score_type':None,'interpretation':'weak temporal proxy; not independently validated fatigue'}
+          'prediction':None,'predicted_class':None,'score':None,'score_type':None,'interpretation':'early-versus-late recording-position proxy; not a fatigue-status label'}
         rows.append(row)
     output=pd.DataFrame(rows,columns=PREDICTION_COLUMNS);mask=output.status=='predicted'
     if mask.any():
         pred,score,kind=predict_scores(bundle['pipeline'],df.loc[mask])
         output.loc[mask,'prediction']=pred;output.loc[mask,'score']=score;output.loc[mask,'score_type']=kind
-        output.loc[mask,'predicted_class']=[bundle['label_vocabulary'][int(x)] for x in pred]
+        output.loc[mask,'predicted_class']=[display_proxy_label(bundle['label_vocabulary'][int(x)]) for x in pred]
     rejected=[]
     run_with_windows=set(df.run_id) if not df.empty else set()
     for i,qc in enumerate(processed['qc']):
         if qc['status']!='valid' or i not in run_with_windows:
-            rejected.append({'start_s':float(recording.t[qc['start']]),'end_s':float(recording.t[qc['end']-1]),'row_type':'rejected_run','qc_valid':False,'activity_occupancy':None,'status':'abstain_qc','reason':qc['status'] if qc['status']!='valid' else 'no_complete_feature_window','prediction':None,'predicted_class':None,'score':None,'score_type':None,'interpretation':'unusable interval; never a nonfatigue label'})
+            rejected.append({'start_s':float(recording.t[qc['start']]),'end_s':float(recording.t[qc['end']-1]),'row_type':'rejected_run','qc_valid':False,'activity_occupancy':None,'status':'abstain_qc','reason':qc['status'] if qc['status']!='valid' else 'no_complete_feature_window','prediction':None,'predicted_class':None,'score':None,'score_type':None,'interpretation':'unusable interval; no fatigue status assigned'})
     if rejected:output=pd.concat([output,pd.DataFrame(rejected,columns=PREDICTION_COLUMNS)],ignore_index=True)
     return output[PREDICTION_COLUMNS].sort_values(['start_s','end_s']).reset_index(drop=True)

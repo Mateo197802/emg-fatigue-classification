@@ -1,8 +1,8 @@
-# Frozen binary protocol
+# Historical binary proxy protocol — not physiological fatigue labels
 
 Version: weak_elapsed_thirds_binary_v1. Seed: 20261028. Approved plan date: 2026-10-28.
 
-The intended construct is acute fatigue in rectus femoris during unilateral knee extension at a prescribed 70% of the reference-leg 1RM. Available evidence supports a weaker operational target: early versus late recording position in candidate-active EMG. Central/peripheral mechanisms, functional force loss and fatigue onset are not identified.
+The intended construct is acute fatigue in rectus femoris during unilateral knee extension at a prescribed 70% of the reference-leg 1RM. Available evidence supports a weaker operational target: early versus late recording position in candidate-active EMG. Central/peripheral mechanisms, functional force loss and fatigue onset are not identified. The labels are an exploratory temporal proxy, not validated Class 0 “no fatigue” and Class 1 “fatigue” outcomes.
 
 The early class contains complete windows ending strictly before the first elapsed-time third; the late class starts at or after the final-third boundary. Recording bounds come from the original file, before quality exclusion. The central third and crossing windows are excluded. Quality failures and activity below detection are never negative fatigue labels. Report the denominators of all windows, valid windows, candidate-active windows and labeled windows.
 
@@ -21,3 +21,15 @@ Metrics use explicit labels [0,1]. AUC and kappa undefined under the specified s
 Sensitivity analyses are prespecified: no overlap, 500/1000 ms windows, 50% activity occupancy, boundary shifts ±5/±10% recording duration, and conditional 50/60 Hz notch with prominence >10 dB and Q=30. Their model is fixed C=1 RMS+MDF logistic, with no search for a sensitivity winner. Family ablations use grouped inner logistic tuning. This cost-saving ruling is recorded before the sensitivity results in the ledger. Bilateral results are descriptive, paired where possible, and do not establish dominance or simultaneous two-channel behavior.
 
 The 20-file RAR is a separate descriptive/inference source, not an untouched external test set. Original F31/F55 scores are retired from the main task rather than mathematically equated to the new binary scores.
+
+## Evidence gate and separate reference-backed protocol (2026-11-09)
+
+The original ZIP has 403 members and 153 CSV members, including a nested source archive with 140 EMG recordings. A separate RAR has 20 EMG files. Their CSV fields are relative time, ADC counts, and an exporter-calculated `Voltage_mV`; physical voltage calibration is not verified. The observed sample rates are near 1 kHz. The workbooks contain bibliography and signal-QC material, not participant force, torque, angle, or fatigue reference tables.
+
+The private source-to-recording crosswalk contains 160 archive/member rows and maps source file hashes to internal recording keys. It explicitly marks folder or filename groups as unverified participant identities and leaves the ZIP-to-RAR identity links unresolved. It does not pool the RAR with the course ZIP.
+
+**Gate G0 is not passed.** No synchronized calibrated force/torque, knee-angle/video, repetition-event markers, MVC/Borg records, or independent participant/session key were located. The phase direction/deadband cannot be frozen from absent kinematics; code requires an explicit angle convention and synchronization residual before phase labels can be produced. No true fatigue or extension/flexion model has been trained, and no such Accuracy/F1 is available.
+
+The future reference-backed protocol is separate: fixed 500 ms sliding windows at 50% overlap as primary, with 250 ms as a sensitivity analysis. For every recording, `N=round(T fs)` samples and `H=round(N(1−overlap))`; the nominal Fourier-bin spacing is `Δf=fs/N`, not the same as the Hann window’s effective spectral resolution. The currently observed rate is approximately 1 kHz, but the processing receipt must use the verified per-run rate rather than assume exactly 1,000 Hz. Full windows must remain within one valid movement phase and one continuous acquisition run; onset or phase-crossing windows are uncertain and excluded from the target unless a separately approved method states otherwise. The historical proxy remains frozen at 250 ms/50% overlap.
+
+The torque/MDC95/persistence expression in `reference_fatigue_protocol.md` is a candidate only. It is not an approved universal fatigue definition and cannot be used on real records until biomechanics review confirms the torque measure, calibration, repeatability source, matched-angle range, onset timing, exclusions, and approval receipt.

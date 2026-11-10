@@ -1,0 +1,3 @@
+candidate,baseline,metric,mean_difference,ci95_lower,ci95_upper,n_paired_groups,groups_improved,groups_worse,groups_equal,uncertainty_unit,bootstrap_replicates,seed
+nested_selector,logistic_rms_mdf,accuracy,0.0092994768984,-0.0372514869042,0.0546061267857,15,8,7,0,fold_id,5000,20261028
+phase_conditioned,baseline_10,accuracy,-0.00506863342287,-0.0222225281412,0.00954869193651,15,5,7,3,fold_id,5000,20261028

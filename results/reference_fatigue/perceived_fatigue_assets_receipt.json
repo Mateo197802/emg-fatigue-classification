@@ -1,0 +1,16 @@
+{
+  "status": "built",
+  "source_hashes": {
+    "benchmark_metrics.csv": "b21ac88e1738078beeafc1e5da535acc944d2c09367202a162f151fa91e827df",
+    "confusion_matrices.csv": "0e7a321bd3dcd55da7a50e53f61554bc3732ed9bd21e2314b842f19675b30d12",
+    "prime_mover_specialist_metrics.csv": "ede82985613aa57d03cfce02b84ce41a9dca5a50b0fcb9180605493841ebddf6",
+    "prime_mover_specialist_confusions.csv": "9858b5e3a8aa92cd91b2f60f76ba4d364a934ee93c5aa58282af6367073ade65",
+    "prime_mover_specialist_paired_differences.csv": "7349f1f1d0f36c68d4492d88405ca2c81bad681aeceea5fe33ad10f03ce593bb"
+  },
+  "figure_hashes": {
+    "metrics": "e0e93e07f74944db9e8147c138890868b5fe206304f79346e9d2b51322ab1b75",
+    "confusions": "289766f4c46f42e3249a6f234ce6c5cb5fdfdde6fd0c0656c13d60a90fc11204",
+    "architecture": "581fdd68a2708507fe6106d6c6aaa1057401b9c3f2553dd4a8d6427c070cf629"
+  },
+  "summary_sha256": "a3e8c5104d52f7a84e32e49aace396d54c928fed48fb80d63a87111b7b00b24e"
+}

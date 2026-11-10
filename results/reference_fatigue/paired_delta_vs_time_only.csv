@@ -1,0 +1,11 @@
+emg_model,metric,comparison,participants,mean_paired_difference,ci95_low,ci95_high,participants_model_higher,bootstrap_replicates,bootstrap_seed
+hist_gradient_boosting,accuracy,model_minus_time_only_control,13,-0.2846526227,-0.3486569227,-0.2204110718,0,50000,20261109
+logistic_regression,accuracy,model_minus_time_only_control,13,-0.3185558683,-0.3822399878,-0.2532948279,0,50000,20261109
+mlp_compact,accuracy,model_minus_time_only_control,13,-0.32168281,-0.3692363047,-0.2694800153,0,50000,20261109
+random_forest,accuracy,model_minus_time_only_control,13,-0.3035099355,-0.3722485362,-0.2319064995,0,50000,20261109
+svm_rbf,accuracy,model_minus_time_only_control,13,-0.3325410081,-0.3932232631,-0.2670453547,0,50000,20261109
+hist_gradient_boosting,f1_macro,model_minus_time_only_control,13,-0.307653333,-0.3695630577,-0.2484683678,0,50000,20261109
+logistic_regression,f1_macro,model_minus_time_only_control,13,-0.3551924763,-0.4210225538,-0.2883455969,0,50000,20261109
+mlp_compact,f1_macro,model_minus_time_only_control,13,-0.3391076083,-0.3843812613,-0.2904587913,0,50000,20261109
+random_forest,f1_macro,model_minus_time_only_control,13,-0.3337790782,-0.4033035207,-0.2654033743,0,50000,20261109
+svm_rbf,f1_macro,model_minus_time_only_control,13,-0.3543779615,-0.4147446542,-0.2921863877,0,50000,20261109

@@ -1,0 +1,210 @@
+{
+  "dataset_doi": "10.6084/m9.figshare.15273906.v1",
+  "prediction_unit": "trial; all inner/outer scores use one row per participant-condition trial",
+  "label_0": "30% reference contraction condition",
+  "label_1": "sustained TLim knee-extension task carried to task failure",
+  "outer_validation": "leave one participant out; both paired trial conditions for that subject are held out",
+  "inner_tuning": "3-fold GroupKFold on outer-training participants; grouped macro-F1 selection",
+  "prediction_threshold": "0.5 for probabilities, zero for signed SVM margins",
+  "seed": 20261109,
+  "models": {
+    "dummy_prior": [
+      {}
+    ],
+    "lr_rms_mdf": [
+      {
+        "C": 0.1
+      },
+      {
+        "C": 1.0
+      },
+      {
+        "C": 10.0
+      }
+    ],
+    "lr_all_features": [
+      {
+        "C": 0.1
+      },
+      {
+        "C": 1.0
+      },
+      {
+        "C": 10.0
+      }
+    ],
+    "svm_rbf": [
+      {
+        "C": 0.1,
+        "gamma": "scale"
+      },
+      {
+        "C": 0.1,
+        "gamma": 0.1
+      },
+      {
+        "C": 1.0,
+        "gamma": "scale"
+      },
+      {
+        "C": 1.0,
+        "gamma": 0.1
+      },
+      {
+        "C": 10.0,
+        "gamma": "scale"
+      },
+      {
+        "C": 10.0,
+        "gamma": 0.1
+      }
+    ],
+    "random_forest": [
+      {
+        "max_depth": 2,
+        "min_samples_leaf": 1
+      },
+      {
+        "max_depth": 2,
+        "min_samples_leaf": 3
+      },
+      {
+        "max_depth": 4,
+        "min_samples_leaf": 1
+      },
+      {
+        "max_depth": 4,
+        "min_samples_leaf": 3
+      },
+      {
+        "max_depth": null,
+        "min_samples_leaf": 1
+      },
+      {
+        "max_depth": null,
+        "min_samples_leaf": 3
+      }
+    ],
+    "hist_gradient_boosting": [
+      {
+        "max_iter": 50,
+        "max_leaf_nodes": 3,
+        "l2_regularization": 1.0
+      },
+      {
+        "max_iter": 50,
+        "max_leaf_nodes": 3,
+        "l2_regularization": 10.0
+      },
+      {
+        "max_iter": 50,
+        "max_leaf_nodes": 7,
+        "l2_regularization": 1.0
+      },
+      {
+        "max_iter": 50,
+        "max_leaf_nodes": 7,
+        "l2_regularization": 10.0
+      },
+      {
+        "max_iter": 100,
+        "max_leaf_nodes": 3,
+        "l2_regularization": 1.0
+      },
+      {
+        "max_iter": 100,
+        "max_leaf_nodes": 3,
+        "l2_regularization": 10.0
+      },
+      {
+        "max_iter": 100,
+        "max_leaf_nodes": 7,
+        "l2_regularization": 1.0
+      },
+      {
+        "max_iter": 100,
+        "max_leaf_nodes": 7,
+        "l2_regularization": 10.0
+      }
+    ],
+    "mlp_compact": [
+      {
+        "hidden_layer_sizes": [
+          8
+        ],
+        "alpha": 0.01
+      },
+      {
+        "hidden_layer_sizes": [
+          8
+        ],
+        "alpha": 0.1
+      },
+      {
+        "hidden_layer_sizes": [
+          16,
+          8
+        ],
+        "alpha": 0.01
+      },
+      {
+        "hidden_layer_sizes": [
+          16,
+          8
+        ],
+        "alpha": 0.1
+      }
+    ],
+    "time_only_control": [
+      {
+        "C": 0.1
+      },
+      {
+        "C": 1.0
+      },
+      {
+        "C": 10.0
+      }
+    ],
+    "emg_plus_time_control": [
+      {
+        "C": 0.1
+      },
+      {
+        "C": 1.0
+      },
+      {
+        "C": 10.0
+      }
+    ]
+  },
+  "base_estimator_settings": {
+    "svm_rbf": "StandardScaler + SVC(kernel=rbf, class_weight=balanced, decision margin)",
+    "random_forest": "200 trees, balanced class weights, square-root feature subsampling",
+    "hist_gradient_boosting": "early stopping disabled; inner participant groups select iterations/leaves/regularization",
+    "mlp_compact": "StandardScaler + MLPClassifier(solver=lbfgs, max_iter=1000, tol=1e-4); compact hidden layers tuned within participant groups",
+    "logistic_regression": "StandardScaler + balanced LogisticRegression, C selected within participant groups"
+  },
+  "cnn": {
+    "architecture": "compact temporal depthwise CNN over 65-channel x 0.5-s windows",
+    "trial_pooling": "mean window logit; binary cross-entropy computed once per trial bag",
+    "windows_per_trial": "8 evenly spaced from the 32 preprocessed windows",
+    "epochs_inner_candidates": [
+      5,
+      12
+    ],
+    "optimizer": "AdamW(lr=0.001, weight_decay=0.001)",
+    "normalization": "median channel RMS fit from training participants only per fold",
+    "candidate_selection_metric": "inner grouped macro-F1"
+  },
+  "pretrained_encoder_head": {
+    "status": "not_run_incompatible",
+    "reason": "the course SSL encoder was trained on a single-channel signal and unlabeled reconstruction; this external release has a 65-position electrode grid, a different sampling rate/protocol, and participant overlap with the course cohort is unverified. Channel adaptation and unverified identity overlap would invalidate a clean external comparison."
+  },
+  "limits": [
+    "the target distinguishes a reference protocol condition from a trial carried to task failure; it is not an instantaneous fatigue/no-fatigue label",
+    "the external source uses isometric 30% peak-torque knee extension, unlike the course dynamic 70% 1RM task",
+    "the uncalibrated force trace is used only for segmentation and is excluded from model features and labels",
+    "only 14 complete paired participants are available; uncertainty is participant-clustered and expected to be wide"
+  ]
+}

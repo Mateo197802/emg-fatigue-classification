@@ -1,0 +1,81 @@
+{
+  "run_id": "run_001",
+  "dataset_id": "10.5281/zenodo.14182446",
+  "dataset_version": "v2",
+  "source_record": "https://zenodo.org/records/14182446",
+  "dataset_license": "CC BY 4.0",
+  "task_id": "PERCEIVED_FATIGUE_CLASSIFICATION",
+  "label_definition_id": "self_report_0_vs_2_transition_1_excluded_v1",
+  "prediction_unit": "stable 500 ms EMG window aligned to a time-stamped reference state",
+  "cohort": {
+    "participants": 13,
+    "trials": 156,
+    "channels_per_trial": 4,
+    "channel_names": [
+      "biceps",
+      "deltoid_anterior",
+      "deltoid_medius",
+      "deltoid_posterior"
+    ],
+    "signal_unit": "V",
+    "measured_fs_hz_min": 1259.2599999922816,
+    "measured_fs_hz_max": 1259.260000037351
+  },
+  "label_counts": {
+    "0": 64283,
+    "1": 60882
+  },
+  "eligible_windows": 125165,
+  "preprocessing_qc": {
+    "channel_trial_records": 624,
+    "gaps": 0,
+    "nonmonotonic_intervals": 0,
+    "nonfinite_samples": 0,
+    "terminal_clock_reset_rows_dropped": 54,
+    "trials_with_terminal_clock_reset": 42,
+    "sensor_clipping": "not assessable; sensor rail limits absent",
+    "filter": "Butterworth bandpass prototype order 4, 20-450 Hz, SOS, zero-phase",
+    "notch": "50/60 Hz conditional on prominence; none triggered"
+  },
+  "window": {
+    "length_ms": 500,
+    "overlap_percent": 50,
+    "rule": "stable reference label over the entire window; transition label 1 excluded"
+  },
+  "outer_validation": "13-fold leave-one-participant-out; all records of a held-out participant excluded from training",
+  "training_sampling": "Even temporal-bin sampling; maximum 50 windows per training participant x trial x class; all test windows retained",
+  "model_selection": "Fixed model settings; no hyperparameter search or selection on outer test folds",
+  "seed": 20261109,
+  "participant_bootstrap_replicates": 5000,
+  "paired_difference_bootstrap": {
+    "replicates": 50000,
+    "seed": 20261109,
+    "resampling_unit": "participant"
+  },
+  "code_revision": "997c03defb17512ec0013f653fc3a3909f70fcd4",
+  "source_archive_hashes": {
+    "emg_md5": "ea7338b95543ada98b1ddc65d4b6aabc",
+    "emg_sha256": "58d383c013b156577f3cb927882557de58ea79e6db5cf6f2a67b99e5beaf0f07",
+    "labels_md5": "3352c990b2baf2246cfa7b331e52607a",
+    "labels_sha256": "136777e891a83c736d5ab7dbbd82ab4d39386597978a9e5d44082c8c9805092b"
+  },
+  "private_feature_table_sha256": "7a2085a3f037584024a63e24b25dc73d2e3cda04058c005e8afbbdf01733b85c",
+  "private_oof_predictions_sha256": "4580aa64d3b9896627b4ef54abfa5dd9192b80393d6e4248283eaf127143a8f6",
+  "models_completed": [
+    "hist_gradient_boosting",
+    "logistic_regression",
+    "majority",
+    "mlp_compact",
+    "random_forest",
+    "svm_rbf",
+    "time_only_control"
+  ],
+  "aggregate_artifact_sha256": {
+    "benchmark_metrics.csv": "b21ac88e1738078beeafc1e5da535acc944d2c09367202a162f151fa91e827df",
+    "confusion_matrices.csv": "0e7a321bd3dcd55da7a50e53f61554bc3732ed9bd21e2314b842f19675b30d12",
+    "paired_delta_vs_time_only.csv": "f2db1342088e2a7e582b42c7a4787e24669bd9ffed1631ad2818c04a491eee59"
+  },
+  "phase_reference_available": false,
+  "mechanical_force_reference_available": false,
+  "scope_note": "Self-reported fatigue only. Aggregate evidence is public; per-window OOF predictions, per-participant metrics, raw signals and subject-level audit tables remain local and are not tracked."
+}

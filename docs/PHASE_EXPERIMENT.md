@@ -1,6 +1,6 @@
 # Experimento suplementario de fase
 
-**La variante de dos etapas no mostró una mejora clara.** El contraste principal, condicionado por fase menos logística directa de diez características, fue −0,0062 de macro-F1; IC bootstrap 95% [−0,0232; +0,0082]. Mejoró en seis grupos, empeoró en ocho y empató en uno. La entrega conserva el modelo principal; el experimento no lo reemplaza.
+**La variante de dos etapas no mostró una mejora clara.** En el mismo proxy temprano/tardío, el directo obtuvo Accuracy 0,6752 ± 0,0935 y macro-F1 0,6355 ± 0,1262; el condicionado obtuvo Accuracy 0,6701 ± 0,1022 y macro-F1 0,6293 ± 0,1330. El contraste condicionado−directo fue −0,0051 en Accuracy (IC bootstrap 95% [−0,0222; +0,0095]) y −0,0062 en macro-F1 (IC 95% [−0,0232; +0,0082]). Ambos intervalos incluyen cero. Mejoró en seis grupos, empeoró en ocho y empató en uno según macro-F1. La entrega conserva el modelo principal; el experimento no lo reemplaza.
 
 ## Qué representan las dos etapas
 
@@ -55,15 +55,17 @@ El baseline reprodujo exactamente las clases de `logistic_all`, con diferencia m
 
 ## Resultados
 
-| Variante | Macro-F1 media ± DE | ROC-AUC media ± DE |
-|---|---:|---:|
-| Directo de diez características | 0,6355 ± 0,1262 | 0,8447 ± 0,0746 |
-| Diez características más score de fase | 0,6326 ± 0,1314 | 0,8422 ± 0,0732 |
-| Condicionado por fase | 0,6293 ± 0,1330 | 0,8431 ± 0,0741 |
-| Sólo score de fase | 0,6184 ± 0,0801 | 0,7786 ± 0,0768 |
-| Control aleatorio condicionado | 0,6356 ± 0,1139 | 0,8320 ± 0,0706 |
+| Variante | Accuracy media ± DE | Macro-F1 media ± DE | ROC-AUC media ± DE |
+|---|---:|---:|---:|
+| Directo de diez características | 0,6752 ± 0,0935 | 0,6355 ± 0,1262 | 0,8447 ± 0,0746 |
+| Diez características más score de fase | 0,6734 ± 0,0992 | 0,6326 ± 0,1314 | 0,8422 ± 0,0732 |
+| Condicionado por fase | 0,6701 ± 0,1022 | 0,6293 ± 0,1330 | 0,8431 ± 0,0741 |
+| Sólo score de fase | 0,6497 ± 0,0785 | 0,6184 ± 0,0801 | 0,7786 ± 0,0768 |
+| Control aleatorio condicionado | 0,6728 ± 0,0906 | 0,6356 ± 0,1139 | 0,8320 ± 0,0706 |
 
-La primera etapa obtuvo macro-F1 0,5420 ± 0,1028 y AUC 0,6212 ± 0,1288 frente a mitades EMG. Este resultado no valida extensión/flexión. La arquitectura usa resúmenes por ventana, no un modelo secuencial con contexto temporal.
+Los contrastes pareados de Accuracy se regeneran con 5.000 bootstrap por grupo y semilla 20261028 mediante [`tools/build_accuracy_contrasts.py`](../tools/build_accuracy_contrasts.py); el agregado está en [`accuracy_paired_differences.csv`](../results/phase_experiment/accuracy_paired_differences.csv). El contraste conditioned−directo en Accuracy es −0,0051 (IC 95% [−0,0222; +0,0095]); en macro-F1 es −0,0062 (IC 95% [−0,0232; +0,0082]).
+
+La primera etapa obtuvo Accuracy 0,5775 ± 0,0783, macro-F1 0,5420 ± 0,1028 y AUC 0,6212 ± 0,1288 frente a mitades EMG. Este resultado no valida extensión/flexión. La arquitectura usa resúmenes por ventana, no un modelo secuencial con contexto temporal.
 
 El selector principal obtuvo 0,6240, pero es un procedimiento diferente. Comparar 0,6293 directamente con él no aísla el aporte de fase. La comparación principal apropiada es contra `baseline_10`, equivalente a la logística completa original. El intervalo pareado cruza cero y la variante de fase tampoco supera el control de etiquetas aleatorias. Son comparaciones exploratorias de esta cohorte pequeña, no una confirmación poblacional de equivalencia o de perjuicio.
 

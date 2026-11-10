@@ -1,0 +1,9 @@
+model,actual_label,predicted_label,count,row_normalized,n_windows
+global_hist_gradient_boosting,0,0,41708,0.6488185057,125165
+global_hist_gradient_boosting,0,1,22575,0.3511814943,125165
+global_hist_gradient_boosting,1,0,20660,0.3393449624,125165
+global_hist_gradient_boosting,1,1,40222,0.6606550376,125165
+specialist_by_prime_mover,0,0,40351,0.6277087255,125165
+specialist_by_prime_mover,0,1,23932,0.3722912745,125165
+specialist_by_prime_mover,1,0,21351,0.3506947866,125165
+specialist_by_prime_mover,1,1,39531,0.6493052134,125165
