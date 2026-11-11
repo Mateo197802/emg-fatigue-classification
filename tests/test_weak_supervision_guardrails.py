@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
+
+pytest.importorskip("torch")
 
 from emg_fatigue.weak_supervision.evaluation_guardrails import (
     OOD_FEATURES,
