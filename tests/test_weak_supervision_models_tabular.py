@@ -5,10 +5,11 @@ import tomllib
 import warnings
 
 import numpy as np
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import RobustScaler
+from sklearn.svm import SVC
 
 from emg_fatigue.weak_supervision.models_tabular import (
     build_tabular_model,
@@ -54,19 +55,23 @@ def test_candidate_builders_fit_real_data_and_impute_using_the_training_pipeline
         model = build_tabular_model(name, params, seed=17)
         assert isinstance(model, Pipeline)
         if name == "svm_rbf":
-            calibrated = model.named_steps["model"]
-            assert isinstance(calibrated, CalibratedClassifierCV)
-            assert isinstance(calibrated.estimator.named_steps["imputer"], SimpleImputer)
+            assert isinstance(model.named_steps["model"], SVC)
+            assert isinstance(model.named_steps["imputer"], SimpleImputer)
         else:
             assert isinstance(model.named_steps["imputer"], SimpleImputer)
         with warnings.catch_warnings(record=True) as fit_warnings:
             warnings.simplefilter("always")
             model.fit(x_train, y_train)
         assert all(issubclass(item.category, ConvergenceWarning) for item in fit_warnings)
-        probabilities = model.predict_proba(x_valid)
-        assert probabilities.shape == (2, 2)
-        assert np.isfinite(probabilities).all()
-        assert np.allclose(probabilities.sum(axis=1), 1.0)
+        if name == "svm_rbf":
+            scores = model.decision_function(x_valid)
+            assert scores.shape == (2,)
+            assert np.isfinite(scores).all()
+        else:
+            probabilities = model.predict_proba(x_valid)
+            assert probabilities.shape == (2, 2)
+            assert np.isfinite(probabilities).all()
+            assert np.allclose(probabilities.sum(axis=1), 1.0)
 
 
 def test_complexity_ties_prefer_regularized_or_smaller_candidates():
@@ -81,14 +86,37 @@ def test_complexity_ties_prefer_regularized_or_smaller_candidates():
     )
 
 
-def test_rbf_svm_uses_the_supported_fold_local_probability_calibrator():
-    x_train = np.asarray([[-2.0, 1.0], [-1.0, 2.0], [1.0, 3.0], [2.0, 4.0], [-3.0, 1.5], [3.0, 4.5]])
-    y_train = np.asarray([0, 0, 1, 1, 0, 1])
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        model = build_tabular_model("svm_rbf", {"C": 1.0}, seed=4)
-        model.fit(x_train, y_train)
+def test_rbf_svm_builder_exposes_decision_scores_for_group_aware_calibration():
+    model = build_tabular_model("svm_rbf", {"C": 1.0}, seed=4)
 
-    assert isinstance(model.named_steps["model"], CalibratedClassifierCV)
-    assert model.named_steps["model"].ensemble is False
-    assert not [warning for warning in caught if issubclass(warning.category, FutureWarning)]
+    assert isinstance(model.named_steps["model"], SVC)
+    assert list(model.named_steps) == ["imputer", "scaler", "model"]
+
+
+def test_logistic_builder_supports_fold_fit_feature_selection_and_scaler_variants():
+    x_train = np.asarray(
+        [[-3.0, 1.0, 99.0], [-2.0, 2.0, 98.0], [-1.0, 1.5, 97.0],
+         [1.0, 4.0, -99.0], [2.0, 5.0, -98.0], [3.0, 4.5, -97.0]]
+    )
+    y_train = np.asarray([0, 0, 0, 1, 1, 1])
+    x_valid = np.asarray([[-2.5, 1.5, 98.5], [2.5, 4.8, -98.5]])
+    model = build_tabular_model(
+        "logistic_regression",
+        {"C": 0.1, "class_weight": None, "scaler": "robust", "feature_k": 2},
+        seed=11,
+    )
+
+    assert isinstance(model.named_steps["scaler"], RobustScaler)
+    assert model.named_steps["model"].class_weight is None
+    assert list(model.named_steps) == ["imputer", "scaler", "feature_selection", "model"]
+    model.fit(x_train, y_train)
+    assert model.named_steps["feature_selection"].get_support().sum() == 2
+    assert model.predict_proba(x_valid).shape == (2, 2)
+
+
+def test_logistic_builder_can_run_without_scaling_only_when_explicitly_requested():
+    model = build_tabular_model(
+        "logistic_regression", {"C": 1.0, "scaler": "none"}, seed=1
+    )
+
+    assert list(model.named_steps) == ["imputer", "model"]

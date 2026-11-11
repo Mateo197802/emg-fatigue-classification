@@ -37,6 +37,33 @@ def test_metrics_mark_class_absence_as_undefined_instead_of_inventing_recall():
     assert result.balanced_accuracy is None
     assert result.per_class["1"]["recall"] is None
     assert "class 1 absent from truth" in result.undefined_reasons["balanced_accuracy"]
+    assert result.matthews_correlation_coefficient is None
+    assert result.cohen_kappa is None
+    assert result.pr_auc_average_precision is None
+    assert result.roc_auc is None
+
+
+def test_metrics_report_full_binary_metrics_and_normalized_confusion():
+    result = compute_metrics(
+        np.asarray([0, 0, 1, 1]),
+        np.asarray([[0.9, 0.1], [0.1, 0.9], [0.2, 0.8], [0.8, 0.2]]),
+        np.asarray([0, 1, 1, 0]),
+        np.zeros(4, dtype=bool),
+    )
+
+    assert result.accuracy == 0.5
+    assert result.sensitivity == 0.5
+    assert result.specificity == 0.5
+    assert result.macro_f1 == 0.5
+    assert result.balanced_accuracy == 0.5
+    assert result.matthews_correlation_coefficient == 0.0
+    assert result.cohen_kappa == 0.0
+    assert np.isclose(result.pr_auc_average_precision, 7 / 12)
+    assert np.isclose(result.roc_auc, 0.5)
+    assert np.isclose(result.calibration["brier_score"], 0.375)
+    assert np.isfinite(result.log_loss)
+    assert result.confusion_matrix == [[1, 1, 0], [1, 1, 0]]
+    assert result.confusion_matrix_normalized_by_true == [[0.5, 0.5, 0.0], [0.5, 0.5, 0.0]]
 
 
 def test_grouped_bootstrap_is_reproducible_and_resamples_whole_groups():
