@@ -50,7 +50,6 @@ from .evaluation_neural_nested import (
     _class_support,
     _fit_platt_calibrator,
     _group_balanced_macro_f1,
-    _group_equal_weights,
     _predict_logits,
     _select_epoch,
     _serialize_checkpoint_model,
@@ -2680,6 +2679,7 @@ def run_augmented_nested_training_stage(
             "clean_pseudo_labels_reassigned": False,
             "seeds": "per-window SHA-256-derived seeds; fixed family x severity schedule balanced within group and class",
         },
+        "training_loss_weighting": "equal total loss mass for every source-group by proxy-class cell",
         "inner_selection": {
             "epoch_metric": "mean inner-validation group-balanced macro-F1 at fixed 0.5",
             "calibration": "group-weighted sigmoid Platt fitted on group-held-out logits from augmented models inside each training partition",
@@ -2794,7 +2794,7 @@ def _run_augmented_nested_training(
                             "outer_fold_id": int(outer.fold_id),
                             "inner_fold_id": int(inner.fold_id),
                             "epoch": int(epoch_index),
-                            "training_loss_group_weighted": float(loss),
+                            "training_loss_group_class_balanced": float(loss),
                             "validation_group_balanced_macro_f1_at_0_5": float(
                                 history["validation_group_balanced_macro_f1_at_0_5"][epoch_index - 1]
                             ),

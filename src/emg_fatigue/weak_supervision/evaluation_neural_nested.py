@@ -24,6 +24,7 @@ from .evaluation_neural import (
     AVAILABLE_MODEL_NAMES,
     MODEL_NAMES,
     _group_balanced_macro_f1,
+    _group_class_equal_weights,
     _group_equal_weights,
     _load_fold_plan,
     _model_output,
@@ -336,7 +337,7 @@ def _train_with_validation_logits(
 
     x_train = torch.from_numpy(np.asarray(train_signals, dtype=np.float32)[:, None, :])
     y_train = torch.from_numpy(np.asarray(train_labels, dtype=np.float32))
-    weights = _group_equal_weights(train_groups)
+    weights = _group_class_equal_weights(train_groups, train_labels)
     trainable_parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
     if not trainable_parameters:
         raise ValueError("neural model has no trainable parameters")
@@ -931,7 +932,7 @@ def run_nested_neural_proxy_stage(
                             "outer_fold_id": int(outer.fold_id),
                             "inner_fold_id": int(inner.fold_id),
                             "epoch": int(epoch_index),
-                            "training_loss_group_weighted": float(loss),
+                            "training_loss_group_class_balanced": float(loss),
                             "validation_group_balanced_macro_f1_at_0_5": float(history["validation_group_balanced_macro_f1_at_0_5"][epoch_index - 1]),
                             "normalization_window_count": fit_receipt["normalization_window_count"],
                             "ssl_pretraining_window_count": fit_receipt["ssl_pretraining_window_count"],
@@ -1231,6 +1232,8 @@ def run_nested_neural_proxy_stage(
         "threshold_comparison": ["fixed 0.5", "inner OOF selected group-balanced Macro-F1"],
         "threshold_selection_objective": "group-balanced Macro-F1 on calibrated inner OOF probabilities only",
         "training_loss_group_weighted": True,
+        "training_loss_class_balanced": True,
+        "training_loss_weighting": "equal total loss mass for every source-group by proxy-class cell",
         "normalization_fit_training_groups_only": True,
         "ssl_pretraining": "fresh masked-span reconstruction on eligible non-overlap development windows from training groups only",
         "frozen_ssl_variant": "encoder parameters frozen during supervised head fit" if "ssl_encoder_frozen" in requested_models else None,

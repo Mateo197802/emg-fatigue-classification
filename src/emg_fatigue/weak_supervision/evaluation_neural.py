@@ -496,6 +496,40 @@ def _group_equal_weights(group_ids: Sequence[str]) -> torch.Tensor:
     return torch.from_numpy(weights.astype(np.float32))
 
 
+def _group_class_equal_weights(group_ids: Sequence[str], class_ids: Sequence[int]) -> torch.Tensor:
+    """Give every source-group-by-class cell equal loss mass.
+
+    This keeps groups equally weighted while also preventing the majority
+    class from dominating the binary proxy loss. Every training group must
+    contain both classes; otherwise this weighting target is not identifiable
+    for that partition and the caller should stop at the support gate.
+    """
+    groups = np.asarray([str(value) for value in group_ids], dtype=object)
+    labels = np.asarray(class_ids, dtype=np.int64)
+    if groups.ndim != 1 or labels.ndim != 1 or groups.shape != labels.shape or not groups.size:
+        raise ValueError("group ids and class ids must be aligned, non-empty one-dimensional arrays")
+    if set(np.unique(labels).tolist()) != {0, 1}:
+        raise ValueError("group-class-balanced loss requires both binary classes")
+    unique_groups = np.unique(groups)
+    counts: dict[tuple[str, int], int] = {}
+    missing: list[tuple[str, int]] = []
+    for group in unique_groups:
+        for class_id in (0, 1):
+            count = int(np.sum((groups == group) & (labels == class_id)))
+            if count == 0:
+                missing.append((str(group), class_id))
+            else:
+                counts[(str(group), class_id)] = count
+    if missing:
+        raise ValueError(f"group-class-balanced loss requires both classes in every training group: {missing}")
+    weights = np.asarray(
+        [1.0 / counts[(str(group), int(class_id))] for group, class_id in zip(groups, labels, strict=True)],
+        dtype=np.float64,
+    )
+    weights *= len(weights) / float(weights.sum())
+    return torch.from_numpy(weights.astype(np.float32))
+
+
 def _group_balanced_macro_f1(truth: np.ndarray, prediction: np.ndarray, groups: Sequence[str]) -> float:
     truth = np.asarray(truth, dtype=np.int64)
     prediction = np.asarray(prediction, dtype=np.int64)
@@ -529,7 +563,7 @@ def _train_supervised(
 ) -> dict[str, list[float]]:
     x_train = torch.from_numpy(np.asarray(train_signals, dtype=np.float32)[:, None, :])
     y_train = torch.from_numpy(np.asarray(train_labels, dtype=np.float32))
-    weights = _group_equal_weights(train_groups)
+    weights = _group_class_equal_weights(train_groups, train_labels)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     has_validation = validation_signals is not None
     if has_validation and (validation_labels is None or validation_groups is None):

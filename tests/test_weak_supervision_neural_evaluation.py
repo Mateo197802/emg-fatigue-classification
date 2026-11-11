@@ -6,6 +6,7 @@ pytest.importorskip("torch")
 from emg_fatigue.weak_supervision.evaluation_neural import (
     _confusion_metrics,
     _group_balanced_macro_f1,
+    _group_class_equal_weights,
     audit_group_fold_support,
     select_fold_pretraining_indices,
     verify_tabular_parent_stage,
@@ -61,6 +62,32 @@ def test_group_balanced_macro_f1_does_not_penalize_perfect_one_class_groups():
     groups = ["G0", "G1", "G2", "G3"]
 
     assert _group_balanced_macro_f1(truth, prediction, groups) == pytest.approx(1.0)
+
+
+def test_group_class_equal_weights_balance_each_source_group_and_proxy_class():
+    groups = ["G1", "G1", "G1", "G2", "G2", "G2", "G2"]
+    labels = [0, 0, 1, 0, 1, 1, 1]
+    weights = _group_class_equal_weights(groups, labels).numpy()
+    group_values = pd.Series(groups).to_numpy()
+    label_values = pd.Series(labels).to_numpy()
+
+    cell_mass = {
+        (group, class_id): float(weights[(group_values == group) & (label_values == class_id)].sum())
+        for group in ("G1", "G2")
+        for class_id in (0, 1)
+    }
+    assert max(cell_mass.values()) - min(cell_mass.values()) == pytest.approx(0.0, abs=1e-6)
+    assert sum(value for (group, _), value in cell_mass.items() if group == "G1") == pytest.approx(
+        sum(value for (group, _), value in cell_mass.items() if group == "G2")
+    )
+    assert sum(value for (_, class_id), value in cell_mass.items() if class_id == 0) == pytest.approx(
+        sum(value for (_, class_id), value in cell_mass.items() if class_id == 1)
+    )
+
+
+def test_group_class_equal_weights_reject_a_group_missing_one_class():
+    with pytest.raises(ValueError, match="both classes in every training group"):
+        _group_class_equal_weights(["G1", "G1", "G2", "G2"], [0, 1, 0, 0])
 
 
 def test_one_class_group_metrics_are_undefined_with_a_reason():
