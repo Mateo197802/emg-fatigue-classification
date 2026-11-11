@@ -7,7 +7,7 @@ name = "emg-fatigue-classification"
 version = "0.1.0"
 description = "Auditable offline binary sEMG classification with explicit weak labels"
 requires-python = ">=3.12"
-dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "PyWavelets", "matplotlib", "joblib", "PyYAML", "pyarrow"]
+dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "PyWavelets", "matplotlib", "joblib", "PyYAML", "pyarrow", "requests==2.34.2"]
 
 [project.optional-dependencies]
 raw-first-ssl = ["torch==2.12.1"]
