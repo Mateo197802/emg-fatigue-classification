@@ -1,0 +1,15 @@
+{
+  "analyzed_window_count": 2763,
+  "csv_count": 20,
+  "fatigue_metrics_produced": false,
+  "group_count": 1,
+  "identity_independence_verified": false,
+  "independent_labels_found": false,
+  "limitations": [
+    "No independent synchronized fatigue or movement-phase reference was present in the complete observed three-column signal schema.",
+    "The observed external source grouping cannot be verified as independent of training identities or prior project exposure.",
+    "Encoder outputs are exploratory representations and reconstruction errors, not fatigue predictions or external validation metrics."
+  ],
+  "reference_search_complete": true,
+  "status": "held_out_file_analysis_no_frozen_supervised_model"
+}

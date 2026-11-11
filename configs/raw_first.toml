@@ -1,0 +1,23 @@
+[run]
+seed = 20261110
+expected_training_csv_count = 140
+expected_source_group_count = 15
+expected_training_archive_name = "EMG_TRAIN_SOLO_CSV_ANONIMO.zip"
+train_fraction = 0.8
+primary_window_s = 0.5
+window_durations_s = [0.25, 0.5, 1.0]
+window_overlap = 0.5
+filter_order = 4
+
+[ssl]
+epochs = 12
+batch_size = 64
+learning_rate = 0.001
+mask_fraction = 0.15
+mask_span_ms = 20.0
+augmentation_levels = [0.05, 0.10, 0.15, 0.20]
+
+[robustness]
+seed = 20261111
+levels = [0.05, 0.10, 0.15, 0.20, 0.25, 0.50]
+maximum_windows = 256

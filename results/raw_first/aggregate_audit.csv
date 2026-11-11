@@ -1,0 +1,29 @@
+metric,value,unit,detail
+training_csv_count,140,count,
+source_folder_count,15,count,
+expected_training_archive_name,EMG_TRAIN_SOLO_CSV_ANONIMO.zip,filename,
+supplied_archive_name_matches_objective,False,boolean,
+source_group_names_anonymized_in_processing,True,boolean,Opaque aliases are generated in memory; the source-name map remains private and is not written.
+source_folder_identity_verified,False,boolean,Opaque source-group folders do not establish participant identity.
+timestamp_rate_valid_file_count,140,count,
+effective_sampling_rate_hz,"{""count"": 140, ""min"": 999.9999999998881, ""p05"": 999.9999999998881, ""median"": 999.9999999999991, ""mean"": 1000.0000000000389, ""p95"": 1000.0000000005542, ""max"": 1000.0000000005542}",Hz,Distribution across source files; no file-level rows published.
+duration_s,"{""count"": 140, ""min"": 16.008, ""p05"": 18.918255, ""median"": 27.7025, ""mean"": 30.41153357142857, ""p95"": 53.02695, ""max"": 70.24799999999999}",s,Distribution across source files.
+sampling_interval_jitter_mad_percent,"{""count"": 140, ""min"": 4.4408920985011154e-11, ""p05"": 4.4408920985011154e-11, ""median"": 1.1102230246250323e-10, ""mean"": 9.088216290643012e-11, ""p95"": 1.776356839401235e-10, ""max"": 1.776356839401235e-10}",%,"Robust interval dispersion per source file, aggregated."
+adc_rms,"{""count"": 140, ""min"": 15.6987607119967, ""p05"": 18.97174646793631, ""median"": 56.20697172193266, ""mean"": 56.206170919127764, ""p95"": 101.30511371428274, ""max"": 130.50540341200306}",ADC-derived units,Exported signal scale; no verified physical calibration.
+adc_to_voltage_r2,"{""count"": 140, ""min"": 0.9999999475608441, ""p05"": 0.9999999641327452, ""median"": 0.9999999959552874, ""mean"": 0.9999999898022671, ""p95"": 0.9999999987532613, ""max"": 0.9999999992467815}",R^2,Linear relationship only; does not verify sensor calibration or ADC representation.
+effective_target_sampling_rate_hz,1000.0,Hz,1000 Hz supported: median is within 1% and at least 95% of valid recordings are within 2%.
+preprocessing_selection_scope,development source groups only; held-out groups excluded,scope,
+preprocessing_selection_group_count,12,count,
+preprocessing_selection_recording_count,110,count,
+selected_bandpass_hz,20.0-400.0,Hz,
+selected_notch_hz,none,Hz,No line frequency crossed the prespecified prevalence threshold; no notch applied.
+reference_search_complete,True,boolean,
+reference_audit_status,blocked_no_independent_reference,status,"All archive members were CSV signals with only Relative_Time_s, ADC_Value, and Voltage_mV columns. No independent synchronized fatigue or movement-phase reference was present; filenames and temporal position are not labels."
+unreviewed_non_signal_csv_count,0,count,
+unreviewed_sidecar_count,0,count,
+primary_500ms_valid_window_count,16629,count,
+primary_500ms_rejected_window_count,0,count,
+valid_250ms_window_count,33649,count,
+valid_1000ms_window_count,8128,count,
+rejected_250ms_window_count,0,count,
+rejected_1000ms_window_count,0,count,
