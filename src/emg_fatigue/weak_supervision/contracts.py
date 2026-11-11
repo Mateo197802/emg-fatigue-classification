@@ -17,6 +17,22 @@ class GroupSplit:
 
 
 @dataclass(frozen=True)
+class CandidateThresholdSelection:
+    """Selected model/calibration/threshold based only on inner-group OOF data."""
+
+    model_name: str
+    params: dict[str, object]
+    calibration_method: str
+    threshold: float
+    group_balanced_macro_f1: float
+    group_balanced_precision: float
+    group_balanced_recall: float
+    selected_candidate_index: int
+    candidate_receipts: tuple[dict[str, object], ...]
+    inner_oof_predictions: tuple[dict[str, object], ...]
+
+
+@dataclass(frozen=True)
 class RawRecording:
     group_id: str
     recording_id: str

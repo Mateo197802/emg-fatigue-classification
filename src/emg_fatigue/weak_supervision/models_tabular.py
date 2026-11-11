@@ -5,14 +5,14 @@ from __future__ import annotations
 from itertools import product
 from typing import Mapping
 
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
+from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler, StandardScaler
 from sklearn.svm import SVC
 
 
@@ -83,36 +83,25 @@ def build_tabular_model(model_name: str, params: Mapping[str, object], seed: int
     """Build a fresh estimator whose imputation/scaling is fit inside each fold."""
     model_seed = int(seed)
     scaled = model_name in {"logistic_regression", "svm_rbf", "mlp"}
+    scaler_name = str(params.get("scaler", "standard"))
+    if scaler_name not in {"standard", "robust", "none"}:
+        raise ValueError(f"Unsupported scaler: {scaler_name}")
     if model_name == "dummy_majority":
         estimator = DummyClassifier(strategy=str(params.get("strategy", "prior")))
     elif model_name == "logistic_regression":
         estimator = LogisticRegression(
             C=float(params.get("C", 1.0)),
-            class_weight="balanced",
+            class_weight=params.get("class_weight", "balanced"),
             max_iter=int(params.get("max_iter", 1000)),
             random_state=model_seed,
         )
     elif model_name == "svm_rbf":
-        svm = SVC(
+        estimator = SVC(
             C=float(params.get("C", 1.0)),
             kernel="rbf",
             class_weight="balanced",
             random_state=model_seed,
         )
-        base_estimator = Pipeline(
-            [
-                ("imputer", SimpleImputer(strategy="median", keep_empty_features=True)),
-                ("scaler", StandardScaler()),
-                ("model", svm),
-            ]
-        )
-        calibrated = CalibratedClassifierCV(
-            estimator=base_estimator,
-            method="sigmoid",
-            cv=3,
-            ensemble=False,
-        )
-        return Pipeline([("model", calibrated)])
     elif model_name == "random_forest":
         configured_depth = int(params.get("max_depth", 0))
         estimator = RandomForestClassifier(
@@ -145,7 +134,12 @@ def build_tabular_model(model_name: str, params: Mapping[str, object], seed: int
         raise ValueError(f"Unsupported tabular model: {model_name}")
 
     steps = [("imputer", SimpleImputer(strategy="median", keep_empty_features=True))]
-    if scaled:
+    if scaled and scaler_name == "standard":
         steps.append(("scaler", StandardScaler()))
+    elif scaled and scaler_name == "robust":
+        steps.append(("scaler", RobustScaler()))
+    if model_name == "logistic_regression" and "feature_k" in params:
+        feature_k = params["feature_k"]
+        steps.append(("feature_selection", SelectKBest(score_func=f_classif, k=int(feature_k))))
     steps.append(("model", estimator))
     return Pipeline(steps)

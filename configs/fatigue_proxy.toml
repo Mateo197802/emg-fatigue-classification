@@ -39,7 +39,7 @@ primary_window_occupancy = 0.5
 window_occupancy_sensitivity = [0.40, 0.60, 0.75]
 
 [labels]
-version = "spectral_persistence_v1"
+version = "low_frequency_fraction_persistence_v1"
 reference_window_count = 5
 reference_instability_percent = 20.0
 reference_instability_sensitivity_percent = [15.0, 25.0, 35.0]
@@ -63,7 +63,7 @@ sensitivity_reference_window_counts = [3, 5]
 outer_group_folds = 4
 inner_group_folds = 3
 seed = 20261113
-selection_metric = "mean_validation_group_macro_f1"
+selection_metric = "group_balanced_macro_f1_after_inner_oof_threshold_selection"
 group_bootstrap_replicates = 2000
 
 [models]
