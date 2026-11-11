@@ -34,12 +34,17 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import StratifiedGroupKFold
 
+from .external_provenance import code_provenance
+
 
 CLASS_IDS = np.asarray([0, 1, 2], dtype=np.int64)
 CLASS_NAMES = {0: "NO_FATIGUE", 1: "TRANSITION", 2: "FATIGUE"}
 WINDOW_SECONDS = 4.0
 WINDOW_HOP_SECONDS = 4.0  # non-overlapping; subject remains the statistical unit
 LABEL_PURITY_MINIMUM = 0.80
+LABEL_RATE_MINIMUM_HZ = 45.0
+LABEL_RATE_MAXIMUM_HZ = 55.0
+MAX_START_OFFSET_SECONDS = 0.05
 MIN_GROUPS_PER_CLASS = 2
 MIN_TRIALS_PER_CLASS = 2
 
@@ -161,6 +166,7 @@ def audit_cerqueira_labels(*, label_root: Path, output_dir: Path) -> dict[str, A
         "note": "50 Hz label timestamps are repeated measures; only 13 participants are independent units.",
         "support_by_trial_file": "cerqueira_label_support_by_trial.csv",
         "support_by_subject_file": "cerqueira_label_support_by_subject.csv",
+        "code_provenance": code_provenance(__file__),
     }
     _write_json(output_dir / "cerqueira_label_audit.json", summary)
     return summary
@@ -239,10 +245,16 @@ def _build_one_trial(
     trial: int,
     raw: pd.DataFrame,
     labels: pd.DataFrame,
-) -> tuple[list[dict[str, Any]], list[np.ndarray]]:
+) -> tuple[list[dict[str, Any]], list[np.ndarray], dict[str, Any]]:
     time, emg, fs = _read_emg_trial(raw)
     label_time = labels["time_s"].to_numpy(dtype=np.float64)
     label_value = labels["label"].to_numpy(dtype=np.int64)
+    label_rate_hz = float(1.0 / np.median(np.diff(label_time))) if len(label_time) > 1 else float("nan")
+    start_offset_s = float(label_time[0] - time[0]) if len(label_time) else float("nan")
+    if not LABEL_RATE_MINIMUM_HZ <= label_rate_hz <= LABEL_RATE_MAXIMUM_HZ:
+        raise ValueError(f"subject {subject} trial {trial} label rate is outside the audited 50 Hz range: {label_rate_hz:.3f}")
+    if not np.isfinite(start_offset_s) or abs(start_offset_s) > MAX_START_OFFSET_SECONDS:
+        raise ValueError(f"subject {subject} trial {trial} label and EMG clocks do not share a verified start: {start_offset_s:.6f} s")
     rows: list[dict[str, Any]] = []
     windows: list[np.ndarray] = []
     duration = min(float(time[-1] - time[0]), float(label_time[-1] - time[0]))
@@ -291,7 +303,18 @@ def _build_one_trial(
         rows.append(row)
         windows.append(signal_window)
         window_index += 1
-    return rows, windows
+    return rows, windows, {
+        "subject_id": f"S{subject:02d}",
+        "trial_id": f"T{trial:02d}",
+        "emg_start_s": float(time[0]),
+        "label_start_s": float(label_time[0]),
+        "start_offset_s": start_offset_s,
+        "emg_end_s": float(time[-1]),
+        "label_end_s": float(label_time[-1]),
+        "end_offset_s": float(label_time[-1] - time[-1]),
+        "emg_rate_hz": float(fs),
+        "label_rate_hz": label_rate_hz,
+    }
 
 
 def build_cerqueira_windows(
@@ -316,6 +339,7 @@ def build_cerqueira_windows(
     labels_by_trial = _label_map(label_root)
     rows: list[dict[str, Any]] = []
     signal_windows: list[np.ndarray] = []
+    synchronization_rows: list[dict[str, Any]] = []
     matched_trials: set[tuple[int, int]] = set()
     # The publisher checksum was verified during download. Reading each nested
     # archive/member below also exercises its ZIP CRC without a second full pass.
@@ -342,9 +366,10 @@ def build_cerqueira_windows(
                     if key in matched_trials:
                         raise ValueError(f"duplicate raw EMG trial in publisher archive: {key}")
                     raw = pd.read_csv(subject_zip.open(trial_member))
-                    new_rows, new_windows = _build_one_trial(subject, trial, raw, labels_by_trial[key])
+                    new_rows, new_windows, synchronization = _build_one_trial(subject, trial, raw, labels_by_trial[key])
                     rows.extend(new_rows)
                     signal_windows.extend(new_windows)
+                    synchronization_rows.append(synchronization)
                     matched_trials.add(key)
                     print(f"Parsed Cerqueira subject {subject:02d} trial {trial:02d}: {len(new_rows)} windows", flush=True)
         elif member_path.suffix.casefold() == ".csv":
@@ -355,9 +380,10 @@ def build_cerqueira_windows(
             if identity in matched_trials:
                 raise ValueError(f"duplicate raw EMG trial in publisher archive: {identity}")
             raw = pd.read_csv(raw_archive.open(member))
-            new_rows, new_windows = _build_one_trial(subject, trial, raw, labels_by_trial[identity])
+            new_rows, new_windows, synchronization = _build_one_trial(subject, trial, raw, labels_by_trial[identity])
             rows.extend(new_rows)
             signal_windows.extend(new_windows)
+            synchronization_rows.append(synchronization)
             matched_trials.add(identity)
             print(f"Parsed Cerqueira subject {subject:02d} trial {trial:02d}: {len(new_rows)} windows", flush=True)
     raw_archive.close()
@@ -385,6 +411,21 @@ def build_cerqueira_windows(
         "target": "source-reported self-perceived fatigue level: 0=no fatigue, 1=transition to fatigue, 2=fatigue",
         "target_provenance": "state selected by participants after researcher prompts; not a physiological fatigue ground truth",
         "signal_archive_sha256": _sha256(signal_archive),
+        "source_archive_sha256": {
+            str(path.relative_to(label_root.parent)).replace("\\", "/"): _sha256(path)
+            for path in (
+                signal_archive,
+                label_root.parent / "originals" / "self_perceived_fatigue_index.zip",
+                label_root.parent / "originals" / "Metadata.xlsx",
+                label_root.parent / "originals" / "protocol.xlsx",
+                label_root.parent / "official_metadata.json",
+            )
+            if path.is_file() and path.is_relative_to(label_root.parent)
+        },
+        "label_csv_sha256": {
+            str(path.relative_to(label_root)).replace("\\", "/"): _sha256(path)
+            for path in sorted(label_root.rglob("*.csv"), key=lambda value: str(value).casefold())
+        },
         "label_root": str(label_root.resolve()),
         "window_seconds": WINDOW_SECONDS,
         "hop_seconds": WINDOW_HOP_SECONDS,
@@ -397,6 +438,16 @@ def build_cerqueira_windows(
         "window_count_is_descriptive_only": True,
         "overlapping_windows_treated_as_independent": False,
         "preprocessing": "4th-order zero-phase Butterworth 20-450 Hz; timestamps synchronized on four active time/value channel pairs; channel 1 timebase with linear interpolation",
+        "time_synchronization": {
+            "method": "match elapsed-time windows from the shared EMG and source rating timestamps; all matched trials must start within 50 ms and ratings must sample at 45-55 Hz",
+            "matched_trials": len(synchronization_rows),
+            "max_abs_start_offset_s": float(max(abs(row["start_offset_s"]) for row in synchronization_rows)),
+            "min_emg_rate_hz": float(min(row["emg_rate_hz"] for row in synchronization_rows)),
+            "max_emg_rate_hz": float(max(row["emg_rate_hz"] for row in synchronization_rows)),
+            "min_label_rate_hz": float(min(row["label_rate_hz"] for row in synchronization_rows)),
+            "max_label_rate_hz": float(max(row["label_rate_hz"] for row in synchronization_rows)),
+            "per_trial_offsets": synchronization_rows,
+        },
         "feature_file": str(feature_path.resolve()),
         "feature_file_sha256": _sha256(feature_path),
         "signal_window_file": str(signal_path.resolve()),
@@ -404,6 +455,7 @@ def build_cerqueira_windows(
         "signal_window_shape": list(bank.shape),
         "feature_columns": [column for column in table.columns if column.startswith("ch")],
         "paired_raw_label_trials": len(matched_trials),
+        "code_provenance": code_provenance(__file__),
     }
     _write_json(manifest_path, manifest)
     return manifest

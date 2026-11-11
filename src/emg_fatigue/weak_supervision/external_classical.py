@@ -27,6 +27,7 @@ from .external_supervision import (
     _require_partition_support,
     _weighted_standardize_fit,
 )
+from .external_provenance import code_provenance
 
 
 MODEL_CONFIGS: dict[str, tuple[dict[str, Any], ...]] = {
@@ -370,6 +371,7 @@ def run_cerqueira_classical_stage(
         "window_count_is_independent_n": False,
         "locked_course_internal_test_values_parsed": 0,
         "course_raw2_rar_opened": False,
+        "code_provenance": code_provenance(__file__, Path(__file__).with_name("external_supervision.py")),
         "artifact_sha256": artifacts,
     }
     _write_json(output_dir / "cerqueira_classical_stage_manifest.json", manifest)
