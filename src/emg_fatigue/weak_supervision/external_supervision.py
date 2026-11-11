@@ -879,6 +879,7 @@ def run_cerqueira_grouped_stage(
         },
         "checkpoint_files": [f"cerqueira_signal_logistic_outer_fold_{i}.joblib" for i in range(1, 5)] + ["cerqueira_signal_logistic_final_development.joblib"],
         "artifact_sha256": artifact_hashes,
+        "code_provenance": code_provenance(__file__),
         "predictions_file": "cerqueira_nested_oof_predictions.parquet",
         "window_count_is_independent_n": False,
         "locked_course_internal_test_values_parsed": 0,
